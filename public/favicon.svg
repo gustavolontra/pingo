@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Water drop -->
+  <path d="M16 2C16 2 5 13.5 5 20.5C5 27.404 9.925 32 16 32C22.075 32 27 27.404 27 20.5C27 13.5 16 2 16 2Z" fill="#6270f5"/>
+  <!-- Lightning bolt -->
+  <path d="M18.5 9L13 18H16.5L14 25L20.5 15H17L18.5 9Z" fill="white"/>
+</svg>
