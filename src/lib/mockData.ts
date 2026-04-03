@@ -20,7 +20,8 @@ export const mockUser: User = {
 }
 
 export const mockDisciplines: Discipline[] = [
-  {
+  // HGP removido — conteúdo válido: historia7ano e geografia7ano (em src/data/)
+  /* {
     id: 'hgp-6',
     name: 'HGP',
     subject: 'História e Geografia de Portugal',
@@ -223,7 +224,7 @@ export const mockDisciplines: Discipline[] = [
         lessons: [],
       },
     ],
-  },
+  }, */
 ]
 
 export const mockLeaderboard: LeaderboardEntry[] = [

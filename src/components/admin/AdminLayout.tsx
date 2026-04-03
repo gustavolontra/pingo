@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/usuarios', icon: Users, label: 'Utilizadores' },
-  { to: '/admin/materias', icon: BookOpen, label: 'Matérias' },
+  { to: '/admin/materias', icon: BookOpen, label: 'Matérias Publicadas' },
   { to: '/admin/aprendizados', icon: FileText, label: 'Aprendizados' },
 ]
 

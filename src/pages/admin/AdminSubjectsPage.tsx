@@ -1,277 +1,106 @@
 /**
- * AdminSubjectsPage.tsx
- *
- * Mostra DUAS secções:
- *   1. "Biblioteca" — disciplinas estáticas (historia7ano, geografia7ano…) — read-only, link para editar
- *   2. "Criadas por ti" — disciplinas criadas no admin — editáveis
- *
- * O admin pode importar uma disciplina estática para o AdminStore,
- * tornando-a editável e "sua" (substitui a estática no aluno).
+ * AdminSubjectsPage — "Matérias Publicadas"
+ * Lista unificada de todo o conteúdo disponível para os alunos.
+ * Não há criação aqui — tudo entra via "Aprendizados".
  */
 
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
-import { STATIC_DISCIPLINES, convertAdminDiscipline } from '@/lib/contentBridge'
-import type { ManagedDiscipline } from '@/store/useAdminStore'
+import { useDisciplines } from '@/hooks/useDisciplines'
+import { Trash2, Pencil } from 'lucide-react'
 import type { Discipline } from '@/types'
-import { BookOpen, Plus, Pencil, Trash2, Download } from 'lucide-react'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+export default function AdminSubjectsPage() {
+  const navigate = useNavigate()
+  const { disciplines: adminDisciplines, deleteDiscipline, hideStaticDiscipline } = useAdminStore()
+  const disciplines = useDisciplines()
 
-function disciplineToManaged(d: Discipline): ManagedDiscipline {
-  return {
-    id: d.id,
-    name: d.name,
-    subject: d.subject,
-    year: d.year,
-    color: d.color,
-    icon: d.icon,
-    createdAt: new Date().toISOString(),
-    topics: d.topics.map((t) => ({
-      id: t.id,
-      disciplineId: d.id,
-      title: t.title,
-      description: t.description,
-      order: t.order,
-      lessons: t.lessons.map((l) => ({
-        id: l.id,
-        topicId: t.id,
-        title: l.title,
-        type: l.type as 'text' | 'quiz' | 'flashcard',
-        estimatedMinutes: l.estimatedMinutes,
-        xpReward: l.xpReward,
-        order: 0,
-        content: l.content as any,
-      })),
-    })),
+  const adminIds = new Set(adminDisciplines.map((d) => d.id))
+
+  function handleDelete(d: Discipline) {
+    if (adminIds.has(d.id)) deleteDiscipline(d.id)
+    else hideStaticDiscipline(d.id)
   }
-}
-
-// ── Componentes ───────────────────────────────────────────────────────────────
-
-function DisciplineCard({
-  discipline,
-  isManaged,
-  onImport,
-  onDelete,
-}: {
-  discipline: Discipline | ManagedDiscipline
-  isManaged: boolean
-  onImport?: () => void
-  onDelete?: () => void
-}) {
-  const d = discipline as Discipline
-  const totalLessons = isManaged
-    ? (discipline as ManagedDiscipline).topics.reduce(
-        (acc, t) => acc + t.lessons.length, 0
-      )
-    : d.totalLessons
 
   return (
-    <div
-      className="rounded-xl p-5 flex items-center gap-4 transition-all"
-      style={{
-        background: 'var(--surface)',
-        border: `1px solid ${isManaged ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`,
-      }}
-    >
-      {/* Icon */}
-      <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-        style={{ background: `${d.color}20` }}
-      >
-        {d.icon}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold truncate" style={{ color: 'var(--text)' }}>{d.name}</p>
-        <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{(discipline as any).subject ?? ''}</p>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-          {d.year}.º ano · {totalLessons} aula{totalLessons !== 1 ? 's' : ''}
+    <div className="p-8 max-w-3xl">
+      <div className="mb-6">
+        <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text)' }}>Matérias Publicadas</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+          {disciplines.length} matéria{disciplines.length !== 1 ? 's' : ''} disponível{disciplines.length !== 1 ? 'eis' : ''} para os alunos.
+          Para adicionar conteúdo vai a <strong>Aprendizados</strong>.
         </p>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 shrink-0">
-        {isManaged ? (
-          <>
-            <Link
-              to={`/admin/materias/${d.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-              style={{ background: 'rgba(98,112,245,0.12)', color: '#a5bbfd' }}
-            >
-              <Pencil size={13} /> Editar
-            </Link>
-            {onDelete && (
-              <button
-                onClick={onDelete}
-                className="p-1.5 rounded-lg transition-all hover:opacity-80"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onImport}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-              style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}
-            >
-              <Download size={13} /> Importar e editar
-            </button>
-            {onDelete && (
-              <button
-                onClick={onDelete}
-                className="p-1.5 rounded-lg transition-all hover:opacity-80"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
-                title="Remover da lista"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-export default function AdminSubjectsPage() {
-  const { disciplines: adminDisciplines, createDiscipline, deleteDiscipline, hideStaticDiscipline, hiddenStaticIds } = useAdminStore()
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', subject: '', year: 7, color: '#6270f5', icon: '📚' })
-  const adminIds = new Set(adminDisciplines.map((d) => d.id))
-  const hidden = new Set(hiddenStaticIds)
-  const staticOnly = STATIC_DISCIPLINES.filter((d) => !adminIds.has(d.id) && !hidden.has(d.id))
-
-  function handleCreate() {
-    if (!form.name || !form.subject) return
-    createDiscipline({ name: form.name, subject: form.subject, year: form.year, color: form.color, icon: form.icon })
-    setShowForm(false)
-    setForm({ name: '', subject: '', year: 7, color: '#6270f5', icon: '📚' })
-  }
-
-  function handleImport(d: Discipline) {
-    const managed = disciplineToManaged(d)
-    useAdminStore.setState((s) => ({
-      disciplines: [...s.disciplines, managed],
-    }))
-  }
-
-  return (
-    <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-display font-bold text-white">Matérias</h2>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-            Gere o conteúdo que os alunos veem
+      {disciplines.length === 0 ? (
+        <div className="card text-center py-16">
+          <p className="text-4xl mb-3">📚</p>
+          <p className="font-semibold" style={{ color: 'var(--text)' }}>Nenhuma matéria publicada</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+            Vai a <strong>Aprendizados</strong> e publica o primeiro conteúdo.
           </p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2">
-          <Plus size={16} /> Nova matéria
-        </button>
-      </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {disciplines.map((d) => {
+            const totalLessons = d.topics.reduce((acc, t) => acc + t.lessons.length, 0)
+            const totalTopics = d.topics.length
+            const isAdmin = adminIds.has(d.id)
 
-      {/* Formulário de criação */}
-      {showForm && (
-        <div className="card space-y-4 animate-slide-up">
-          <h3 className="font-display font-semibold text-white">Nova disciplina</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Nome', key: 'name', placeholder: 'ex: Matemática' },
-              { label: 'Disciplina', key: 'subject', placeholder: 'ex: Matemática' },
-            ].map(({ label, key, placeholder }) => (
-              <div key={key}>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{label}</label>
-                <input
-                  value={(form as any)[key]}
-                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
-                />
-              </div>
-            ))}
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Ano</label>
-              <select
-                value={form.year}
-                onChange={(e) => setForm((f) => ({ ...f, year: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+            return (
+              <div
+                key={d.id}
+                className="rounded-xl p-5 flex items-center gap-4"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
               >
-                {[7, 8, 9].map((y) => <option key={y} value={y}>{y}.º ano</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Ícone</label>
-              <input
-                value={form.icon}
-                onChange={(e) => setForm((f) => ({ ...f, icon: e.target.value }))}
-                placeholder="📐"
-                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
-                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={handleCreate} className="btn-primary">Criar</button>
-            <button onClick={() => setShowForm(false)} className="btn-ghost">Cancelar</button>
-          </div>
-        </div>
-      )}
+                {/* Icon */}
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+                  style={{ background: `${d.color}18` }}
+                >
+                  {d.icon}
+                </div>
 
-      {/* Disciplinas criadas pelo admin */}
-      {adminDisciplines.length > 0 && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-            Criadas por ti ({adminDisciplines.length})
-          </h3>
-          {adminDisciplines.map((d) => (
-            <DisciplineCard
-              key={d.id}
-              discipline={convertAdminDiscipline(d)}
-              isManaged
-              onDelete={() => deleteDiscipline(d.id)}
-            />
-          ))}
-        </section>
-      )}
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold truncate" style={{ color: 'var(--text)' }}>{d.name}</p>
+                    {isAdmin && (
+                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
+                        Editável
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{d.subject}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                    {d.year}.º ano · {totalTopics} tópico{totalTopics !== 1 ? 's' : ''} · {totalLessons} aula{totalLessons !== 1 ? 's' : ''}
+                  </p>
+                </div>
 
-      {/* Biblioteca estática */}
-      {staticOnly.length > 0 && (
-        <section className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-              Biblioteca de conteúdo ({staticOnly.length})
-            </h3>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              Disciplinas pré-carregadas. Clica "Importar e editar" para as gerir.
-            </p>
-          </div>
-          {staticOnly.map((d) => (
-            <DisciplineCard
-              key={d.id}
-              discipline={d}
-              isManaged={false}
-              onImport={() => handleImport(d)}
-              onDelete={() => hideStaticDiscipline(d.id)}
-            />
-          ))}
-        </section>
-      )}
-
-      {/* Empty state */}
-      {adminDisciplines.length === 0 && staticOnly.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpen size={40} className="mx-auto mb-3 opacity-30" />
-          <p style={{ color: 'var(--text-muted)' }}>Nenhuma disciplina ainda</p>
+                {/* Actions */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {isAdmin && (
+                    <button
+                      onClick={() => navigate(`/admin/materias/${d.id}`)}
+                      className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                      style={{ color: '#6270f5' }}
+                      title="Editar conteúdo"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDelete(d)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                    style={{ color: '#dc2626' }}
+                    title="Remover"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
