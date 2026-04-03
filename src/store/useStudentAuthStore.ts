@@ -7,7 +7,8 @@ import { useStore } from '@/store/useStore'
 export function syncCurrentStudentStats() {
   const studentId = useStudentAuthStore.getState().studentId
   if (!studentId) return
-  const { user, disciplines } = useStore.getState()
+  const { user, getDisciplines } = useStore.getState()
+  const disciplines = getDisciplines()
   const lessonsCompleted = disciplines.flatMap((d) => d.topics.flatMap((t) => t.lessons)).filter((l) => l.isCompleted).length
   useAdminStore.getState().syncStudentStats(studentId, {
     xp: user.xp,

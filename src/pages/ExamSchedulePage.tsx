@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useStore } from '@/store/useStore'
+import { useDisciplines } from '@/hooks/useDisciplines'
 import { getDaysUntilExam, formatDate, generateStudyPlan, getUrgencyColor } from '@/lib/utils'
 import { Calendar, Target, BookOpen, AlertTriangle } from 'lucide-react'
 
 export default function ExamSchedulePage() {
-  const { disciplines, setExamDate } = useStore()
+  const { setExamDate } = useStore()
+  const disciplines = useDisciplines()
   const discipline = disciplines[0]
   const [dateInput, setDateInput] = useState(
     discipline.examDate ? new Date(discipline.examDate).toISOString().split('T')[0] : ''

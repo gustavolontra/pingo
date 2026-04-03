@@ -1,203 +1,283 @@
+/**
+ * AdminSubjectsPage.tsx
+ *
+ * Mostra DUAS secções:
+ *   1. "Biblioteca" — disciplinas estáticas (historia7ano, geografia7ano…) — read-only, link para editar
+ *   2. "Criadas por ti" — disciplinas criadas no admin — editáveis
+ *
+ * O admin pode importar uma disciplina estática para o AdminStore,
+ * tornando-a editável e "sua" (substitui a estática no aluno).
+ */
+
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAdminStore, type ManagedDiscipline } from '@/store/useAdminStore'
-import { BookPlus, Trash2, X, Pencil } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useAdminStore } from '@/store/useAdminStore'
+import { STATIC_DISCIPLINES, convertAdminDiscipline } from '@/lib/contentBridge'
+import type { ManagedDiscipline } from '@/store/useAdminStore'
+import type { Discipline } from '@/types'
+import { BookOpen, Plus, Pencil, Trash2, Download, Lock } from 'lucide-react'
 
-const COLOR_OPTIONS = [
-  { label: 'Azul', value: '#3b82f6' },
-  { label: 'Roxo', value: '#6270f5' },
-  { label: 'Verde', value: '#10b981' },
-  { label: 'Laranja', value: '#f59e0b' },
-  { label: 'Vermelho', value: '#ef4444' },
-  { label: 'Rosa', value: '#ec4899' },
-  { label: 'Ciano', value: '#06b6d4' },
-  { label: 'Índigo', value: '#6366f1' },
-]
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-const ICON_OPTIONS = ['📐', '📝', '🗺️', '🔬', '⚗️', '🏛️', '🌍', '🎨', '🎵', '💻', '📖', '🧮']
-
-const YEAR_OPTIONS = ['1.º ano', '2.º ano', '3.º ano', '4.º ano', '5.º ano', '6.º ano', '7.º ano', '8.º ano', '9.º ano']
-
-const EMPTY_FORM = { name: '', subject: '', year: 5, color: '#3b82f6', icon: '📖' }
-
-export default function AdminSubjectsPage() {
-  const { disciplines, createDiscipline, deleteDiscipline } = useAdminStore()
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState(EMPTY_FORM)
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    createDiscipline(form)
-    setForm(EMPTY_FORM)
-    setShowForm(false)
+function disciplineToManaged(d: Discipline): ManagedDiscipline {
+  return {
+    id: d.id,
+    name: d.name,
+    subject: d.subject,
+    year: d.year,
+    color: d.color,
+    icon: d.icon,
+    createdAt: new Date().toISOString(),
+    topics: d.topics.map((t) => ({
+      id: t.id,
+      disciplineId: d.id,
+      title: t.title,
+      description: t.description,
+      order: t.order,
+      lessons: t.lessons.map((l) => ({
+        id: l.id,
+        topicId: t.id,
+        title: l.title,
+        type: l.type as 'text' | 'quiz' | 'flashcard',
+        estimatedMinutes: l.estimatedMinutes,
+        xpReward: l.xpReward,
+        order: 0,
+        content: l.content as any,
+      })),
+    })),
   }
+}
+
+// ── Componentes ───────────────────────────────────────────────────────────────
+
+function DisciplineCard({
+  discipline,
+  isManaged,
+  onImport,
+  onDelete,
+}: {
+  discipline: Discipline | ManagedDiscipline
+  isManaged: boolean
+  onImport?: () => void
+  onDelete?: () => void
+}) {
+  const d = discipline as Discipline
+  const totalLessons = isManaged
+    ? (discipline as ManagedDiscipline).topics.reduce(
+        (acc, t) => acc + t.lessons.length, 0
+      )
+    : d.totalLessons
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text)' }}>Matérias</h2>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{disciplines.length} matéria{disciplines.length !== 1 ? 's' : ''} criada{disciplines.length !== 1 ? 's' : ''}</p>
-        </div>
-        <button className="btn-primary flex items-center gap-2" onClick={() => setShowForm(true)}>
-          <BookPlus size={16} />
-          Nova matéria
-        </button>
+    <div
+      className="rounded-xl p-5 flex items-center gap-4 transition-all"
+      style={{
+        background: 'var(--surface)',
+        border: `1px solid ${isManaged ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`,
+      }}
+    >
+      {/* Icon */}
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+        style={{ background: `${d.color}20` }}
+      >
+        {d.icon}
       </div>
 
-      {/* Create form modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.2)' }}>
-          <div className="card w-full max-w-md relative">
-            <button
-              onClick={() => setShowForm(false)}
-              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-white truncate">{d.name}</p>
+          {!isManaged && (
+            <span
+              className="text-xs px-1.5 py-0.5 rounded flex items-center gap-1"
+              style={{ background: 'rgba(99,143,255,0.12)', color: '#a5bbfd' }}
             >
-              <X size={18} />
-            </button>
-            <h3 className="text-lg font-display font-bold mb-5" style={{ color: 'var(--text)' }}>Nova matéria</h3>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Sigla / Nome curto</label>
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="HGP"
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Nome completo</label>
-                <input
-                  value={form.subject}
-                  onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
-                  placeholder="História e Geografia de Portugal"
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Ano / Série</label>
-                <select
-                  value={form.year}
-                  onChange={(e) => setForm((f) => ({ ...f, year: Number(e.target.value) }))}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                >
-                  {YEAR_OPTIONS.map((y, i) => <option key={y} value={i + 1}>{y}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>Ícone</label>
-                <div className="flex flex-wrap gap-2">
-                  {ICON_OPTIONS.map((icon) => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setForm((f) => ({ ...f, icon }))}
-                      className="w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all"
-                      style={{
-                        background: form.icon === icon ? 'rgba(98,112,245,0.12)' : 'var(--surface-2)',
-                        border: `2px solid ${form.icon === icon ? '#6270f5' : 'transparent'}`,
-                      }}
-                    >
-                      {icon}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>Cor</label>
-                <div className="flex gap-2 flex-wrap">
-                  {COLOR_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      title={label}
-                      onClick={() => setForm((f) => ({ ...f, color: value }))}
-                      className="w-8 h-8 rounded-full transition-all"
-                      style={{
-                        background: value,
-                        outline: form.color === value ? `3px solid ${value}` : 'none',
-                        outlineOffset: '2px',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3 mt-1">
-                <button type="button" className="btn-ghost flex-1" onClick={() => setShowForm(false)}>Cancelar</button>
-                <button type="submit" className="btn-primary flex-1">Criar</button>
-              </div>
-            </form>
-          </div>
+              <Lock size={10} /> Biblioteca
+            </span>
+          )}
+          {isManaged && (
+            <span
+              className="text-xs px-1.5 py-0.5 rounded"
+              style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}
+            >
+              Editável
+            </span>
+          )}
         </div>
-      )}
+        <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          {d.year}.º ano · {totalLessons} aula{totalLessons !== 1 ? 's' : ''}
+        </p>
+      </div>
 
-      {/* Grid */}
-      {disciplines.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-3xl mb-3">📚</p>
-          <p className="font-semibold" style={{ color: 'var(--text)' }}>Nenhuma matéria ainda</p>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Clica em "Nova matéria" para começar.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-          {disciplines.map((d) => (
-            <DisciplineCard key={d.id} discipline={d} onDelete={() => deleteDiscipline(d.id)} />
-          ))}
-        </div>
-      )}
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        {isManaged ? (
+          <>
+            <Link
+              to={`/admin/materias/${d.id}`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+              style={{ background: 'rgba(98,112,245,0.12)', color: '#a5bbfd' }}
+            >
+              <Pencil size={13} /> Editar
+            </Link>
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="p-1.5 rounded-lg transition-all hover:opacity-80"
+                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </>
+        ) : (
+          <button
+            onClick={onImport}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+            style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}
+          >
+            <Download size={13} /> Importar e editar
+          </button>
+        )}
+      </div>
     </div>
   )
 }
 
-function DisciplineCard({ discipline: d, onDelete }: { discipline: ManagedDiscipline; onDelete: () => void }) {
-  const navigate = useNavigate()
-  const topicCount = d.topics?.length ?? 0
-  const lessonCount = d.topics?.flatMap((t) => t.lessons).length ?? 0
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function AdminSubjectsPage() {
+  const { disciplines: adminDisciplines, createDiscipline, deleteDiscipline } = useAdminStore()
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ name: '', subject: '', year: 7, color: '#6270f5', icon: '📚' })
+  // Disciplinas estáticas que o admin ainda NÃO importou
+  const adminIds = new Set(adminDisciplines.map((d) => d.id))
+  const staticOnly = STATIC_DISCIPLINES.filter((d) => !adminIds.has(d.id))
+
+  function handleCreate() {
+    if (!form.name || !form.subject) return
+    createDiscipline({ name: form.name, subject: form.subject, year: form.year, color: form.color, icon: form.icon })
+    setShowForm(false)
+    setForm({ name: '', subject: '', year: 7, color: '#6270f5', icon: '📚' })
+  }
+
+  function handleImport(d: Discipline) {
+    const managed = disciplineToManaged(d)
+    useAdminStore.setState((s) => ({
+      disciplines: [...s.disciplines, managed],
+    }))
+  }
 
   return (
-    <div className="card flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-            style={{ background: `${d.color}15` }}
-          >
-            {d.icon}
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold truncate" style={{ color: d.color }}>{d.name}</p>
-            <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{d.subject}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{d.year}.º ano</p>
-          </div>
+    <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-display font-bold text-white">Matérias</h2>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Gere o conteúdo que os alunos veem
+          </p>
         </div>
-        <button
-          onClick={onDelete}
-          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0"
-          style={{ color: '#dc2626' }}
-        >
-          <Trash2 size={14} />
+        <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2">
+          <Plus size={16} /> Nova matéria
         </button>
       </div>
 
-      <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {topicCount} tópico{topicCount !== 1 ? 's' : ''} · {lessonCount} aula{lessonCount !== 1 ? 's' : ''}
-        </p>
-        <button
-          onClick={() => navigate(`/admin/materias/${d.id}`)}
-          className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors hover:bg-slate-100"
-          style={{ color: '#6270f5' }}
-        >
-          <Pencil size={12} /> Gerir conteúdo
-        </button>
-      </div>
+      {/* Formulário de criação */}
+      {showForm && (
+        <div className="card space-y-4 animate-slide-up">
+          <h3 className="font-display font-semibold text-white">Nova disciplina</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: 'Nome', key: 'name', placeholder: 'ex: Matemática' },
+              { label: 'Disciplina', key: 'subject', placeholder: 'ex: Matemática' },
+            ].map(({ label, key, placeholder }) => (
+              <div key={key}>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{label}</label>
+                <input
+                  value={(form as any)[key]}
+                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+                />
+              </div>
+            ))}
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Ano</label>
+              <select
+                value={form.year}
+                onChange={(e) => setForm((f) => ({ ...f, year: Number(e.target.value) }))}
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+              >
+                {[7, 8, 9].map((y) => <option key={y} value={y}>{y}.º ano</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Ícone</label>
+              <input
+                value={form.icon}
+                onChange={(e) => setForm((f) => ({ ...f, icon: e.target.value }))}
+                placeholder="📐"
+                className="w-full px-3 py-2 rounded-lg text-sm text-white outline-none"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleCreate} className="btn-primary">Criar</button>
+            <button onClick={() => setShowForm(false)} className="btn-ghost">Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Disciplinas criadas pelo admin */}
+      {adminDisciplines.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+            Criadas por ti ({adminDisciplines.length})
+          </h3>
+          {adminDisciplines.map((d) => (
+            <DisciplineCard
+              key={d.id}
+              discipline={convertAdminDiscipline(d)}
+              isManaged
+              onDelete={() => deleteDiscipline(d.id)}
+            />
+          ))}
+        </section>
+      )}
+
+      {/* Biblioteca estática */}
+      {staticOnly.length > 0 && (
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+              Biblioteca de conteúdo ({staticOnly.length})
+            </h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              Disciplinas pré-carregadas. Clica "Importar e editar" para as gerir.
+            </p>
+          </div>
+          {staticOnly.map((d) => (
+            <DisciplineCard
+              key={d.id}
+              discipline={d}
+              isManaged={false}
+              onImport={() => handleImport(d)}
+            />
+          ))}
+        </section>
+      )}
+
+      {/* Empty state */}
+      {adminDisciplines.length === 0 && staticOnly.length === 0 && (
+        <div className="text-center py-12">
+          <BookOpen size={40} className="mx-auto mb-3 opacity-30" />
+          <p style={{ color: 'var(--text-muted)' }}>Nenhuma disciplina ainda</p>
+        </div>
+      )}
     </div>
   )
 }

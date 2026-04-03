@@ -1,10 +1,12 @@
 import { useStore } from '@/store/useStore'
+import { useDisciplines } from '@/hooks/useDisciplines'
 import { useStudyPlan } from '@/hooks/useStudyPlan'
 import ProgressRing from '@/components/ui/ProgressRing'
 import { Target } from 'lucide-react'
 
 export default function TodayGoal() {
-  const { disciplines, dailyStats } = useStore()
+  const { dailyStats } = useStore()
+  const disciplines = useDisciplines()
   const discipline = disciplines[0]
   const plan = useStudyPlan(discipline)
 

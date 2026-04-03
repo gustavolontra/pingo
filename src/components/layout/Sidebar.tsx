@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { LayoutDashboard, Calendar, Trophy, User, LogOut } from 'lucide-react'
 import { useStore } from '@/store/useStore'
+import { useDisciplines } from '@/hooks/useDisciplines'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { cn } from '@/lib/utils'
 
@@ -12,7 +13,8 @@ const navItems = [
 ]
 
 export default function Sidebar() {
-  const { user, disciplines } = useStore()
+  const { user } = useStore()
+  const disciplines = useDisciplines()
   const { studentName, logout } = useStudentAuthStore()
   const navigate = useNavigate()
   const xpPct = Math.round((user.xp / user.xpForNextLevel) * 100)

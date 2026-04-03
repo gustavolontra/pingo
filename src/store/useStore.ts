@@ -1,20 +1,49 @@
+/**
+ * useStore.ts  — store do aluno
+ *
+ * Disciplinas vêm sempre de mergeAllDisciplines(adminStore.disciplines),
+ * que combina: conteúdo admin + ficheiros estáticos (historia7ano, geografia7ano…)
+ *
+ * O progresso do aluno (isCompleted, score, examDate) é guardado aqui em separado
+ * e sobreposto no momento da leitura.
+ */
+
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { User, Discipline, StudySession, DailyStats } from '@/types'
-import { mockUser, mockDisciplines, mockDailyStats } from '@/lib/mockData'
-import { historia7ano } from '@/data/historia7ano'
-
-const initialDisciplines = [...mockDisciplines, historia7ano]
+import { mockUser, mockDailyStats } from '@/lib/mockData'
+import { mergeAllDisciplines } from '@/lib/contentBridge'
+import { useAdminStore } from '@/store/useAdminStore'
 import { syncCurrentStudentStats } from '@/store/useStudentAuthStore'
+
+// ── Tipos de progresso guardados pelo aluno ──────────────────────────────────
+
+interface LessonProgress {
+  isCompleted: boolean
+  score?: number
+  completedAt?: string   // ISO string
+}
+
+interface StudentProgress {
+  /** lessonId → progresso */
+  lessons: Record<string, LessonProgress>
+  /** disciplineId → examDate ISO */
+  examDates: Record<string, string>
+}
 
 interface AppState {
   user: User
-  disciplines: Discipline[]
   sessions: StudySession[]
   dailyStats: DailyStats[]
+  progress: StudentProgress
+
+  /** Computed: disciplinas com progresso do aluno aplicado */
+  getDisciplines: () => Discipline[]
 
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
+
+  /** Mantido por compatibilidade com useKVContent (pode ficar vazio agora) */
   setDisciplinesFromKV: (disciplines: Discipline[]) => void
 }
 
@@ -26,35 +55,69 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       user: mockUser,
-      disciplines: initialDisciplines,
       sessions: [],
       dailyStats: mockDailyStats,
+      progress: { lessons: {}, examDates: {} },
 
-      completeLesson: (lessonId, score, durationMinutes) => {
-        const { disciplines, user, dailyStats, sessions } = get()
-        let xpEarned = 0
-        let disciplineId = ''
+      // ── Computed ──────────────────────────────────────────────────────────
 
-        const updatedDisciplines = disciplines.map((d) => {
-          let found = false
-          const updatedTopics = d.topics.map((t) => ({
+      getDisciplines: () => {
+        const adminDisciplines = useAdminStore.getState().disciplines
+        const merged = mergeAllDisciplines(adminDisciplines)
+        const { progress } = get()
+
+        // Aplica progresso do aluno sobre o conteúdo
+        return merged.map((d) => {
+          const examDate = progress.examDates[d.id]
+            ? new Date(progress.examDates[d.id])
+            : d.examDate
+
+          const topics = d.topics.map((t) => ({
             ...t,
             lessons: t.lessons.map((l) => {
-              if (l.id === lessonId && !l.isCompleted) {
-                xpEarned = Math.round(l.xpReward * Math.max(0.5, score / 100))
-                disciplineId = d.id
-                found = true
-                return { ...l, isCompleted: true, completedAt: new Date(), score }
-              }
-              return l
+              const p = progress.lessons[l.id]
+              if (!p) return l
+              return { ...l, isCompleted: p.isCompleted, score: p.score, completedAt: p.completedAt ? new Date(p.completedAt) : undefined }
             }),
           }))
-          if (!found) return d
-          const completedLessons = updatedTopics.flatMap((t) => t.lessons).filter((l) => l.isCompleted).length
-          return { ...d, topics: updatedTopics, completedLessons }
-        })
 
-        // Update today's stats
+          const completedLessons = topics.flatMap((t) => t.lessons).filter((l) => l.isCompleted).length
+
+          return { ...d, topics, examDate, completedLessons }
+        })
+      },
+
+      // ── Actions ───────────────────────────────────────────────────────────
+
+      completeLesson: (lessonId, score, durationMinutes) => {
+        const { user, dailyStats, sessions, progress, getDisciplines } = get()
+        const disciplines = getDisciplines()
+
+        // Descobre qual a lição e a disciplina
+        let xpEarned = 0
+        let disciplineId = ''
+        for (const d of disciplines) {
+          for (const t of d.topics) {
+            const lesson = t.lessons.find((l) => l.id === lessonId)
+            if (lesson && !lesson.isCompleted) {
+              xpEarned = Math.round(lesson.xpReward * Math.max(0.5, score / 100))
+              disciplineId = d.id
+              break
+            }
+          }
+          if (disciplineId) break
+        }
+
+        // Actualiza progresso
+        const newProgress: StudentProgress = {
+          ...progress,
+          lessons: {
+            ...progress.lessons,
+            [lessonId]: { isCompleted: true, score, completedAt: new Date().toISOString() },
+          },
+        }
+
+        // Actualiza stats diárias
         const today = todayKey()
         const existingIdx = dailyStats.findIndex((s) => s.date === today)
         let updatedStats = [...dailyStats]
@@ -66,10 +129,16 @@ export const useStore = create<AppState>()(
             xpEarned: updatedStats[existingIdx].xpEarned + xpEarned,
           }
         } else {
-          updatedStats.push({ date: today, minutesStudied: durationMinutes, lessonsCompleted: 1, xpEarned, disciplines: [disciplineId] })
+          updatedStats.push({
+            date: today,
+            minutesStudied: durationMinutes,
+            lessonsCompleted: 1,
+            xpEarned,
+            disciplines: [disciplineId],
+          })
         }
 
-        // Check streak
+        // Streak
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
         const studiedYesterday = dailyStats.some((s) => s.date === yesterday && s.minutesStudied > 0)
         const studiedToday = dailyStats.some((s) => s.date === today && s.minutesStudied > 0)
@@ -87,7 +156,7 @@ export const useStore = create<AppState>()(
         }
 
         set({
-          disciplines: updatedDisciplines,
+          progress: newProgress,
           dailyStats: updatedStats,
           sessions: [...sessions, newSession],
           user: {
@@ -98,23 +167,34 @@ export const useStore = create<AppState>()(
             longestStreak: Math.max(user.longestStreak, newStreak),
           },
         })
+
         setTimeout(syncCurrentStudentStats, 100)
       },
 
       setExamDate: (disciplineId, date) =>
         set({
-          disciplines: get().disciplines.map((d) =>
-            d.id === disciplineId ? { ...d, examDate: date } : d
-          ),
+          progress: {
+            ...get().progress,
+            examDates: {
+              ...get().progress.examDates,
+              [disciplineId]: date.toISOString(),
+            },
+          },
         }),
 
-      setDisciplinesFromKV: (kvDisciplines) => {
-        const current = get().disciplines
-        const existingIds = new Set(current.map((d) => d.id))
-        const newOnes = kvDisciplines.filter((d) => !existingIds.has(d.id))
-        if (newOnes.length > 0) set({ disciplines: [...current, ...newOnes] })
-      },
+      // Compatibilidade com useKVContent — já não faz nada porque
+      // as disciplinas vêm do adminStore via getDisciplines()
+      setDisciplinesFromKV: () => {},
     }),
-    { name: 'estudar-pt-v2' }
+    {
+      name: 'estudar-pt-v3',   // versão nova para limpar localStorage antigo
+      partialize: (state) => ({
+        user: state.user,
+        sessions: state.sessions,
+        dailyStats: state.dailyStats,
+        progress: state.progress,
+        // NÃO persiste disciplines — vêm sempre do adminStore no runtime
+      }),
+    }
   )
 )

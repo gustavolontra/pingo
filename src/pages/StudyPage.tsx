@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useStore } from '@/store/useStore'
+import { useDisciplines } from '@/hooks/useDisciplines'
 import type { Lesson, Topic } from '@/types'
 import { cn } from '@/lib/utils'
 import { Lock, CheckCircle2, ChevronDown, ChevronRight, Zap, Clock } from 'lucide-react'
@@ -13,7 +13,7 @@ import ProgressRing from '@/components/ui/ProgressRing'
 
 export default function StudyPage() {
   const { disciplineId } = useParams<{ disciplineId: string }>()
-  const { disciplines } = useStore()
+  const disciplines = useDisciplines()
   const discipline = disciplines.find((d) => d.id === disciplineId)
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
   const [lessonResult, setLessonResult] = useState<{ score: number; xp: number } | null>(null)

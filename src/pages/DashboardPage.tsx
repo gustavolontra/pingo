@@ -1,4 +1,5 @@
 import { useStore } from '@/store/useStore'
+import { useDisciplines } from '@/hooks/useDisciplines'
 import { formatMinutes } from '@/lib/utils'
 import { Flame, Clock, Zap, BookOpen } from 'lucide-react'
 import StatCard from '@/components/ui/StatCard'
@@ -8,7 +9,8 @@ import TodayGoal from '@/components/dashboard/TodayGoal'
 import StreakCalendar from '@/components/gamification/StreakCalendar'
 
 export default function DashboardPage() {
-  const { user, disciplines, dailyStats } = useStore()
+  const { user, dailyStats } = useStore()
+  const disciplines = useDisciplines()
   const thisWeekXP = dailyStats.slice(-7).reduce((sum, s) => sum + s.xpEarned, 0)
   const thisWeekMin = dailyStats.slice(-7).reduce((sum, s) => sum + s.minutesStudied, 0)
 
