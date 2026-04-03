@@ -1,6 +1,4 @@
-import { useStore } from '@/store/useStore'
 import { mockLeaderboard } from '@/lib/mockData'
-import { Medal } from 'lucide-react'
 
 const CURRENT_USER_ID = 'user-1'
 
