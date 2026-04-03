@@ -59,9 +59,9 @@ export default function AdminUsersPage() {
             </button>
             <h3 className="text-lg font-display font-bold mb-5" style={{ color: 'var(--text)' }}>Novo utilizador</h3>
             <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-              <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Marina Silva" required />
-              <FormField label="Login" value={form.login} onChange={field('login')} placeholder="marina.silva" required />
-              <FormField label="Email" type="email" value={form.email} onChange={field('email')} placeholder="marina@escola.pt" required />
+              <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
+              <FormField label="Login" value={form.login} onChange={field('login')} placeholder="ana.costa" required />
+              <FormField label="Email" type="email" value={form.email} onChange={field('email')} placeholder="ana@escola.pt" required />
               <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Série</label>

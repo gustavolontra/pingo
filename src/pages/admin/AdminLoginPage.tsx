@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
                     border: '1px solid var(--border)',
                     color: 'var(--text)',
                   }}
-                  placeholder="gustavolontra"
+                  placeholder="utilizador"
                   required
                   autoFocus
                 />
