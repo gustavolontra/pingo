@@ -1,11 +1,24 @@
 const BASE = '/api'
 
+export interface KVFlashcard {
+  front: string
+  back: string
+}
+
+export interface KVQuestion {
+  text: string
+  answer: boolean
+  explanation: string
+}
+
 export interface KVContentItem {
   id: string
   disciplineId: string
   title: string
   body: string
   keyPoints: string[]
+  flashcards: KVFlashcard[]
+  questions: KVQuestion[]
   createdAt: string
   updatedAt: string
 }
@@ -32,6 +45,14 @@ export const api = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(disciplines),
+    })
+  },
+
+  async putContent(item: KVContentItem): Promise<void> {
+    await fetch(`${BASE}/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
     })
   },
 

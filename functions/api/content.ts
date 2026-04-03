@@ -8,6 +8,8 @@ interface ContentItem {
   title: string
   body: string
   keyPoints: string[]
+  flashcards: { front: string; back: string }[]
+  questions: { text: string; answer: boolean; explanation: string }[]
   createdAt: string
   updatedAt: string
 }
@@ -15,7 +17,6 @@ interface ContentItem {
 export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
   const url = new URL(request.url)
   const disciplineId = url.searchParams.get('disciplineId')
-
   const headers = corsHeaders()
 
   if (disciplineId) {
@@ -24,7 +25,6 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
     return Response.json(items, { headers })
   }
 
-  // Return all content keys
   const list = await env.PINGO_CONTENT.list({ prefix: 'content:' })
   const all: ContentItem[] = []
   for (const key of list.keys) {
@@ -40,6 +40,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
 
   const item: ContentItem = {
     ...body,
+    flashcards: body.flashcards ?? [],
+    questions: body.questions ?? [],
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -51,6 +53,20 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   await env.PINGO_CONTENT.put(key, JSON.stringify(existing))
 
   return Response.json(item, { status: 201, headers })
+}
+
+export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
+  const headers = corsHeaders()
+  const updated = await request.json() as ContentItem
+
+  const key = `content:${updated.disciplineId}`
+  const existing: ContentItem[] = JSON.parse(await env.PINGO_CONTENT.get(key) ?? '[]')
+  const newList = existing.map((c) =>
+    c.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : c
+  )
+  await env.PINGO_CONTENT.put(key, JSON.stringify(newList))
+
+  return Response.json({ ok: true }, { headers })
 }
 
 export const onRequestDelete: PagesFunction<Env> = async ({ env, request }) => {
@@ -78,7 +94,7 @@ export const onRequestOptions: PagesFunction = async () => {
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
   }

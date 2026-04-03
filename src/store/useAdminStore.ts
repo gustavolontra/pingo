@@ -101,6 +101,19 @@ export interface ManagedDiscipline {
   topics: AdminTopic[]
 }
 
+// ─── Content drafts ───────────────────────────────────────────────────────────
+
+export interface ContentDraft {
+  id: string
+  title: string
+  body: string
+  disciplineId: string
+  keyPoints: string[]
+  flashcards: { front: string; back: string }[]
+  questions: { text: string; answer: boolean; explanation: string }[]
+  createdAt: string
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 // SHA-256 of "1234"
@@ -122,7 +135,8 @@ interface AdminState {
   admins: AdminUser[]
   students: Student[]
   disciplines: ManagedDiscipline[]
-  hiddenStaticIds: string[]   // IDs de disciplinas estáticas que o admin removeu
+  hiddenStaticIds: string[]
+  contentDrafts: ContentDraft[]
 
   // Auth
   login: (email: string, password: string) => Promise<boolean>
@@ -138,6 +152,11 @@ interface AdminState {
   createDiscipline: (data: Omit<ManagedDiscipline, 'id' | 'createdAt' | 'topics'>) => void
   deleteDiscipline: (id: string) => void
   hideStaticDiscipline: (id: string) => void
+
+  // Content drafts
+  saveDraft: (draft: Omit<ContentDraft, 'id' | 'createdAt'>) => ContentDraft
+  updateDraft: (id: string, data: Partial<Omit<ContentDraft, 'id' | 'createdAt'>>) => void
+  deleteDraft: (id: string) => void
 
   // Topics
   addTopic: (disciplineId: string, data: Pick<AdminTopic, 'title' | 'description'>) => void
@@ -181,6 +200,7 @@ export const useAdminStore = create<AdminState>()(
       students: [],
       disciplines: [],
       hiddenStaticIds: [],
+      contentDrafts: [],
 
       // ── Auth ────────────────────────────────────────────────────────────────
 
@@ -245,6 +265,18 @@ export const useAdminStore = create<AdminState>()(
 
       hideStaticDiscipline: (id) =>
         set({ hiddenStaticIds: [...get().hiddenStaticIds.filter((x) => x !== id), id] }),
+
+      saveDraft: (data) => {
+        const draft: ContentDraft = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
+        set({ contentDrafts: [...get().contentDrafts, draft] })
+        return draft
+      },
+
+      updateDraft: (id, data) =>
+        set({ contentDrafts: get().contentDrafts.map((d) => d.id === id ? { ...d, ...data } : d) }),
+
+      deleteDraft: (id) =>
+        set({ contentDrafts: get().contentDrafts.filter((d) => d.id !== id) }),
 
       // ── Topics ──────────────────────────────────────────────────────────────
 
