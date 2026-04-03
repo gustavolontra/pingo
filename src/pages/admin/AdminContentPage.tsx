@@ -92,7 +92,7 @@ export default function AdminContentPage() {
   }
 
   const canSave = title.trim() && body.trim() && selectedDisciplineId
-  const selectedDisc = disciplines.find((d) => d.id === selectedDisciplineId)
+
 
   return (
     <div className="p-8 max-w-3xl">
