@@ -11,6 +11,7 @@ import AdminLayout from '@/components/admin/AdminLayout'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminSubjectsPage from '@/pages/admin/AdminSubjectsPage'
+import AdminStudentDetailPage from '@/pages/admin/AdminStudentDetailPage'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
@@ -59,6 +60,7 @@ export default function App() {
       >
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="usuarios" element={<AdminUsersPage />} />
+        <Route path="usuarios/:id" element={<AdminStudentDetailPage />} />
         <Route path="materias" element={<AdminSubjectsPage />} />
       </Route>
     </Routes>

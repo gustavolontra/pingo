@@ -2,6 +2,21 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { hashPassword } from '@/lib/crypto'
 import { useAdminStore } from '@/store/useAdminStore'
+import { useStore } from '@/store/useStore'
+
+export function syncCurrentStudentStats() {
+  const studentId = useStudentAuthStore.getState().studentId
+  if (!studentId) return
+  const { user, disciplines } = useStore.getState()
+  const lessonsCompleted = disciplines.flatMap((d) => d.topics.flatMap((t) => t.lessons)).filter((l) => l.isCompleted).length
+  useAdminStore.getState().syncStudentStats(studentId, {
+    xp: user.xp,
+    level: user.level,
+    streak: user.streak,
+    lessonsCompleted,
+    totalStudyMinutes: user.totalStudyMinutes,
+  })
+}
 
 interface StudentAuthState {
   isAuthenticated: boolean
@@ -34,6 +49,8 @@ export const useStudentAuthStore = create<StudentAuthState>()(
             studentName: student.name,
             studentEmail: student.login,
           })
+          // Sync stats on login
+          setTimeout(syncCurrentStudentStats, 100)
           return true
         }
         return false

@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAdminStore, type Student } from '@/store/useAdminStore'
-import { UserPlus, Trash2, X } from 'lucide-react'
+import { UserPlus, Trash2, X, ChevronRight } from 'lucide-react'
 
 const GRADE_OPTIONS = [
   '1.º ano', '2.º ano', '3.º ano', '4.º ano',
@@ -116,6 +117,7 @@ export default function AdminUsersPage() {
 }
 
 function StudentRow({ student, onDelete }: { student: Student; onDelete: () => void }) {
+  const navigate = useNavigate()
   return (
     <tr style={{ borderBottom: '1px solid var(--border)' }} className="hover:bg-slate-50 transition-colors">
       <td className="px-5 py-3.5 font-medium" style={{ color: 'var(--text)' }}>{student.name}</td>
@@ -123,14 +125,24 @@ function StudentRow({ student, onDelete }: { student: Student; onDelete: () => v
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.school}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.grade}</td>
       <td className="px-5 py-3.5">
-        <button
-          onClick={onDelete}
-          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-          style={{ color: '#dc2626' }}
-          title="Remover"
-        >
-          <Trash2 size={15} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => navigate(`/admin/usuarios/${student.id}`)}
+            className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            style={{ color: '#6270f5' }}
+            title="Ver detalhe"
+          >
+            <ChevronRight size={15} />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+            style={{ color: '#dc2626' }}
+            title="Remover"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
       </td>
     </tr>
   )

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { User, Discipline, StudySession, DailyStats } from '@/types'
 import { mockUser, mockDisciplines, mockDailyStats } from '@/lib/mockData'
+import { syncCurrentStudentStats } from '@/store/useStudentAuthStore'
 
 interface AppState {
   user: User
@@ -93,6 +94,7 @@ export const useStore = create<AppState>()(
             longestStreak: Math.max(user.longestStreak, newStreak),
           },
         })
+        setTimeout(syncCurrentStudentStats, 100)
       },
 
       setExamDate: (disciplineId, date) =>

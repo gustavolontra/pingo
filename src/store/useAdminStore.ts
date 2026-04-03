@@ -20,6 +20,13 @@ export interface Student {
   passwordHash: string
   createdAt: string
   isActive: boolean
+  // Study stats (synced from student app)
+  xp: number
+  level: number
+  streak: number
+  lessonsCompleted: number
+  totalStudyMinutes: number
+  lastActiveAt?: string
 }
 
 export interface ManagedDiscipline {
@@ -54,6 +61,7 @@ interface AdminState {
   logout: () => void
   createStudent: (data: { login: string; name: string; school: string; grade: string; password: string }) => Promise<void>
   updateStudent: (id: string, data: Partial<Pick<Student, 'name' | 'email' | 'school' | 'grade' | 'isActive'>>) => void
+  syncStudentStats: (id: string, stats: Pick<Student, 'xp' | 'level' | 'streak' | 'lessonsCompleted' | 'totalStudyMinutes'>) => void
   deleteStudent: (id: string) => void
   createDiscipline: (data: Omit<ManagedDiscipline, 'id' | 'createdAt'>) => void
   deleteDiscipline: (id: string) => void
@@ -89,6 +97,11 @@ export const useAdminStore = create<AdminState>()(
           login,
           name,
           email: login,
+          xp: 0,
+          level: 1,
+          streak: 0,
+          lessonsCompleted: 0,
+          totalStudyMinutes: 0,
           school,
           grade,
           passwordHash,
@@ -101,6 +114,13 @@ export const useAdminStore = create<AdminState>()(
       updateStudent: (id, data) =>
         set({
           students: get().students.map((s) => (s.id === id ? { ...s, ...data } : s)),
+        }),
+
+      syncStudentStats: (id, stats) =>
+        set({
+          students: get().students.map((s) =>
+            s.id === id ? { ...s, ...stats, lastActiveAt: new Date().toISOString() } : s
+          ),
         }),
 
       deleteStudent: (id) =>
