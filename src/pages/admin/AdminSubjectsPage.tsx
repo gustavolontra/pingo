@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAdminStore, type ManagedDiscipline } from '@/store/useAdminStore'
-import { BookPlus, Trash2, X } from 'lucide-react'
+import { BookPlus, Trash2, X, Pencil } from 'lucide-react'
 
 const COLOR_OPTIONS = [
   { label: 'Azul', value: '#3b82f6' },
@@ -156,28 +157,47 @@ export default function AdminSubjectsPage() {
 }
 
 function DisciplineCard({ discipline: d, onDelete }: { discipline: ManagedDiscipline; onDelete: () => void }) {
+  const navigate = useNavigate()
+  const topicCount = d.topics?.length ?? 0
+  const lessonCount = d.topics?.flatMap((t) => t.lessons).length ?? 0
+
   return (
-    <div className="card flex items-start justify-between gap-3">
-      <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-          style={{ background: `${d.color}15` }}
+    <div className="card flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+            style={{ background: `${d.color}15` }}
+          >
+            {d.icon}
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold truncate" style={{ color: d.color }}>{d.name}</p>
+            <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{d.subject}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{d.year}.º ano</p>
+          </div>
+        </div>
+        <button
+          onClick={onDelete}
+          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0"
+          style={{ color: '#dc2626' }}
         >
-          {d.icon}
-        </div>
-        <div className="min-w-0">
-          <p className="font-semibold truncate" style={{ color: d.color }}>{d.name}</p>
-          <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{d.subject}</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{d.year}.º ano</p>
-        </div>
+          <Trash2 size={14} />
+        </button>
       </div>
-      <button
-        onClick={onDelete}
-        className="p-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0"
-        style={{ color: '#dc2626' }}
-      >
-        <Trash2 size={14} />
-      </button>
+
+      <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          {topicCount} tópico{topicCount !== 1 ? 's' : ''} · {lessonCount} aula{lessonCount !== 1 ? 's' : ''}
+        </p>
+        <button
+          onClick={() => navigate(`/admin/materias/${d.id}`)}
+          className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors hover:bg-slate-100"
+          style={{ color: '#6270f5' }}
+        >
+          <Pencil size={12} /> Gerir conteúdo
+        </button>
+      </div>
     </div>
   )
 }
