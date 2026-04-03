@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { User, Discipline, StudySession, DailyStats } from '@/types'
 import { mockUser, mockDisciplines, mockDailyStats } from '@/lib/mockData'
+import { historia7ano } from '@/data/historia7ano'
+
+const initialDisciplines = [...mockDisciplines, historia7ano]
 import { syncCurrentStudentStats } from '@/store/useStudentAuthStore'
 
 interface AppState {
@@ -23,7 +26,7 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       user: mockUser,
-      disciplines: mockDisciplines,
+      disciplines: initialDisciplines,
       sessions: [],
       dailyStats: mockDailyStats,
 
@@ -105,7 +108,12 @@ export const useStore = create<AppState>()(
           ),
         }),
 
-      setDisciplinesFromKV: (disciplines) => set({ disciplines }),
+      setDisciplinesFromKV: (kvDisciplines) => {
+        const current = get().disciplines
+        const existingIds = new Set(current.map((d) => d.id))
+        const newOnes = kvDisciplines.filter((d) => !existingIds.has(d.id))
+        if (newOnes.length > 0) set({ disciplines: [...current, ...newOnes] })
+      },
     }),
     { name: 'estudar-pt-v2' }
   )
