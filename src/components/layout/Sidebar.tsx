@@ -21,8 +21,8 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-3 mb-5">
-        <h1 className="text-xl font-display font-extrabold text-white tracking-tight">
-          estudar<span style={{ color: '#6270f5' }}>.pt</span>
+        <h1 className="text-xl font-display font-extrabold tracking-tight" style={{ color: 'var(--text)' }}>
+          pingo<span style={{ color: '#6270f5' }}>.team</span>
         </h1>
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>3.º Ciclo · Ensino Básico</p>
       </div>
@@ -43,9 +43,9 @@ export default function Sidebar() {
             to={`/study/${d.id}`}
             className={({ isActive }) => cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-              isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              isActive ? '' : 'hover:bg-slate-100'
             )}
-            style={({ isActive }) => isActive ? { background: `${d.color}18`, color: d.color } : {}}
+            style={({ isActive }) => isActive ? { background: `${d.color}15`, color: d.color } : { color: 'var(--text-muted)' }}
           >
             <span>{d.icon}</span>
             <span className="flex-1 truncate">{d.name}</span>
@@ -76,7 +76,7 @@ export default function Sidebar() {
               {user.name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{user.name}</p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Nível {user.level}</p>
             </div>
           </div>
@@ -99,9 +99,9 @@ function SideNavItem({ to, icon: Icon, label }: { to: string; icon: any; label: 
     <NavLink to={to}
       className={({ isActive }) => cn(
         'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-        isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+        isActive ? '' : 'hover:bg-slate-100'
       )}
-      style={({ isActive }) => isActive ? { background: 'rgba(98,112,245,0.15)', color: '#a5bbfd' } : {}}
+      style={({ isActive }) => isActive ? { background: 'rgba(98,112,245,0.1)', color: '#6270f5' } : { color: 'var(--text-muted)' }}
     >
       <Icon size={17} />
       {label}

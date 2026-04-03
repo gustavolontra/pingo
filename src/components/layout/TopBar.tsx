@@ -21,9 +21,9 @@ export default function TopBar() {
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold"
           style={{
-            background: 'rgba(98,112,245,0.12)',
-            border: '1px solid rgba(98,112,245,0.25)',
-            color: '#a5bbfd',
+            background: 'rgba(98,112,245,0.08)',
+            border: '1px solid rgba(98,112,245,0.2)',
+            color: '#6270f5',
           }}
         >
           <Zap size={14} />
