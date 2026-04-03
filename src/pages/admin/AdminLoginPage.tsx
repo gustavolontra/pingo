@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
 import { Lock, User } from 'lucide-react'
@@ -10,6 +10,8 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,6 +38,9 @@ export default function AdminLoginPage() {
 
         <div className="card">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <input type="text" style={{ display: 'none' }} readOnly />
+            <input type="password" style={{ display: 'none' }} readOnly />
+
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>
                 Email
@@ -43,7 +48,9 @@ export default function AdminLoginPage() {
               <div className="relative">
                 <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
-                  type="email"
+                  ref={emailRef}
+                  type="text"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all"
@@ -54,7 +61,9 @@ export default function AdminLoginPage() {
                   }}
                   placeholder="email@exemplo.com"
                   required
-                  autoFocus
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={() => emailRef.current?.removeAttribute('readonly')}
                 />
               </div>
             </div>
@@ -66,6 +75,7 @@ export default function AdminLoginPage() {
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
+                  ref={passRef}
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -77,6 +87,9 @@ export default function AdminLoginPage() {
                   }}
                   placeholder="••••••••"
                   required
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={() => passRef.current?.removeAttribute('readonly')}
                 />
               </div>
             </div>

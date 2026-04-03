@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { Mail, Lock } from 'lucide-react'
@@ -10,6 +10,8 @@ export default function StudentLoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -35,7 +37,11 @@ export default function StudentLoginPage() {
         </div>
 
         <div className="card">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Campos ocultos para enganar o autofill do browser */}
+            <input type="text" style={{ display: 'none' }} readOnly />
+            <input type="password" style={{ display: 'none' }} readOnly />
+
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>
                 Email
@@ -43,7 +49,9 @@ export default function StudentLoginPage() {
               <div className="relative">
                 <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
-                  type="email"
+                  ref={emailRef}
+                  type="text"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all"
@@ -54,8 +62,9 @@ export default function StudentLoginPage() {
                   }}
                   placeholder="email@escola.pt"
                   required
-                  autoFocus
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={() => emailRef.current?.removeAttribute('readonly')}
                 />
               </div>
             </div>
@@ -67,6 +76,7 @@ export default function StudentLoginPage() {
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
+                  ref={passRef}
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +88,9 @@ export default function StudentLoginPage() {
                   }}
                   placeholder="••••••••"
                   required
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  readOnly
+                  onFocus={() => passRef.current?.removeAttribute('readonly')}
                 />
               </div>
             </div>
