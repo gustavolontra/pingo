@@ -1,37 +1,77 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminStore, type Student } from '@/store/useAdminStore'
-import { UserPlus, Trash2, X, ChevronRight } from 'lucide-react'
+import { hashPassword } from '@/lib/crypto'
+import { UserPlus, Trash2, X, ChevronRight, Pencil } from 'lucide-react'
 
 const GRADE_OPTIONS = [
   '1.º ano', '2.º ano', '3.º ano', '4.º ano',
   '5.º ano', '6.º ano', '7.º ano', '8.º ano', '9.º ano',
 ]
 
-const EMPTY_FORM = { login: '', name: '', school: '', grade: '5.º ano', password: '' }
+const EMPTY_FORM = { login: '', name: '', school: '', grade: '7.º ano', password: '' }
 
 export default function AdminUsersPage() {
-  const { students, createStudent, deleteStudent } = useAdminStore()
+  const { students, createStudent, updateStudent, deleteStudent } = useAdminStore()
   const [showForm, setShowForm] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   function field(key: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     const exists = students.some((s) => s.login === form.login)
-    if (exists) { setError('Login já existe.'); return }
+    if (exists) { setError('Email já existe.'); return }
     setSaving(true)
     await createStudent(form)
     setSaving(false)
     setForm(EMPTY_FORM)
     setShowForm(false)
+  }
+
+  function openEdit(student: Student) {
+    setEditingStudent(student)
+    setForm({ login: student.login, name: student.name, school: student.school, grade: student.grade, password: '' })
+    setError('')
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingStudent) return
+    setError('')
+    const emailTaken = students.some((s) => s.login === form.login && s.id !== editingStudent.id)
+    if (emailTaken) { setError('Email já existe noutro utilizador.'); return }
+    setSaving(true)
+    updateStudent(editingStudent.id, { name: form.name, email: form.login, school: form.school, grade: form.grade })
+    // Update login field directly (not covered by updateStudent)
+    useAdminStore.setState((s) => ({
+      students: s.students.map((s2) =>
+        s2.id === editingStudent.id ? { ...s2, login: form.login } : s2
+      ),
+    }))
+    if (form.password.trim()) {
+      const passwordHash = await hashPassword(form.password)
+      useAdminStore.setState((s) => ({
+        students: s.students.map((s2) =>
+          s2.id === editingStudent.id ? { ...s2, passwordHash } : s2
+        ),
+      }))
+    }
+    setSaving(false)
+    setEditingStudent(null)
+  }
+
+  function handleDelete(id: string) {
+    deleteStudent(id)
+    setConfirmDeleteId(null)
   }
 
   return (
@@ -41,51 +81,69 @@ export default function AdminUsersPage() {
           <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text)' }}>Utilizadores</h2>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{students.length} aluno{students.length !== 1 ? 's' : ''} registado{students.length !== 1 ? 's' : ''}</p>
         </div>
-        <button className="btn-primary flex items-center gap-2" onClick={() => setShowForm(true)}>
+        <button className="btn-primary flex items-center gap-2" onClick={() => { setShowForm(true); setForm(EMPTY_FORM); setError('') }}>
           <UserPlus size={16} />
           Novo utilizador
         </button>
       </div>
 
-      {/* Create form modal */}
+      {/* Create modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.2)' }}>
-          <div className="card w-full max-w-md relative">
-            <button
-              onClick={() => { setShowForm(false); setError('') }}
-              className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              <X size={18} />
-            </button>
-            <h3 className="text-lg font-display font-bold mb-5" style={{ color: 'var(--text)' }}>Novo utilizador</h3>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3.5" autoComplete="off">
-              <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
-              <FormField label="Email" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required autoComplete="off" />
-              <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Série</label>
-                <select
-                  value={form.grade}
-                  onChange={field('grade')}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-                >
-                  {GRADE_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-              <FormField label="Senha temporária" type="password" value={form.password} onChange={field('password')} placeholder="••••••••" required />
-              {error && <p className="text-sm" style={{ color: '#dc2626' }}>{error}</p>}
-              <div className="flex gap-3 mt-1">
-                <button type="button" className="btn-ghost flex-1" onClick={() => { setShowForm(false); setError('') }}>Cancelar</button>
-                <button type="submit" className="btn-primary flex-1" style={{ opacity: saving ? 0.7 : 1 }} disabled={saving}>
-                  {saving ? 'A guardar...' : 'Criar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <Modal title="Novo utilizador" onClose={() => { setShowForm(false); setError('') }}>
+          <form onSubmit={handleCreate} className="flex flex-col gap-3.5" autoComplete="off">
+            <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
+            <FormField label="Email (login)" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required />
+            <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
+            <GradeSelect value={form.grade} onChange={field('grade')} />
+            <FormField label="Senha temporária" type="password" value={form.password} onChange={field('password')} placeholder="••••••••" required />
+            {error && <p className="text-sm" style={{ color: '#dc2626' }}>{error}</p>}
+            <div className="flex gap-3 mt-1">
+              <button type="button" className="btn-ghost flex-1" onClick={() => { setShowForm(false); setError('') }}>Cancelar</button>
+              <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving ? 'A guardar...' : 'Criar'}</button>
+            </div>
+          </form>
+        </Modal>
       )}
+
+      {/* Edit modal */}
+      {editingStudent && (
+        <Modal title={`Editar — ${editingStudent.name}`} onClose={() => setEditingStudent(null)}>
+          <form onSubmit={handleEdit} className="flex flex-col gap-3.5" autoComplete="off">
+            <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
+            <FormField label="Email (login)" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required />
+            <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
+            <GradeSelect value={form.grade} onChange={field('grade')} />
+            <FormField label="Nova senha (deixa em branco para não alterar)" type="password" value={form.password} onChange={field('password')} placeholder="••••••••" />
+            {error && <p className="text-sm" style={{ color: '#dc2626' }}>{error}</p>}
+            <div className="flex gap-3 mt-1">
+              <button type="button" className="btn-ghost flex-1" onClick={() => setEditingStudent(null)}>Cancelar</button>
+              <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving ? 'A guardar...' : 'Guardar'}</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Confirm delete modal */}
+      {confirmDeleteId && (() => {
+        const s = students.find((s) => s.id === confirmDeleteId)!
+        return (
+          <Modal title="Confirmar exclusão" onClose={() => setConfirmDeleteId(null)}>
+            <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+              Tens a certeza que queres remover <strong style={{ color: 'var(--text)' }}>{s.name}</strong>? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3">
+              <button className="btn-ghost flex-1" onClick={() => setConfirmDeleteId(null)}>Cancelar</button>
+              <button
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+                style={{ background: '#dc2626' }}
+                onClick={() => handleDelete(confirmDeleteId)}
+              >
+                Remover
+              </button>
+            </div>
+          </Modal>
+        )
+      })()}
 
       {/* Table */}
       {students.length === 0 ? (
@@ -106,7 +164,12 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {students.map((student) => (
-                <StudentRow key={student.id} student={student} onDelete={() => deleteStudent(student.id)} />
+                <StudentRow
+                  key={student.id}
+                  student={student}
+                  onEdit={() => openEdit(student)}
+                  onDelete={() => setConfirmDeleteId(student.id)}
+                />
               ))}
             </tbody>
           </table>
@@ -116,30 +179,30 @@ export default function AdminUsersPage() {
   )
 }
 
-function StudentRow({ student, onDelete }: { student: Student; onDelete: () => void }) {
+function StudentRow({ student, onEdit, onDelete }: { student: Student; onEdit: () => void; onDelete: () => void }) {
   const navigate = useNavigate()
   return (
     <tr style={{ borderBottom: '1px solid var(--border)' }} className="hover:bg-slate-50 transition-colors">
-      <td className="px-5 py-3.5 font-medium" style={{ color: 'var(--text)' }}>{student.name}</td>
+      <td className="px-5 py-3.5 font-medium" style={{ color: 'var(--text)' }}>
+        <div className="flex items-center gap-2">
+          {student.name}
+          {!student.isActive && (
+            <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#dc2626' }}>Inativo</span>
+          )}
+        </div>
+      </td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.login}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.school}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.grade}</td>
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => navigate(`/admin/usuarios/${student.id}`)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-            style={{ color: '#6270f5' }}
-            title="Ver detalhe"
-          >
+          <button onClick={() => navigate(`/admin/usuarios/${student.id}`)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: '#6270f5' }} title="Ver detalhe">
             <ChevronRight size={15} />
           </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-            style={{ color: '#dc2626' }}
-            title="Remover"
-          >
+          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: '#6270f5' }} title="Editar">
+            <Pencil size={15} />
+          </button>
+          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: '#dc2626' }} title="Remover">
             <Trash2 size={15} />
           </button>
         </div>
@@ -148,11 +211,34 @@ function StudentRow({ student, onDelete }: { student: Student; onDelete: () => v
   )
 }
 
-function FormField({
-  label, value, onChange, placeholder, type = 'text', required, autoComplete = 'on',
-}: {
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.2)' }}>
+      <div className="card w-full max-w-md relative">
+        <button onClick={onClose} className="absolute top-4 right-4 p-1 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: 'var(--text-muted)' }}>
+          <X size={18} />
+        </button>
+        <h3 className="text-lg font-display font-bold mb-5" style={{ color: 'var(--text)' }}>{title}</h3>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function GradeSelect({ value, onChange }: { value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Série</label>
+      <select value={value} onChange={onChange} className="w-full px-3 py-2.5 rounded-xl text-sm outline-none" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+        {GRADE_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
+      </select>
+    </div>
+  )
+}
+
+function FormField({ label, value, onChange, placeholder, type = 'text', required }: {
   label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string; type?: string; required?: boolean; autoComplete?: string
+  placeholder?: string; type?: string; required?: boolean
 }) {
   return (
     <div>
@@ -163,7 +249,7 @@ function FormField({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
-        autoComplete={autoComplete}
+        autoComplete="off"
         className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
         style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
       />
