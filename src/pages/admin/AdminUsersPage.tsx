@@ -7,7 +7,7 @@ const GRADE_OPTIONS = [
   '5.º ano', '6.º ano', '7.º ano', '8.º ano', '9.º ano',
 ]
 
-const EMPTY_FORM = { login: '', name: '', email: '', school: '', grade: '5.º ano', password: '' }
+const EMPTY_FORM = { login: '', name: '', school: '', grade: '5.º ano', password: '' }
 
 export default function AdminUsersPage() {
   const { students, createStudent, deleteStudent } = useAdminStore()
@@ -60,8 +60,7 @@ export default function AdminUsersPage() {
             <h3 className="text-lg font-display font-bold mb-5" style={{ color: 'var(--text)' }}>Novo utilizador</h3>
             <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
               <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
-              <FormField label="Login" value={form.login} onChange={field('login')} placeholder="ana.costa" required />
-              <FormField label="Email" type="email" value={form.email} onChange={field('email')} placeholder="ana@escola.pt" required />
+              <FormField label="Email" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required />
               <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Série</label>
@@ -99,7 +98,7 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-                {['Nome', 'Login', 'Email', 'Escola', 'Série', ''].map((h) => (
+                {['Nome', 'Email', 'Escola', 'Série', ''].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold" style={{ color: 'var(--text-muted)' }}>{h}</th>
                 ))}
               </tr>
@@ -121,7 +120,6 @@ function StudentRow({ student, onDelete }: { student: Student; onDelete: () => v
     <tr style={{ borderBottom: '1px solid var(--border)' }} className="hover:bg-slate-50 transition-colors">
       <td className="px-5 py-3.5 font-medium" style={{ color: 'var(--text)' }}>{student.name}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.login}</td>
-      <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.email}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.school}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.grade}</td>
       <td className="px-5 py-3.5">

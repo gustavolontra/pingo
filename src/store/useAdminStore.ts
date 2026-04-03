@@ -4,7 +4,7 @@ import { hashPassword } from '@/lib/crypto'
 
 export interface AdminUser {
   id: string
-  username: string
+  email: string
   passwordHash: string
   role: 'master' | 'admin'
   name: string
@@ -37,7 +37,7 @@ const MASTER_PASSWORD_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e
 
 const INITIAL_ADMIN: AdminUser = {
   id: 'master-1',
-  username: 'gustavolontra',
+  email: 'gustavolontra@gmail.com',
   passwordHash: MASTER_PASSWORD_HASH,
   role: 'master',
   name: 'Gustavo Lontra',
@@ -50,9 +50,9 @@ interface AdminState {
   students: Student[]
   disciplines: ManagedDiscipline[]
 
-  login: (username: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
-  createStudent: (data: { login: string; name: string; email: string; school: string; grade: string; password: string }) => Promise<void>
+  createStudent: (data: { login: string; name: string; school: string; grade: string; password: string }) => Promise<void>
   updateStudent: (id: string, data: Partial<Pick<Student, 'name' | 'email' | 'school' | 'grade' | 'isActive'>>) => void
   deleteStudent: (id: string) => void
   createDiscipline: (data: Omit<ManagedDiscipline, 'id' | 'createdAt'>) => void
@@ -68,10 +68,10 @@ export const useAdminStore = create<AdminState>()(
       students: [],
       disciplines: [],
 
-      login: async (username, password) => {
+      login: async (email, password) => {
         const hash = await hashPassword(password)
         const admin = get().admins.find(
-          (a) => a.username === username && a.passwordHash === hash
+          (a) => a.email === email && a.passwordHash === hash
         )
         if (admin) {
           set({ isAuthenticated: true, currentAdmin: admin })
@@ -82,13 +82,13 @@ export const useAdminStore = create<AdminState>()(
 
       logout: () => set({ isAuthenticated: false, currentAdmin: null }),
 
-      createStudent: async ({ login, name, email, school, grade, password }) => {
+      createStudent: async ({ login, name, school, grade, password }) => {
         const passwordHash = await hashPassword(password)
         const student: Student = {
           id: crypto.randomUUID(),
           login,
           name,
-          email,
+          email: login,
           school,
           grade,
           passwordHash,

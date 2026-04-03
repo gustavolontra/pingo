@@ -6,7 +6,7 @@ import { Lock, User } from 'lucide-react'
 export default function AdminLoginPage() {
   const navigate = useNavigate()
   const login = useAdminStore((s) => s.login)
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,7 +15,7 @@ export default function AdminLoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const ok = await login(username, password)
+    const ok = await login(email, password)
     setLoading(false)
     if (ok) {
       navigate('/admin/dashboard')
@@ -38,21 +38,21 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>
-                Utilizador
+                Email
               </label>
               <div className="relative">
                 <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all"
                   style={{
                     background: 'var(--surface-2)',
                     border: '1px solid var(--border)',
                     color: 'var(--text)',
                   }}
-                  placeholder="utilizador"
+                  placeholder="email@exemplo.com"
                   required
                   autoFocus
                 />
