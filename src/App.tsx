@@ -5,12 +5,19 @@ import StudyPage from '@/pages/StudyPage'
 import ExamSchedulePage from '@/pages/ExamSchedulePage'
 import LeaderboardPage from '@/pages/LeaderboardPage'
 import ProfilePage from '@/pages/ProfilePage'
+import StudentLoginPage from '@/pages/StudentLoginPage'
 import AdminLoginPage from '@/pages/admin/AdminLoginPage'
 import AdminLayout from '@/components/admin/AdminLayout'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminSubjectsPage from '@/pages/admin/AdminSubjectsPage'
 import { useAdminStore } from '@/store/useAdminStore'
+import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+
+function StudentGuard({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useStudentAuthStore((s) => s.isAuthenticated)
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+}
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAdminStore((s) => s.isAuthenticated)
@@ -20,9 +27,19 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
-      {/* Student app */}
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+      {/* Login de estudante */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<StudentLoginPage />} />
+
+      {/* App de estudante (protegido) */}
+      <Route
+        path="/"
+        element={
+          <StudentGuard>
+            <Layout />
+          </StudentGuard>
+        }
+      >
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="study/:disciplineId" element={<StudyPage />} />
         <Route path="exames" element={<ExamSchedulePage />} />

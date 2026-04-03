@@ -1,6 +1,7 @@
-import { NavLink } from "react-router-dom"
-import { LayoutDashboard, Calendar, Trophy, User } from 'lucide-react'
+import { NavLink, useNavigate } from "react-router-dom"
+import { LayoutDashboard, Calendar, Trophy, User, LogOut } from 'lucide-react'
 import { useStore } from '@/store/useStore'
+import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -12,7 +13,14 @@ const navItems = [
 
 export default function Sidebar() {
   const { user, disciplines } = useStore()
+  const { studentName, logout } = useStudentAuthStore()
+  const navigate = useNavigate()
   const xpPct = Math.round((user.xp / user.xpForNextLevel) * 100)
+
+  function handleLogout() {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <aside
@@ -73,10 +81,10 @@ export default function Sidebar() {
               className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
               style={{ background: '#6270f5', color: 'white' }}
             >
-              {user.name.charAt(0)}
+              {(studentName ?? user.name).charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{user.name}</p>
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{studentName ?? user.name}</p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Nível {user.level}</p>
             </div>
           </div>
@@ -89,6 +97,14 @@ export default function Sidebar() {
             </div>
           </div>
         </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 w-full mt-2 px-2 py-2 rounded-xl text-sm font-medium transition-all hover:bg-red-50"
+          style={{ color: '#dc2626' }}
+        >
+          <LogOut size={15} />
+          Sair
+        </button>
       </div>
     </aside>
   )
