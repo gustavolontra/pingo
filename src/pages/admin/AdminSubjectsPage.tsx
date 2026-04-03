@@ -15,7 +15,7 @@ import { useAdminStore } from '@/store/useAdminStore'
 import { STATIC_DISCIPLINES, convertAdminDiscipline } from '@/lib/contentBridge'
 import type { ManagedDiscipline } from '@/store/useAdminStore'
 import type { Discipline } from '@/types'
-import { BookOpen, Plus, Pencil, Trash2, Download, Lock } from 'lucide-react'
+import { BookOpen, Plus, Pencil, Trash2, Download } from 'lucide-react'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,26 +86,9 @@ function DisciplineCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-semibold text-white truncate">{d.name}</p>
-          {!isManaged && (
-            <span
-              className="text-xs px-1.5 py-0.5 rounded flex items-center gap-1"
-              style={{ background: 'rgba(99,143,255,0.12)', color: '#a5bbfd' }}
-            >
-              <Lock size={10} /> Biblioteca
-            </span>
-          )}
-          {isManaged && (
-            <span
-              className="text-xs px-1.5 py-0.5 rounded"
-              style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981' }}
-            >
-              Editável
-            </span>
-          )}
-        </div>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+        <p className="font-semibold truncate" style={{ color: 'var(--text)' }}>{d.name}</p>
+        <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{(discipline as any).subject ?? ''}</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
           {d.year}.º ano · {totalLessons} aula{totalLessons !== 1 ? 's' : ''}
         </p>
       </div>
