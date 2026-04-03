@@ -58,9 +58,9 @@ export default function AdminUsersPage() {
               <X size={18} />
             </button>
             <h3 className="text-lg font-display font-bold mb-5" style={{ color: 'var(--text)' }}>Novo utilizador</h3>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3.5" autoComplete="off">
               <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
-              <FormField label="Email" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required />
+              <FormField label="Email" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required autoComplete="off" />
               <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>Série</label>
@@ -137,10 +137,10 @@ function StudentRow({ student, onDelete }: { student: Student; onDelete: () => v
 }
 
 function FormField({
-  label, value, onChange, placeholder, type = 'text', required,
+  label, value, onChange, placeholder, type = 'text', required, autoComplete = 'on',
 }: {
   label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string; type?: string; required?: boolean
+  placeholder?: string; type?: string; required?: boolean; autoComplete?: string
 }) {
   return (
     <div>
@@ -151,6 +151,7 @@ function FormField({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        autoComplete={autoComplete}
         className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
         style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
       />
