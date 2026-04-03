@@ -1,0 +1,257 @@
+import type { Discipline, User, LeaderboardEntry, DailyStats } from '@/types'
+
+export const mockUser: User = {
+  id: 'user-1',
+  name: 'Ana Ferreira',
+  level: 8,
+  xp: 3420,
+  xpForNextLevel: 4000,
+  streak: 7,
+  longestStreak: 14,
+  totalStudyMinutes: 1840,
+  joinedAt: new Date('2024-09-01'),
+  badges: [
+    { id: 'b1', name: 'Primeira Aula', description: 'Completaste a tua primeira aula', icon: '🎓', rarity: 'common', unlockedAt: new Date('2024-09-01') },
+    { id: 'b2', name: 'Semana Perfeita', description: '7 dias consecutivos de estudo', icon: '🔥', rarity: 'rare', unlockedAt: new Date('2024-09-08') },
+    { id: 'b3', name: 'Quiz Master', description: '10 quizzes com 100%', icon: '⚡', rarity: 'epic', unlockedAt: new Date('2024-09-15') },
+    { id: 'b4', name: 'Madrugador', description: 'Estudaste antes das 7h', icon: '🌅', rarity: 'common' },
+    { id: 'b5', name: 'Lenda', description: 'Nível 10 atingido', icon: '👑', rarity: 'legendary' },
+  ],
+}
+
+export const mockDisciplines: Discipline[] = [
+  {
+    id: 'matematica-9',
+    name: 'Matemática',
+    subject: 'Matemática',
+    year: 9,
+    color: '#6270f5',
+    icon: '📐',
+    examDate: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000), // 28 days from now
+    totalLessons: 48,
+    completedLessons: 19,
+    topics: [
+      {
+        id: 't1',
+        disciplineId: 'matematica-9',
+        title: 'Números Reais',
+        description: 'Revisão de números racionais e irracionais, radicais e potências.',
+        order: 1,
+        isUnlocked: true,
+        completedAt: new Date('2024-10-01'),
+        lessons: [
+          {
+            id: 'l1',
+            topicId: 't1',
+            title: 'Números Racionais e Irracionais',
+            type: 'text',
+            difficulty: 'basico',
+            estimatedMinutes: 15,
+            xpReward: 50,
+            isCompleted: true,
+            completedAt: new Date('2024-10-01'),
+            score: 100,
+            content: {
+              type: 'text',
+              body: `## Números Racionais e Irracionais\n\nUm **número racional** é qualquer número que pode ser expresso como uma fração p/q, onde p e q são inteiros e q ≠ 0.\n\n### Exemplos de números racionais:\n- 1/2 = 0,5\n- 3/4 = 0,75\n- -2/3 ≈ -0,666...\n- 5 = 5/1\n\n### Números Irracionais\nOs **números irracionais** não podem ser expressos como fração. A sua representação decimal é infinita e não periódica.\n\n**Exemplos:**\n- √2 ≈ 1,41421356...\n- π ≈ 3,14159265...\n- √3 ≈ 1,73205080...\n\n> **Nota:** O conjunto dos números reais (ℝ) inclui tanto os racionais como os irracionais.`,
+              keyPoints: [
+                'Racionais: podem ser escritos como p/q (q ≠ 0)',
+                'Irracionais: decimais infinitos não periódicos',
+                'ℝ = ℚ ∪ Irracionais',
+              ],
+            },
+          },
+          {
+            id: 'l2',
+            topicId: 't1',
+            title: 'Quiz — Números Reais',
+            type: 'quiz',
+            difficulty: 'basico',
+            estimatedMinutes: 10,
+            xpReward: 75,
+            isCompleted: true,
+            score: 80,
+            completedAt: new Date('2024-10-02'),
+            content: {
+              type: 'quiz',
+              questions: [
+                {
+                  id: 'q1',
+                  text: 'Qual dos seguintes é um número irracional?',
+                  type: 'multiple-choice',
+                  options: ['0,333...', '√2', '3/7', '0,125'],
+                  correctAnswer: 1,
+                  explanation: '√2 ≈ 1,41421356... é irracional porque a sua representação decimal é infinita e não periódica.',
+                },
+                {
+                  id: 'q2',
+                  text: 'π (pi) é um número racional.',
+                  type: 'true-false',
+                  options: ['Verdadeiro', 'Falso'],
+                  correctAnswer: 1,
+                  explanation: 'π é irracional. Não pode ser expresso como fração de dois inteiros.',
+                },
+                {
+                  id: 'q3',
+                  text: 'Qual é o conjunto que inclui todos os números reais?',
+                  type: 'multiple-choice',
+                  options: ['ℕ — Naturais', 'ℤ — Inteiros', 'ℚ — Racionais', 'ℝ — Reais'],
+                  correctAnswer: 3,
+                  explanation: 'ℝ (Reais) é o conjunto mais amplo, contendo racionais e irracionais.',
+                },
+              ],
+            },
+          },
+          {
+            id: 'l3',
+            topicId: 't1',
+            title: 'Potências e Radicais — Áudio',
+            type: 'audio',
+            difficulty: 'intermedio',
+            estimatedMinutes: 12,
+            xpReward: 60,
+            isCompleted: false,
+            content: {
+              type: 'audio',
+              audioUrl: '/audio/potencias-radicais.mp3',
+              duration: 720,
+              transcript: 'Nesta aula vamos explorar as propriedades das potências e radicais...',
+              keyPoints: [
+                'aⁿ × aᵐ = aⁿ⁺ᵐ',
+                '(aⁿ)ᵐ = aⁿˣᵐ',
+                '√a = a^(1/2)',
+              ],
+            },
+          },
+          {
+            id: 'l4',
+            topicId: 't1',
+            title: 'Flashcards — Propriedades',
+            type: 'flashcard',
+            difficulty: 'basico',
+            estimatedMinutes: 8,
+            xpReward: 40,
+            isCompleted: false,
+            content: {
+              type: 'flashcard',
+              cards: [
+                { id: 'fc1', front: 'aⁿ × aᵐ = ?', back: 'aⁿ⁺ᵐ', example: '2³ × 2⁴ = 2⁷ = 128' },
+                { id: 'fc2', front: 'a⁰ = ?', back: '1 (para a ≠ 0)', example: '5⁰ = 1' },
+                { id: 'fc3', front: 'a⁻ⁿ = ?', back: '1/aⁿ', example: '2⁻³ = 1/8' },
+                { id: 'fc4', front: '√a² = ?', back: '|a|', example: '√(-3)² = |-3| = 3' },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: 't2',
+        disciplineId: 'matematica-9',
+        title: 'Equações do 2.º Grau',
+        description: 'Resolução de equações quadráticas, fórmula quadrática e discussão de soluções.',
+        order: 2,
+        isUnlocked: true,
+        lessons: [
+          {
+            id: 'l5',
+            topicId: 't2',
+            title: 'Introdução às Equações Quadráticas',
+            type: 'text',
+            difficulty: 'intermedio',
+            estimatedMinutes: 20,
+            xpReward: 70,
+            isCompleted: false,
+            content: {
+              type: 'text',
+              body: `## Equações do 2.º Grau\n\nUma equação do 2.º grau tem a forma:\n\n**ax² + bx + c = 0**, com a ≠ 0\n\n### Fórmula Quadrática (Fórmula de Bhaskara)\n\nx = (-b ± √Δ) / 2a\n\nOnde o **discriminante** Δ = b² - 4ac determina o número de soluções:\n- Δ > 0 → Duas soluções reais distintas\n- Δ = 0 → Uma solução real (dupla)\n- Δ < 0 → Sem soluções reais`,
+              keyPoints: [
+                'Forma geral: ax² + bx + c = 0',
+                'Δ = b² - 4ac (discriminante)',
+                'x = (-b ± √Δ) / 2a',
+              ],
+            },
+          },
+          {
+            id: 'l6',
+            topicId: 't2',
+            title: 'Quiz — Equações Quadráticas',
+            type: 'quiz',
+            difficulty: 'intermedio',
+            estimatedMinutes: 15,
+            xpReward: 100,
+            isCompleted: false,
+            content: {
+              type: 'quiz',
+              questions: [
+                {
+                  id: 'q4',
+                  text: 'Qual é o discriminante de x² - 5x + 6 = 0?',
+                  type: 'multiple-choice',
+                  options: ['1', '25', '49', '11'],
+                  correctAnswer: 0,
+                  explanation: 'Δ = b² - 4ac = (-5)² - 4(1)(6) = 25 - 24 = 1',
+                },
+                {
+                  id: 'q5',
+                  text: 'Se Δ < 0, a equação tem duas soluções reais.',
+                  type: 'true-false',
+                  options: ['Verdadeiro', 'Falso'],
+                  correctAnswer: 1,
+                  explanation: 'Se Δ < 0, não há soluções no conjunto dos reais.',
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: 't3',
+        disciplineId: 'matematica-9',
+        title: 'Funções e Gráficos',
+        description: 'Conceito de função, domínio, contradomínio e representação gráfica.',
+        order: 3,
+        isUnlocked: false,
+        lessons: [],
+      },
+      {
+        id: 't4',
+        disciplineId: 'matematica-9',
+        title: 'Geometria — Teorema de Pitágoras',
+        description: 'Aplicações do Teorema de Pitágoras e trigonometria.',
+        order: 4,
+        isUnlocked: false,
+        lessons: [],
+      },
+    ],
+  },
+]
+
+export const mockLeaderboard: LeaderboardEntry[] = [
+  { userId: 'u1', name: 'Beatriz Costa', level: 12, xp: 5800, weeklyXp: 420, rank: 1 },
+  { userId: 'u2', name: 'Miguel Santos', level: 11, xp: 5200, weeklyXp: 380, rank: 2 },
+  { userId: 'u3', name: 'Sofia Mendes', level: 10, xp: 4600, weeklyXp: 355, rank: 3 },
+  { userId: 'user-1', name: 'Ana Ferreira', level: 8, xp: 3420, weeklyXp: 290, rank: 4 },
+  { userId: 'u5', name: 'João Rodrigues', level: 8, xp: 3100, weeklyXp: 250, rank: 5 },
+  { userId: 'u6', name: 'Inês Oliveira', level: 7, xp: 2800, weeklyXp: 200, rank: 6 },
+  { userId: 'u7', name: 'Tomás Pereira', level: 6, xp: 2200, weeklyXp: 180, rank: 7 },
+  { userId: 'u8', name: 'Mariana Lima', level: 5, xp: 1800, weeklyXp: 140, rank: 8 },
+]
+
+export const mockDailyStats: DailyStats[] = [
+  { date: '2024-10-01', minutesStudied: 45, lessonsCompleted: 3, xpEarned: 180, disciplines: ['matematica-9'] },
+  { date: '2024-10-02', minutesStudied: 30, lessonsCompleted: 2, xpEarned: 120, disciplines: ['matematica-9'] },
+  { date: '2024-10-03', minutesStudied: 60, lessonsCompleted: 4, xpEarned: 240, disciplines: ['matematica-9'] },
+  { date: '2024-10-04', minutesStudied: 20, lessonsCompleted: 1, xpEarned: 50, disciplines: ['matematica-9'] },
+  { date: '2024-10-05', minutesStudied: 75, lessonsCompleted: 5, xpEarned: 320, disciplines: ['matematica-9'] },
+  { date: '2024-10-06', minutesStudied: 0, lessonsCompleted: 0, xpEarned: 0, disciplines: [] },
+  { date: '2024-10-07', minutesStudied: 50, lessonsCompleted: 3, xpEarned: 200, disciplines: ['matematica-9'] },
+]
+
+// Additional disciplines (to add when expanding)
+export const additionalDisciplines: Omit<Discipline, 'topics'>[] = [
+  { id: 'portugues-9', name: 'Português', subject: 'Português', year: 9, color: '#10b981', icon: '📝', totalLessons: 40, completedLessons: 0 },
+  { id: 'cn-9', name: 'Ciências Naturais', subject: 'Ciências Naturais', year: 9, color: '#f59e0b', icon: '🔬', totalLessons: 36, completedLessons: 0 },
+  { id: 'historia-9', name: 'História', subject: 'História', year: 9, color: '#ef4444', icon: '🏛️', totalLessons: 32, completedLessons: 0 },
+  { id: 'fisico-9', name: 'Físico-Química', subject: 'Físico-Química', year: 9, color: '#a78bfa', icon: '⚗️', totalLessons: 38, completedLessons: 0 },
+  { id: 'geo-9', name: 'Geografia', subject: 'Geografia', year: 9, color: '#22d3ee', icon: '🌍', totalLessons: 30, completedLessons: 0 },
+]
