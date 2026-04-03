@@ -1,8 +1,10 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
+import { useKVContent } from '@/hooks/useKVContent'
 
 export default function Layout() {
+  useKVContent()
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <Sidebar />

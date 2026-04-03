@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { hashPassword } from '@/lib/crypto'
+import { api } from '@/lib/api'
+
+function syncDisciplines(disciplines: ManagedDiscipline[]) {
+  api.putDisciplines(disciplines.map(({ id, name, subject, year, color, icon }) => ({
+    id, name, subject, year, color, icon,
+  }))).catch(() => {/* silent – offline ok */})
+}
 
 export interface AdminUser {
   id: string
@@ -222,11 +229,16 @@ export const useAdminStore = create<AdminState>()(
           createdAt: new Date().toISOString(),
           topics: [],
         }
-        set({ disciplines: [...get().disciplines, discipline] })
+        const updated = [...get().disciplines, discipline]
+        set({ disciplines: updated })
+        syncDisciplines(updated)
       },
 
-      deleteDiscipline: (id) =>
-        set({ disciplines: get().disciplines.filter((d) => d.id !== id) }),
+      deleteDiscipline: (id) => {
+        const updated = get().disciplines.filter((d) => d.id !== id)
+        set({ disciplines: updated })
+        syncDisciplines(updated)
+      },
 
       // ── Topics ──────────────────────────────────────────────────────────────
 

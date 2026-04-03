@@ -12,6 +12,7 @@ interface AppState {
 
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
+  setDisciplinesFromKV: (disciplines: Discipline[]) => void
 }
 
 function todayKey() {
@@ -103,6 +104,8 @@ export const useStore = create<AppState>()(
             d.id === disciplineId ? { ...d, examDate: date } : d
           ),
         }),
+
+      setDisciplinesFromKV: (disciplines) => set({ disciplines }),
     }),
     { name: 'estudar-pt-v2' }
   )
