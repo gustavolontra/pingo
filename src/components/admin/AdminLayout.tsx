@@ -1,12 +1,13 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
-import { LayoutDashboard, Users, BookOpen, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, BookOpen, LogOut, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/usuarios', icon: Users, label: 'Utilizadores' },
   { to: '/admin/materias', icon: BookOpen, label: 'Matérias' },
+  { to: '/admin/conteudo', icon: FileText, label: 'Conteúdo' },
 ]
 
 export default function AdminLayout() {

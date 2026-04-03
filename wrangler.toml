@@ -1,0 +1,8 @@
+name = "pingo-team"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "PINGO_CONTENT"
+id = "e579a05b60eb4649a7ce687e45cce297"
+preview_id = "35c4b3224e44478498bb995b08dd880c"
