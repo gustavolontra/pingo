@@ -13,7 +13,7 @@ import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminSubjectsPage from '@/pages/admin/AdminSubjectsPage'
 import AdminStudentDetailPage from '@/pages/admin/AdminStudentDetailPage'
 import AdminDisciplineContentPage from '@/pages/admin/AdminDisciplineContentPage'
-import AdminContentPage from '@/pages/admin/AdminContentPage'
+import AdminLearningsPage from '@/pages/admin/AdminLearningsPage'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
@@ -65,7 +65,7 @@ export default function App() {
         <Route path="usuarios/:id" element={<AdminStudentDetailPage />} />
         <Route path="materias" element={<AdminSubjectsPage />} />
         <Route path="materias/:id" element={<AdminDisciplineContentPage />} />
-        <Route path="conteudo" element={<AdminContentPage />} />
+        <Route path="aprendizados" element={<AdminLearningsPage />} />
       </Route>
     </Routes>
   )

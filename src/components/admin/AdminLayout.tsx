@@ -7,7 +7,7 @@ const navItems = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/usuarios', icon: Users, label: 'Utilizadores' },
   { to: '/admin/materias', icon: BookOpen, label: 'Matérias' },
-  { to: '/admin/conteudo', icon: FileText, label: 'Conteúdo' },
+  { to: '/admin/aprendizados', icon: FileText, label: 'Aprendizados' },
 ]
 
 export default function AdminLayout() {

@@ -115,13 +115,25 @@ function DisciplineCard({
             )}
           </>
         ) : (
-          <button
-            onClick={onImport}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-            style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}
-          >
-            <Download size={13} /> Importar e editar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onImport}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+              style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}
+            >
+              <Download size={13} /> Importar e editar
+            </button>
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="p-1.5 rounded-lg transition-all hover:opacity-80"
+                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                title="Remover da lista"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -131,12 +143,12 @@ function DisciplineCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminSubjectsPage() {
-  const { disciplines: adminDisciplines, createDiscipline, deleteDiscipline } = useAdminStore()
+  const { disciplines: adminDisciplines, createDiscipline, deleteDiscipline, hideStaticDiscipline, hiddenStaticIds } = useAdminStore()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', subject: '', year: 7, color: '#6270f5', icon: '📚' })
-  // Disciplinas estáticas que o admin ainda NÃO importou
   const adminIds = new Set(adminDisciplines.map((d) => d.id))
-  const staticOnly = STATIC_DISCIPLINES.filter((d) => !adminIds.has(d.id))
+  const hidden = new Set(hiddenStaticIds)
+  const staticOnly = STATIC_DISCIPLINES.filter((d) => !adminIds.has(d.id) && !hidden.has(d.id))
 
   function handleCreate() {
     if (!form.name || !form.subject) return
@@ -249,6 +261,7 @@ export default function AdminSubjectsPage() {
               discipline={d}
               isManaged={false}
               onImport={() => handleImport(d)}
+              onDelete={() => hideStaticDiscipline(d.id)}
             />
           ))}
         </section>

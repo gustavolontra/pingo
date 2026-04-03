@@ -88,14 +88,13 @@ export function convertAdminDiscipline(d: ManagedDiscipline): Discipline {
  * Recebe as disciplinas geridas pelo admin e devolve o array final
  * que o aluno vai ver, com a prioridade correta.
  */
-export function mergeAllDisciplines(adminDisciplines: ManagedDiscipline[]): Discipline[] {
-  // Converte as do admin
+export function mergeAllDisciplines(adminDisciplines: ManagedDiscipline[], hiddenStaticIds: string[] = []): Discipline[] {
   const fromAdmin = adminDisciplines.map(convertAdminDiscipline)
   const adminIds = new Set(fromAdmin.map((d) => d.id))
+  const hidden = new Set(hiddenStaticIds)
 
-  // Mantém as estáticas que o admin ainda não geriu
-  const fromStatic = STATIC_DISCIPLINES.filter((d) => !adminIds.has(d.id))
+  // Estáticas que o admin não importou nem escondeu
+  const fromStatic = STATIC_DISCIPLINES.filter((d) => !adminIds.has(d.id) && !hidden.has(d.id))
 
-  // Admin first, depois estáticas
   return [...fromAdmin, ...fromStatic]
 }

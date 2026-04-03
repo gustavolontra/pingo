@@ -122,6 +122,7 @@ interface AdminState {
   admins: AdminUser[]
   students: Student[]
   disciplines: ManagedDiscipline[]
+  hiddenStaticIds: string[]   // IDs de disciplinas estáticas que o admin removeu
 
   // Auth
   login: (email: string, password: string) => Promise<boolean>
@@ -136,6 +137,7 @@ interface AdminState {
   // Disciplines
   createDiscipline: (data: Omit<ManagedDiscipline, 'id' | 'createdAt' | 'topics'>) => void
   deleteDiscipline: (id: string) => void
+  hideStaticDiscipline: (id: string) => void
 
   // Topics
   addTopic: (disciplineId: string, data: Pick<AdminTopic, 'title' | 'description'>) => void
@@ -178,6 +180,7 @@ export const useAdminStore = create<AdminState>()(
       admins: [INITIAL_ADMIN],
       students: [],
       disciplines: [],
+      hiddenStaticIds: [],
 
       // ── Auth ────────────────────────────────────────────────────────────────
 
@@ -239,6 +242,9 @@ export const useAdminStore = create<AdminState>()(
         set({ disciplines: updated })
         syncDisciplines(updated)
       },
+
+      hideStaticDiscipline: (id) =>
+        set({ hiddenStaticIds: [...get().hiddenStaticIds.filter((x) => x !== id), id] }),
 
       // ── Topics ──────────────────────────────────────────────────────────────
 

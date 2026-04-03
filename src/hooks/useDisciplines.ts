@@ -5,9 +5,10 @@ import type { Discipline } from '@/types'
 
 export function useDisciplines(): Discipline[] {
   const adminDisciplines = useAdminStore((s) => s.disciplines)
+  const hiddenStaticIds = useAdminStore((s) => s.hiddenStaticIds)
   const progress = useStore((s) => s.progress)
 
-  const merged = mergeAllDisciplines(adminDisciplines)
+  const merged = mergeAllDisciplines(adminDisciplines, hiddenStaticIds)
 
   return merged.map((d) => {
     const examDate = progress.examDates[d.id]
