@@ -20,6 +20,7 @@ export default function AdminDisciplineContentPage() {
   const { disciplines, addTopic, updateTopic, deleteTopic, addLesson, updateLesson, deleteLesson } = useAdminStore()
 
   const discipline = disciplines.find((d) => d.id === disciplineId)
+  const topics = discipline?.topics ?? []
 
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null)
@@ -33,7 +34,7 @@ export default function AdminDisciplineContentPage() {
 
   if (!discipline) return null
 
-  const selectedTopic = discipline.topics.find((t) => t.id === selectedTopicId) ?? null
+  const selectedTopic = topics.find((t) => t.id === selectedTopicId) ?? null
   const selectedLesson = selectedTopic?.lessons.find((l) => l.id === selectedLessonId) ?? null
 
   function handleAddTopic(e: React.FormEvent) {
@@ -84,9 +85,9 @@ export default function AdminDisciplineContentPage() {
         {/* Topics list */}
         <div className="flex-1 p-3 flex flex-col gap-1">
           <p className="px-2 py-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-            Tópicos ({discipline.topics.length})
+            Tópicos ({topics.length})
           </p>
-          {discipline.topics.map((topic) => (
+          {topics.map((topic) => (
             <TopicItem
               key={topic.id}
               topic={topic}
@@ -150,7 +151,7 @@ export default function AdminDisciplineContentPage() {
             <BookOpen size={40} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
             <p className="mt-4 font-semibold" style={{ color: 'var(--text)' }}>Seleciona um tópico</p>
             <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-              {discipline.topics.length === 0
+              {topics.length === 0
                 ? 'Cria o primeiro tópico no painel esquerdo.'
                 : 'Clica num tópico para ver e editar as suas aulas.'}
             </p>

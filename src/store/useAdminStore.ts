@@ -233,17 +233,18 @@ export const useAdminStore = create<AdminState>()(
       addTopic: (disciplineId, { title, description }) => {
         const disc = get().disciplines.find((d) => d.id === disciplineId)
         if (!disc) return
+        const existingTopics = disc.topics ?? []
         const topic: AdminTopic = {
           id: crypto.randomUUID(),
           disciplineId,
           title,
           description,
-          order: disc.topics.length + 1,
+          order: existingTopics.length + 1,
           lessons: [],
         }
         set({
           disciplines: updateDiscipline(get().disciplines, disciplineId, (d) => ({
-            ...d, topics: [...d.topics, topic],
+            ...d, topics: [...(d.topics ?? []), topic],
           })),
         })
       },
@@ -267,7 +268,7 @@ export const useAdminStore = create<AdminState>()(
 
       addLesson: (disciplineId, topicId, { title, type }) => {
         const disc = get().disciplines.find((d) => d.id === disciplineId)
-        const topic = disc?.topics.find((t) => t.id === topicId)
+        const topic = (disc?.topics ?? []).find((t) => t.id === topicId)
         if (!topic) return
         const lesson: AdminLesson = {
           id: crypto.randomUUID(),
