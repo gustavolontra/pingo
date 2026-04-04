@@ -7,17 +7,17 @@ function buildLessonsFromItem(item: KVContentItem): Lesson[] {
   const lessons: Lesson[] = []
 
   // 1. Text lesson (always)
-  const wordCount = item.body.split(/\s+/).length
+  const wordCount = item.resumo.split(/\s+/).length
   lessons.push({
     id: item.id,
     topicId: `topic-${item.disciplineId}`,
-    title: item.title,
+    title: item.titulo,
     type: 'text',
     difficulty: 'basico',
     estimatedMinutes: Math.max(5, Math.round(wordCount / 130)),
     xpReward: 50,
     isCompleted: false,
-    content: { type: 'text', body: item.body, keyPoints: item.keyPoints } satisfies TextContent,
+    content: { type: 'text', body: item.resumo, keyPoints: item.palavrasChave } satisfies TextContent,
   })
 
   // 2. Flashcard lesson (if has flashcards)
@@ -25,7 +25,7 @@ function buildLessonsFromItem(item: KVContentItem): Lesson[] {
     lessons.push({
       id: `${item.id}-fc`,
       topicId: `topic-${item.disciplineId}`,
-      title: `Flashcards — ${item.title}`,
+      title: `Flashcards — ${item.titulo}`,
       type: 'flashcard',
       difficulty: 'basico',
       estimatedMinutes: Math.max(3, Math.round(item.flashcards.length * 0.5)),
@@ -33,31 +33,35 @@ function buildLessonsFromItem(item: KVContentItem): Lesson[] {
       isCompleted: false,
       content: {
         type: 'flashcard',
-        cards: item.flashcards.map((f, i) => ({ id: `${item.id}-fc-${i}`, front: f.front, back: f.back })),
+        cards: item.flashcards.map((f, i) => ({
+          id: `${item.id}-fc-${i}`,
+          front: f.frente,
+          back: f.verso,
+        })),
       } satisfies FlashcardContent,
     })
   }
 
   // 3. Quiz lesson (if has questions)
-  if (item.questions?.length > 0) {
+  if (item.quiz?.length > 0) {
     lessons.push({
       id: `${item.id}-qz`,
       topicId: `topic-${item.disciplineId}`,
-      title: `Quiz — ${item.title}`,
+      title: `Quiz — ${item.titulo}`,
       type: 'quiz',
       difficulty: 'basico',
-      estimatedMinutes: Math.max(3, item.questions.length * 1),
+      estimatedMinutes: Math.max(3, item.quiz.length * 1),
       xpReward: 60,
       isCompleted: false,
       content: {
         type: 'quiz',
-        questions: item.questions.map((q, i) => ({
+        questions: item.quiz.map((q, i) => ({
           id: `${item.id}-qz-${i}`,
-          text: q.text,
-          type: 'true-false' as const,
-          options: ['Verdadeiro', 'Falso'],
-          correctAnswer: q.answer ? 0 : 1,
-          explanation: q.explanation,
+          text: q.pergunta,
+          type: q.tipo,
+          options: q.opcoes,
+          correctAnswer: q.correta,
+          explanation: q.explicacao,
         })),
       } satisfies QuizContent,
     })

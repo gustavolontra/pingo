@@ -1,103 +1,143 @@
 /**
  * AdminSubjectsPage — "Matérias Publicadas"
- * Lista unificada de todo o conteúdo disponível para os alunos.
- * Não há criação aqui — tudo entra via "Aprendizados".
+ *
+ * Visualização read-only do conteúdo publicado via "Aprendizados".
+ * Agrupa por disciplina → tópico.
+ * Para adicionar conteúdo, usa "Aprendizados".
  */
 
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAdminStore } from '@/store/useAdminStore'
-import { useDisciplines } from '@/hooks/useDisciplines'
-import { Trash2, Pencil } from 'lucide-react'
-import type { Discipline } from '@/types'
+import { STATIC_DISCIPLINES } from '@/lib/contentBridge'
+import { api, type KVContentItem } from '@/lib/api'
+import { BookOpen, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 
 export default function AdminSubjectsPage() {
-  const navigate = useNavigate()
-  const { disciplines: adminDisciplines, deleteDiscipline, hideStaticDiscipline } = useAdminStore()
-  const disciplines = useDisciplines()
+  const { disciplines: adminDisciplines } = useAdminStore()
+  const [items, setItems] = useState<KVContentItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [openDisc, setOpenDisc] = useState<string | null>(null)
 
-  const adminIds = new Set(adminDisciplines.map((d) => d.id))
+  const allDisciplines = [
+    ...adminDisciplines.map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year, color: d.color, icon: d.icon })),
+    ...STATIC_DISCIPLINES
+      .filter((d) => !adminDisciplines.some((a) => a.id === d.id))
+      .map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year, color: d.color, icon: d.icon })),
+  ]
 
-  function handleDelete(d: Discipline) {
-    if (adminIds.has(d.id)) deleteDiscipline(d.id)
-    else hideStaticDiscipline(d.id)
-  }
+  useEffect(() => {
+    api.getAllContent()
+      .then(setItems)
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Group items by disciplineId → topico
+  const grouped = items.reduce<Record<string, Record<string, KVContentItem[]>>>((acc, item) => {
+    if (!acc[item.disciplineId]) acc[item.disciplineId] = {}
+    if (!acc[item.disciplineId][item.topico]) acc[item.disciplineId][item.topico] = []
+    acc[item.disciplineId][item.topico].push(item)
+    return acc
+  }, {})
+
+  const disciplineIds = Object.keys(grouped)
 
   return (
     <div className="p-8 max-w-3xl">
       <div className="mb-6">
         <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text)' }}>Matérias Publicadas</h2>
         <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-          {disciplines.length} matéria{disciplines.length !== 1 ? 's' : ''} disponível{disciplines.length !== 1 ? 'eis' : ''} para os alunos.
-          Para adicionar conteúdo vai a <strong>Aprendizados</strong>.
+          Conteúdo publicado via <strong>Aprendizados</strong>. Para adicionar mais, vai a Aprendizados.
         </p>
       </div>
 
-      {disciplines.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-16 gap-3" style={{ color: 'var(--text-muted)' }}>
+          <Loader2 size={20} className="animate-spin" />
+          <span className="text-sm">A carregar...</span>
+        </div>
+      ) : disciplineIds.length === 0 ? (
         <div className="card text-center py-16">
-          <p className="text-4xl mb-3">📚</p>
-          <p className="font-semibold" style={{ color: 'var(--text)' }}>Nenhuma matéria publicada</p>
+          <div className="mx-auto mb-3 w-fit opacity-30" style={{ color: 'var(--text-muted)' }}>
+            <BookOpen size={36} />
+          </div>
+          <p className="font-semibold" style={{ color: 'var(--text)' }}>Nenhum conteúdo publicado</p>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Vai a <strong>Aprendizados</strong> e publica o primeiro conteúdo.
+            Vai a <strong>Aprendizados</strong> e publica o primeiro aprendizado.
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {disciplines.map((d) => {
-            const totalLessons = d.topics.reduce((acc, t) => acc + t.lessons.length, 0)
-            const totalTopics = d.topics.length
-            const isAdmin = adminIds.has(d.id)
+          {disciplineIds.map((discId) => {
+            const disc = allDisciplines.find((d) => d.id === discId)
+            const topics = grouped[discId]
+            const topicNames = Object.keys(topics)
+            const totalItems = Object.values(topics).reduce((acc, t) => acc + t.length, 0)
+            const isOpen = openDisc === discId
 
             return (
-              <div
-                key={d.id}
-                className="rounded-xl p-5 flex items-center gap-4"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-              >
-                {/* Icon */}
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                  style={{ background: `${d.color}18` }}
+              <div key={discId} className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                {/* Discipline header */}
+                <button
+                  onClick={() => setOpenDisc(isOpen ? null : discId)}
+                  className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 transition-all text-left"
+                  style={{ background: 'var(--surface)' }}
                 >
-                  {d.icon}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold truncate" style={{ color: 'var(--text)' }}>{d.name}</p>
-                    {isAdmin && (
-                      <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
-                        Editável
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{d.subject}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                    {d.year}.º ano · {totalTopics} tópico{totalTopics !== 1 ? 's' : ''} · {totalLessons} aula{totalLessons !== 1 ? 's' : ''}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {isAdmin && (
-                    <button
-                      onClick={() => navigate(`/admin/materias/${d.id}`)}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                      style={{ color: '#6270f5' }}
-                      title="Editar conteúdo"
+                  {disc?.icon && (
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                      style={{ background: disc.color ? `${disc.color}18` : 'var(--surface-2)' }}
                     >
-                      <Pencil size={15} />
-                    </button>
+                      {disc.icon}
+                    </div>
                   )}
-                  <button
-                    onClick={() => handleDelete(d)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                    style={{ color: '#dc2626' }}
-                    title="Remover"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
+                      {disc?.name ?? discId}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {disc?.subject} · {topicNames.length} tópico{topicNames.length !== 1 ? 's' : ''} · {totalItems} conteúdo{totalItems !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                  {isOpen
+                    ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} />
+                    : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+                </button>
+
+                {/* Topics + content */}
+                {isOpen && (
+                  <div style={{ background: 'var(--surface-2)', borderTop: '1px solid var(--border)' }}>
+                    {topicNames.map((topicName) => (
+                      <div key={topicName} className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+                        <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#6270f5' }}>
+                          {topicName}
+                        </p>
+                        <div className="flex flex-col gap-2">
+                          {topics[topicName].map((item) => (
+                            <div key={item.id} className="flex items-start gap-3 px-3 py-2.5 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{item.titulo}</p>
+                                {item.palavrasChave?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {item.palavrasChave.slice(0, 4).map((kp, i) => (
+                                      <span key={i} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+                                        {kp}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-3 mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                                  {item.flashcards?.length > 0 && <span>🃏 {item.flashcards.length} flashcards</span>}
+                                  {item.quiz?.length > 0 && <span>❓ {item.quiz.length} questões</span>}
+                                  <span>{new Date(item.createdAt).toLocaleDateString('pt-PT')}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}

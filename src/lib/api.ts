@@ -1,24 +1,28 @@
 const BASE = '/api'
 
 export interface KVFlashcard {
-  front: string
-  back: string
+  frente: string
+  verso: string
+  exemplo?: string
 }
 
 export interface KVQuestion {
-  text: string
-  answer: boolean
-  explanation: string
+  pergunta: string
+  tipo: 'multiple-choice' | 'true-false'
+  opcoes: string[]
+  correta: number
+  explicacao: string
 }
 
 export interface KVContentItem {
   id: string
   disciplineId: string
-  title: string
-  body: string
-  keyPoints: string[]
+  topico: string
+  titulo: string
+  resumo: string
+  palavrasChave: string[]
   flashcards: KVFlashcard[]
-  questions: KVQuestion[]
+  quiz: KVQuestion[]
   createdAt: string
   updatedAt: string
 }
@@ -32,7 +36,33 @@ export interface KVDiscipline {
   icon: string
 }
 
+export interface AnalysisResult {
+  titulo: string
+  materia: string
+  ano: number
+  topico: string
+  palavrasChave: string[]
+  resumo: string
+  flashcards: KVFlashcard[]
+  quiz: KVQuestion[]
+}
+
 export const api = {
+  // AI Analysis
+  async analyze(content: string): Promise<AnalysisResult> {
+    const res = await fetch(`${BASE}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new Error(err.error ?? `HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
+
   // Disciplines
   async getDisciplines(): Promise<KVDiscipline[]> {
     const res = await fetch(`${BASE}/disciplines`)

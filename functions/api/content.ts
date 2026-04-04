@@ -5,11 +5,18 @@ interface Env {
 interface ContentItem {
   id: string
   disciplineId: string
-  title: string
-  body: string
-  keyPoints: string[]
-  flashcards: { front: string; back: string }[]
-  questions: { text: string; answer: boolean; explanation: string }[]
+  topico: string
+  titulo: string
+  resumo: string
+  palavrasChave: string[]
+  flashcards: { frente: string; verso: string; exemplo?: string }[]
+  quiz: {
+    pergunta: string
+    tipo: 'multiple-choice' | 'true-false'
+    opcoes: string[]
+    correta: number
+    explicacao: string
+  }[]
   createdAt: string
   updatedAt: string
 }
@@ -41,7 +48,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   const item: ContentItem = {
     ...body,
     flashcards: body.flashcards ?? [],
-    questions: body.questions ?? [],
+    quiz: body.quiz ?? [],
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

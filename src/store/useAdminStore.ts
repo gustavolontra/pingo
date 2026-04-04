@@ -103,14 +103,32 @@ export interface ManagedDiscipline {
 
 // ─── Content drafts ───────────────────────────────────────────────────────────
 
+export interface DraftFlashcard {
+  frente: string
+  verso: string
+  exemplo: string
+}
+
+export interface DraftQuestion {
+  pergunta: string
+  tipo: 'multiple-choice' | 'true-false'
+  opcoes: string[]
+  correta: number
+  explicacao: string
+}
+
 export interface ContentDraft {
   id: string
-  title: string
-  body: string
+  titulo: string
+  materia: string
   disciplineId: string
-  keyPoints: string[]
-  flashcards: { front: string; back: string }[]
-  questions: { text: string; answer: boolean; explanation: string }[]
+  ano: number
+  topico: string
+  palavrasChave: string[]
+  resumo: string
+  flashcards: DraftFlashcard[]
+  quiz: DraftQuestion[]
+  rawContent: string
   createdAt: string
 }
 
