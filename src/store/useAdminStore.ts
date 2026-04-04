@@ -379,6 +379,24 @@ export const useAdminStore = create<AdminState>()(
           })),
         }),
     }),
-    { name: 'pingo-admin-v1' }
+    {
+      name: 'pingo-admin-v1',
+      version: 2,
+      migrate: (state: unknown) => {
+        // v2: zerar stats de alunos que tinham XP do mockUser fictício
+        const s = state as { students?: Student[] } & Record<string, unknown>
+        return {
+          ...s,
+          students: (s.students ?? []).map((st) => ({
+            ...st,
+            xp: 0,
+            level: 1,
+            streak: 0,
+            lessonsCompleted: 0,
+            totalStudyMinutes: 0,
+          })),
+        }
+      },
+    }
   )
 )
