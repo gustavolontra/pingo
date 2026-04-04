@@ -351,8 +351,8 @@ export default function LandingPage() {
 
         {/* ── Idle: logo + pesquisa centrada ─────────────────────────────── */}
         {!hasAnswer && (
-          <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start md:justify-center px-4 md:px-6 py-8 md:py-12">
-            <div className="mb-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-4 md:px-6 py-6 md:py-12 overflow-y-auto">
+            <div className="mb-6 md:mb-8 text-center">
               <img
                 src="/favicon.svg"
                 alt="Pingo"
@@ -379,9 +379,9 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* Banner */}
+            {/* Banner — só em desktop */}
             <div
-              className="mt-10 w-full rounded-2xl overflow-hidden"
+              className="hidden md:block mt-10 w-full rounded-2xl overflow-hidden"
               style={{ maxWidth: '28rem', background: 'rgba(98,112,245,0.07)', border: '1px solid rgba(98,112,245,0.2)' }}
             >
               <div className="flex items-center gap-4 px-5 py-4">
