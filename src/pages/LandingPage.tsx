@@ -89,7 +89,7 @@ function findLocalContext(query: string, items: KVContentItem[]): string {
 
 // ── Componente principal ──────────────────────────────────────────────────────
 
-const FREE_LIMIT = 3
+const FREE_LIMIT = 5
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -113,6 +113,7 @@ export default function LandingPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const answerRef = useRef<HTMLDivElement>(null)
 
+  const isDailyLimitReached = questionsUsed >= FREE_LIMIT
   const hasAnswer = aiAnswer !== null || limitReached
 
   // Carrega conteúdo do KV para sugestões e contexto
@@ -148,7 +149,7 @@ export default function LandingPage() {
   async function handleSearch(q: string = query) {
     if (!q.trim()) return
 
-    if (questionsUsed >= FREE_LIMIT) {
+    if (isDailyLimitReached) {
       setLimitReached(true)
       return
     }
@@ -355,20 +356,9 @@ export default function LandingPage() {
             <div ref={answerRef} className="flex-1 overflow-y-auto">
               <div className="max-w-2xl mx-auto px-6 py-8">
 
-                {/* Gate de limite */}
+                {/* Gate de limite — tentou pesquisar após esgotar */}
                 {limitReached && (
-                  <div className="text-center py-20">
-                    <p className="text-4xl mb-4">🔒</p>
-                    <p className="text-lg font-display font-bold mb-2" style={{ color: 'var(--text)' }}>
-                      Chegaste ao limite de {FREE_LIMIT} perguntas gratuitas
-                    </p>
-                    <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-                      Inicia sessão para continuar a aprender sem limites.
-                    </p>
-                    <button onClick={() => navigate('/login')} className="btn-primary px-8 py-3">
-                      Iniciar sessão
-                    </button>
-                  </div>
+                  <LimitGate navigate={navigate} />
                 )}
 
                 {/* Loading */}
@@ -387,8 +377,8 @@ export default function LandingPage() {
                     )}
                     <div className="mt-3">{renderBody(aiAnswer)}</div>
 
-                    {/* CTA interactivo — só se não for rejeição */}
-                    {!isRejection && (
+                    {/* CTA interactivo — só se não for rejeição e limite não atingido */}
+                    {!isRejection && !isDailyLimitReached && (
                       <div className="mt-6">
                         {loginPrompt ? (
                           <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl" style={{ background: 'rgba(98,112,245,0.08)', border: '1px solid rgba(98,112,245,0.2)' }}>
@@ -409,23 +399,68 @@ export default function LandingPage() {
                         )}
                       </div>
                     )}
+
+                    {/* Mensagens progressivas */}
+                    {!isRejection && questionsUsed === 3 && (
+                      <p className="mt-5 text-sm text-center" style={{ color: 'var(--text-muted)' }}>
+                        Estás a gostar? 😊 Ainda tens 2 pesquisas gratuitas hoje. Os teus colegas já estão a ganhar XP e a subir no ranking — não fiques para trás!
+                      </p>
+                    )}
+                    {!isRejection && questionsUsed === 4 && (
+                      <div className="mt-5 px-4 py-3 rounded-xl text-sm text-center" style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.2)', color: '#f97316' }}>
+                        Atenção — esta é a tua penúltima pesquisa gratuita de hoje! ⚡ Enquanto hesitas, os teus colegas já completaram mais uma aula. Entra e não percas terreno!
+                      </div>
+                    )}
+                    {!isRejection && isDailyLimitReached && (
+                      <LimitGate navigate={navigate} />
+                    )}
                   </>
                 )}
               </div>
             </div>
 
-            {/* Input fixo em baixo */}
-            <div
-              className="shrink-0 px-6 py-4"
-              style={{ borderTop: '1px solid var(--border)', background: '#ffffff' }}
-            >
-              <div className="max-w-2xl mx-auto">
-                <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} />
+            {/* Input fixo em baixo — escondido quando limite atingido */}
+            {!isDailyLimitReached && (
+              <div
+                className="shrink-0 px-6 py-4"
+                style={{ borderTop: '1px solid var(--border)', background: '#ffffff' }}
+              >
+                <div className="max-w-2xl mx-auto">
+                  <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} />
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </main>
+    </div>
+  )
+}
+
+// ── Limite diário ─────────────────────────────────────────────────────────────
+
+function LimitGate({ navigate }: { navigate: (p: string) => void }) {
+  return (
+    <div className="mt-6 px-5 py-6 rounded-2xl text-center space-y-4" style={{ background: 'rgba(98,112,245,0.07)', border: '1px solid rgba(98,112,245,0.25)' }}>
+      <p className="text-2xl">🏆</p>
+      <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+        Limite atingido por hoje!
+      </p>
+      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        Os teus colegas já estão no ranking — cria a tua conta grátis agora e começa a subir também. Não deixes que a distância aumente!
+      </p>
+      <div className="flex gap-3 justify-center">
+        <button onClick={() => navigate('/login')} className="btn-primary px-5 py-2 text-sm">
+          Iniciar sessão
+        </button>
+        <button
+          onClick={() => navigate('/login?tab=registar')}
+          className="px-5 py-2 text-sm font-semibold rounded-xl transition-all"
+          style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)' }}
+        >
+          Criar conta
+        </button>
+      </div>
     </div>
   )
 }
