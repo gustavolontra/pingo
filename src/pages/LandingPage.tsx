@@ -269,12 +269,12 @@ export default function LandingPage() {
         className="hidden md:flex w-64 flex-col py-5 px-3 gap-2 shrink-0 overflow-y-auto"
         style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)' }}
       >
-        <div className="px-3 mb-3">
+        <button onClick={handleNew} className="px-3 mb-3 text-left">
           <h1 className="text-xl font-display font-extrabold tracking-tight" style={{ color: 'var(--text)' }}>
             pingo<span style={{ color: '#6270f5' }}>.team</span>
           </h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Estudo inteligente</p>
-        </div>
+        </button>
 
         <button
           onClick={handleNew}
