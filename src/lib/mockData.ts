@@ -1,22 +1,17 @@
 import type { Discipline, User, LeaderboardEntry, DailyStats } from '@/types'
 
+// Fallback neutro — os dados reais vêm de useStudentAuthStore após login
 export const mockUser: User = {
   id: 'user-1',
-  name: 'Marina',
-  level: 8,
-  xp: 3420,
-  xpForNextLevel: 4000,
-  streak: 7,
-  longestStreak: 14,
-  totalStudyMinutes: 1840,
-  joinedAt: new Date('2024-09-01'),
-  badges: [
-    { id: 'b1', name: 'Primeira Aula', description: 'Completaste a tua primeira aula', icon: '🎓', rarity: 'common', unlockedAt: new Date('2024-09-01') },
-    { id: 'b2', name: 'Semana Perfeita', description: '7 dias consecutivos de estudo', icon: '🔥', rarity: 'rare', unlockedAt: new Date('2024-09-08') },
-    { id: 'b3', name: 'Quiz Master', description: '10 quizzes com 100%', icon: '⚡', rarity: 'epic', unlockedAt: new Date('2024-09-15') },
-    { id: 'b4', name: 'Madrugador', description: 'Estudaste antes das 7h', icon: '🌅', rarity: 'common' },
-    { id: 'b5', name: 'Lenda', description: 'Nível 10 atingido', icon: '👑', rarity: 'legendary' },
-  ],
+  name: 'Aluno',
+  level: 1,
+  xp: 0,
+  xpForNextLevel: 1000,
+  streak: 0,
+  longestStreak: 0,
+  totalStudyMinutes: 0,
+  joinedAt: new Date(),
+  badges: [],
 }
 
 export const mockDisciplines: Discipline[] = [
@@ -227,16 +222,7 @@ export const mockDisciplines: Discipline[] = [
   }, */
 ]
 
-export const mockLeaderboard: LeaderboardEntry[] = [
-  { userId: 'u1', name: 'Beatriz Costa', level: 12, xp: 5800, weeklyXp: 420, rank: 1 },
-  { userId: 'u2', name: 'Miguel Santos', level: 11, xp: 5200, weeklyXp: 380, rank: 2 },
-  { userId: 'u3', name: 'Sofia Mendes', level: 10, xp: 4600, weeklyXp: 355, rank: 3 },
-  { userId: 'user-1', name: 'Marina', level: 8, xp: 3420, weeklyXp: 290, rank: 4 },
-  { userId: 'u5', name: 'João Rodrigues', level: 8, xp: 3100, weeklyXp: 250, rank: 5 },
-  { userId: 'u6', name: 'Inês Oliveira', level: 7, xp: 2800, weeklyXp: 200, rank: 6 },
-  { userId: 'u7', name: 'Tomás Pereira', level: 6, xp: 2200, weeklyXp: 180, rank: 7 },
-  { userId: 'u8', name: 'Mariana Lima', level: 5, xp: 1800, weeklyXp: 140, rank: 8 },
-]
+export const mockLeaderboard: LeaderboardEntry[] = []
 
 export const mockDailyStats: DailyStats[] = [
   { date: '2024-10-01', minutesStudied: 45, lessonsCompleted: 3, xpEarned: 180, disciplines: ['hgp-6'] },
