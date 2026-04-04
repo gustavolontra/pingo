@@ -325,7 +325,7 @@ export default function LandingPage() {
       </aside>
 
       {/* ── Área principal ────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-x-hidden overflow-y-hidden">
 
         {/* Topbar */}
         <div
@@ -366,7 +366,7 @@ export default function LandingPage() {
 
             <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} large />
 
-            <div className="flex flex-wrap gap-2 justify-center mt-5 max-w-2xl">
+            <div className="flex flex-wrap gap-2 justify-center mt-5 w-full" style={{ maxWidth: '42rem' }}>
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
@@ -381,8 +381,8 @@ export default function LandingPage() {
 
             {/* Banner */}
             <div
-              className="mt-10 max-w-md w-full rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(98,112,245,0.07)', border: '1px solid rgba(98,112,245,0.2)' }}
+              className="mt-10 w-full rounded-2xl overflow-hidden"
+              style={{ maxWidth: '28rem', background: 'rgba(98,112,245,0.07)', border: '1px solid rgba(98,112,245,0.2)' }}
             >
               <div className="flex items-center gap-4 px-5 py-4">
                 <Zap size={20} style={{ color: '#6270f5', flexShrink: 0 }} />
