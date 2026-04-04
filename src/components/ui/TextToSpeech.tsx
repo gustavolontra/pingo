@@ -96,12 +96,12 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
     setStatus('idle')
   }
 
-  const isLight = variant === 'light'
   const btnBase = `flex items-center justify-center rounded-full transition-all`
-  const surface = isLight ? 'var(--surface-2)' : 'rgba(255,255,255,0.12)'
-  const textMuted = isLight ? 'var(--text-muted)' : 'rgba(255,255,255,0.7)'
+  const surface = 'var(--surface-2)'
+  const textMuted = 'var(--text-muted)'
   const accent = '#6270f5'
-  const border = isLight ? '1px solid var(--border)' : '1px solid rgba(255,255,255,0.15)'
+  const border = '1px solid var(--border)'
+  void variant
 
   if (noVoice) {
     return (
