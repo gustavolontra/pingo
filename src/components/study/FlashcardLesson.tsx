@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { Lesson, FlashcardContent } from '@/types'
 import { useStore } from '@/store/useStore'
-// removed
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
+import TextToSpeech from '@/components/ui/TextToSpeech'
 
 interface Props { lesson: Lesson; onComplete: (score: number, xp: number) => void }
 
@@ -76,6 +76,12 @@ export default function FlashcardLesson({ lesson, onComplete }: Props) {
           </>
         )}
       </div>
+
+      <TextToSpeech
+        text={flipped
+          ? `${card.front}. Resposta: ${card.back}${card.example ? `. Exemplo: ${card.example}` : ''}`
+          : card.front}
+      />
 
       <div className="flex gap-3">
         {index > 0 && (

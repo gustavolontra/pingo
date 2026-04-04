@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Lesson, TextContent } from '@/types'
 import { useStore } from '@/store/useStore'
 import { CheckCircle2 } from 'lucide-react'
+import TextToSpeech from '@/components/ui/TextToSpeech'
 
 interface Props { lesson: Lesson; onComplete: (score: number, xp: number) => void }
 
@@ -43,8 +44,11 @@ export default function TextLesson({ lesson, onComplete }: Props) {
   return (
     <div className="animate-slide-up space-y-5">
       <div className="card">
-        <h2 className="text-xl font-display font-bold text-white mb-4">{lesson.title}</h2>
-        <div className="space-y-1.5">{renderBody(content.body)}</div>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <h2 className="text-xl font-display font-bold text-white">{lesson.title}</h2>
+        </div>
+        <TextToSpeech text={`${lesson.title}. ${content.body}. Pontos-chave: ${content.keyPoints.join('. ')}`} />
+        <div className="space-y-1.5 mt-4">{renderBody(content.body)}</div>
       </div>
 
       {/* Key points */}

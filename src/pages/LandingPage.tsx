@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, LogIn, X, Zap, Lock, Trash2, Search } from 'lucide-react'
 import { DISCIPLINE_TEMPLATES } from '@/lib/contentBridge'
+import TextToSpeech from '@/components/ui/TextToSpeech'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -449,7 +450,10 @@ export default function LandingPage() {
 
                 {/* Resposta da IA sem conteúdo local (rejeição, erro, off-topic) */}
                 {!loading && !limitReached && !answer && aiAnswer && (
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{aiAnswer}</p>
+                  <>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{aiAnswer}</p>
+                    <TextToSpeech text={aiAnswer} variant="light" />
+                  </>
                 )}
 
                 {!loading && !limitReached && answer && (
@@ -468,8 +472,10 @@ export default function LandingPage() {
                       {answer.title}
                     </h2>
 
+                    <TextToSpeech text={`${answer.title}. ${aiAnswer ?? answer.body}`} variant="light" />
+
                     {/* Corpo em Markdown — usa resposta da IA se disponível */}
-                    {renderBody(aiAnswer ?? answer.body)}
+                    <div className="mt-4">{renderBody(aiAnswer ?? answer.body)}</div>
 
                     {/* Pontos-chave */}
                     {answer.keyPoints.length > 0 && (
