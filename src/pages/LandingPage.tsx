@@ -103,7 +103,7 @@ export default function LandingPage() {
   const [questionsUsed, setQuestionsUsed] = useState<number>(() => {
     try {
       const today = new Date().toISOString().split('T')[0]
-      const saved = JSON.parse(localStorage.getItem('pingo-q-daily') ?? '{}')
+      const saved = JSON.parse(localStorage.getItem('pingo-q-daily-v2') ?? '{}')
       if (saved.date !== today) return 0
       // Se o limite guardado for de uma versão anterior (ex: limite era 3), ignora
       const count = saved.count ?? 0
@@ -142,7 +142,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0]
-    localStorage.setItem('pingo-q-daily', JSON.stringify({ date: today, count: questionsUsed }))
+    localStorage.setItem('pingo-q-daily-v2', JSON.stringify({ date: today, count: questionsUsed }))
   }, [questionsUsed])
 
   useEffect(() => {
