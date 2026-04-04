@@ -30,9 +30,13 @@ export default function StreakCalendar({ stats }: Props) {
           <div
             key={i}
             title={`${d.date.toLocaleDateString('pt-PT')}: ${d.minutes}min`}
-            className="aspect-square rounded-md transition-all cursor-default"
+            className="aspect-square rounded-md transition-all cursor-default flex items-center justify-center"
             style={{ background: getColor(d.minutes) }}
-          />
+          >
+            <span className="text-[9px] font-medium select-none" style={{ color: d.minutes > 0 ? 'rgba(255,255,255,0.85)' : 'var(--text-muted)', opacity: 0.8 }}>
+              {d.date.getDate()}
+            </span>
+          </div>
         ))}
       </div>
       <div className="flex items-center gap-2 mt-2 justify-end">
