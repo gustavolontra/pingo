@@ -379,9 +379,9 @@ export default function LandingPage() {
               ))}
             </div>
 
-            {/* Banner — só em desktop */}
+            {/* Banner CTA */}
             <div
-              className="hidden md:block mt-10 w-full rounded-2xl overflow-hidden"
+              className="mt-6 md:mt-10 w-full rounded-2xl overflow-hidden"
               style={{ maxWidth: '28rem', background: 'rgba(98,112,245,0.07)', border: '1px solid rgba(98,112,245,0.2)' }}
             >
               <div className="flex items-center gap-4 px-5 py-4">
@@ -391,13 +391,6 @@ export default function LandingPage() {
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Inicia sessão para aceder a quizzes, flashcards e muito mais.</p>
                 </div>
                 <button onClick={() => navigate('/login')} className="btn-primary text-xs px-4 py-2 shrink-0">Entrar</button>
-              </div>
-              <div className="flex items-center gap-3 px-5 py-3" style={{ borderTop: '1px solid rgba(98,112,245,0.15)', background: 'rgba(98,112,245,0.04)' }}>
-                <span className="text-base">🏆</span>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  <strong style={{ color: 'var(--text)' }}>Qual é a tua posição no ranking da turma?</strong>
-                  {' '}Os teus colegas já estão a acumular XP — não fiques para trás.
-                </p>
               </div>
             </div>
           </div>
