@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAdminStore } from '@/store/useAdminStore'
-import { STATIC_DISCIPLINES, DISCIPLINE_TEMPLATES } from '@/lib/contentBridge'
+import { getDisciplineOption } from '@/lib/contentBridge'
 import { api, type KVContentItem, type KVFlashcard, type KVQuestion } from '@/lib/api'
 import { BookOpen, ChevronDown, ChevronUp, Loader2, Pencil, Trash2, X, Save, Plus } from 'lucide-react'
 
@@ -22,12 +22,11 @@ export default function AdminSubjectsPage() {
   const [confirmDelete, setConfirmDelete] = useState<KVContentItem | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const allDisciplines = [
-    ...adminDisciplines.map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year, color: d.color, icon: d.icon })),
-    ...[...STATIC_DISCIPLINES, ...DISCIPLINE_TEMPLATES]
-      .filter((d) => !adminDisciplines.some((a) => a.id === d.id))
-      .map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year, color: d.color, icon: d.icon })),
-  ]
+  function discInfo(id: string) {
+    const admin = adminDisciplines.find((d) => d.id === id)
+    if (admin) return { id: admin.id, name: admin.name, subject: admin.subject, year: admin.year, color: admin.color, icon: admin.icon }
+    return getDisciplineOption(id)
+  }
 
   function reload() {
     setLoading(true)
@@ -92,7 +91,7 @@ export default function AdminSubjectsPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {disciplineIds.map((discId) => {
-            const disc = allDisciplines.find((d) => d.id === discId)
+            const disc = discInfo(discId)
             const topics = grouped[discId]
             const topicNames = Object.keys(topics)
             const totalItems = Object.values(topics).reduce((acc, t) => acc + t.length, 0)

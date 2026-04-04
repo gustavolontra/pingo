@@ -1,100 +1,52 @@
 /**
  * contentBridge.ts
- * ─────────────────────────────────────────────────────────────────────────────
- * ÚNICA FONTE DE VERDADE para disciplinas visíveis ao aluno.
  *
- * Ordem de prioridade (mais alta → mais baixa):
- *   1. Disciplinas criadas pelo admin no AdminStore  (conteúdo editável)
- *   2. Ficheiros estáticos em src/data/             (historia7ano, geografia7ano…)
- *   3. mockDisciplines de mockData.ts               (matemática demo)
- *
- * Regra: se um ID já existe numa fonte mais prioritária, a fonte mais baixa é ignorada.
- * Assim o admin pode "sobrescrever" qualquer disciplina estática criando uma com o mesmo ID.
+ * Lista de disciplinas disponíveis para o dropdown do admin.
+ * Apenas nomes/IDs — sem conteúdo hardcoded.
+ * O conteúdo real vem sempre do Cloudflare KV.
  */
 
-import type { Discipline, Topic, Lesson, LessonContent } from '@/types'
-import type { ManagedDiscipline, AdminTopic, AdminLesson } from '@/store/useAdminStore'
+export interface DisciplineOption {
+  id: string
+  name: string
+  subject: string
+  year: number
+  color: string
+  icon: string
+}
 
-// ── Ficheiros estáticos ──────────────────────────────────────────────────────
-import { historia7ano } from '@/data/historia7ano'
-import { geografia7ano } from '@/data/geografia7ano'
-import { mockDisciplines } from '@/lib/mockData'
-
-/** Todas as disciplinas estáticas (ficheiros de conteúdo + demo). */
-export const STATIC_DISCIPLINES: Discipline[] = [
-  ...mockDisciplines,
-  historia7ano,
-  geografia7ano,
+export const DISCIPLINE_OPTIONS: DisciplineOption[] = [
+  { id: 'historia-7', name: 'História 7.º Ano', subject: 'História', year: 7, color: '#ef4444', icon: '🏛️' },
+  { id: 'historia-8', name: 'História 8.º Ano', subject: 'História', year: 8, color: '#ef4444', icon: '🏛️' },
+  { id: 'historia-9', name: 'História 9.º Ano', subject: 'História', year: 9, color: '#ef4444', icon: '🏛️' },
+  { id: 'geografia-7', name: 'Geografia 7.º Ano', subject: 'Geografia', year: 7, color: '#10b981', icon: '🌍' },
+  { id: 'geografia-8', name: 'Geografia 8.º Ano', subject: 'Geografia', year: 8, color: '#10b981', icon: '🌍' },
+  { id: 'geografia-9', name: 'Geografia 9.º Ano', subject: 'Geografia', year: 9, color: '#10b981', icon: '🌍' },
+  { id: 'matematica-7', name: 'Matemática 7.º Ano', subject: 'Matemática', year: 7, color: '#6270f5', icon: '📐' },
+  { id: 'matematica-8', name: 'Matemática 8.º Ano', subject: 'Matemática', year: 8, color: '#6270f5', icon: '📐' },
+  { id: 'matematica-9', name: 'Matemática 9.º Ano', subject: 'Matemática', year: 9, color: '#6270f5', icon: '📐' },
+  { id: 'portugues-7', name: 'Português 7.º Ano', subject: 'Português', year: 7, color: '#f59e0b', icon: '📖' },
+  { id: 'portugues-8', name: 'Português 8.º Ano', subject: 'Português', year: 8, color: '#f59e0b', icon: '📖' },
+  { id: 'portugues-9', name: 'Português 9.º Ano', subject: 'Português', year: 9, color: '#f59e0b', icon: '📖' },
+  { id: 'ciencias-7', name: 'Ciências Naturais 7.º Ano', subject: 'Ciências Naturais', year: 7, color: '#06b6d4', icon: '🔬' },
+  { id: 'ciencias-8', name: 'Ciências Naturais 8.º Ano', subject: 'Ciências Naturais', year: 8, color: '#06b6d4', icon: '🔬' },
+  { id: 'ciencias-9', name: 'Ciências Naturais 9.º Ano', subject: 'Ciências Naturais', year: 9, color: '#06b6d4', icon: '🔬' },
+  { id: 'fisico-quimica-7', name: 'Físico-Química 7.º Ano', subject: 'Físico-Química', year: 7, color: '#8b5cf6', icon: '⚗️' },
+  { id: 'fisico-quimica-8', name: 'Físico-Química 8.º Ano', subject: 'Físico-Química', year: 8, color: '#8b5cf6', icon: '⚗️' },
+  { id: 'fisico-quimica-9', name: 'Físico-Química 9.º Ano', subject: 'Físico-Química', year: 9, color: '#8b5cf6', icon: '⚗️' },
+  { id: 'ingles-7', name: 'Inglês 7.º Ano', subject: 'Inglês', year: 7, color: '#0ea5e9', icon: '🇬🇧' },
+  { id: 'ingles-8', name: 'Inglês 8.º Ano', subject: 'Inglês', year: 8, color: '#0ea5e9', icon: '🇬🇧' },
+  { id: 'ingles-9', name: 'Inglês 9.º Ano', subject: 'Inglês', year: 9, color: '#0ea5e9', icon: '🇬🇧' },
 ]
 
-// ── Conversor AdminStore → Discipline ────────────────────────────────────────
-
-function convertLesson(l: AdminLesson): Lesson {
-  // Garante que o content tem a estrutura correcta mesmo que esteja incompleto
-  let content: LessonContent
-  if (l.content.type === 'quiz') {
-    content = { type: 'quiz', questions: l.content.questions ?? [] }
-  } else if (l.content.type === 'flashcard') {
-    content = { type: 'flashcard', cards: l.content.cards ?? [] }
-  } else {
-    const tc = l.content as { type: 'text'; body?: string; keyPoints?: string[] }
-    content = { type: 'text', body: tc.body ?? '', keyPoints: tc.keyPoints ?? [] }
+/** Devolve o DisciplineOption para um dado id, ou um fallback genérico. */
+export function getDisciplineOption(id: string): DisciplineOption {
+  return DISCIPLINE_OPTIONS.find((d) => d.id === id) ?? {
+    id,
+    name: id,
+    subject: id,
+    year: 7,
+    color: '#6270f5',
+    icon: '📚',
   }
-
-  return {
-    id: l.id,
-    topicId: l.topicId,
-    title: l.title,
-    type: l.type,
-    difficulty: 'basico',          // admin pode expor isto no futuro
-    estimatedMinutes: l.estimatedMinutes ?? 10,
-    xpReward: l.xpReward ?? 50,
-    isCompleted: false,
-    content,
-  }
-}
-
-function convertTopic(t: AdminTopic): Topic {
-  return {
-    id: t.id,
-    disciplineId: t.disciplineId,
-    title: t.title,
-    description: t.description,
-    order: t.order,
-    isUnlocked: true,
-    lessons: (t.lessons ?? []).map(convertLesson),
-  }
-}
-
-export function convertAdminDiscipline(d: ManagedDiscipline): Discipline {
-  const topics = (d.topics ?? []).map(convertTopic)
-  const totalLessons = topics.reduce((acc, t) => acc + t.lessons.length, 0)
-  return {
-    id: d.id,
-    name: d.name,
-    subject: d.subject,
-    year: d.year,
-    color: d.color,
-    icon: d.icon,
-    topics,
-    totalLessons,
-    completedLessons: 0,
-  }
-}
-
-// ── Merge ────────────────────────────────────────────────────────────────────
-
-/**
- * Recebe as disciplinas geridas pelo admin e devolve o array final
- * que o aluno vai ver, com a prioridade correta.
- */
-export function mergeAllDisciplines(adminDisciplines: ManagedDiscipline[], hiddenStaticIds: string[] = []): Discipline[] {
-  const fromAdmin = adminDisciplines.map(convertAdminDiscipline)
-  const adminIds = new Set(fromAdmin.map((d) => d.id))
-  const hidden = new Set(hiddenStaticIds)
-
-  // Estáticas que o admin não importou nem escondeu
-  const fromStatic = STATIC_DISCIPLINES.filter((d) => !adminIds.has(d.id) && !hidden.has(d.id))
-
-  return [...fromAdmin, ...fromStatic]
 }

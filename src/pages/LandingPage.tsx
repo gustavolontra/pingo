@@ -1,99 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, LogIn, X, Zap, Lock, Trash2, Search } from 'lucide-react'
-import { DISCIPLINE_TEMPLATES } from '@/lib/contentBridge'
+import { api, type KVContentItem } from '@/lib/api'
 import TextToSpeech from '@/components/ui/TextToSpeech'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
-
-interface Answer {
-  title: string
-  body: string
-  keyPoints: string[]
-  disciplineName: string
-  disciplineIcon: string
-  disciplineColor: string
-  topicTitle: string
-  hasInteractive: boolean   // tem quiz ou flashcard relacionado
-}
 
 interface RecentItem {
   query: string
   timestamp: number
 }
 
-// ── Sugestões a partir do conteúdo real ───────────────────────────────────────
-
-const SUGGESTIONS: string[] = (() => {
-  const out: string[] = []
-  for (const disc of DISCIPLINE_TEMPLATES) {
-    for (const topic of disc.topics) {
-      if (out.length >= 6) break
-      // usa o título da primeira lição de texto do tópico como sugestão
-      const textLesson = topic.lessons.find((l) => l.content.type === 'text')
-      if (textLesson) out.push(textLesson.title)
-    }
-    if (out.length >= 6) break
-  }
-  return out
-})()
-
-// ── Motor de resposta ─────────────────────────────────────────────────────────
-
-function findAnswer(query: string): Answer | null {
-  if (!query.trim()) return null
-  const words = query.toLowerCase().split(/\s+/).filter((w) => w.length >= 3)
-  if (words.length === 0) return null
-
-  type Candidate = { score: number; answer: Answer }
-  let best: Candidate | null = null
-
-  for (const disc of DISCIPLINE_TEMPLATES) {
-    for (const topic of disc.topics) {
-      // Verifica se o tópico tem lição de texto
-      const textLesson = topic.lessons.find((l) => l.content.type === 'text')
-      if (!textLesson || textLesson.content.type !== 'text') continue
-
-      const { body, keyPoints } = textLesson.content
-      const hasInteractive = topic.lessons.some((l) => l.content.type === 'quiz' || l.content.type === 'flashcard')
-
-      const searchable = [
-        textLesson.title,
-        topic.title,
-        topic.description,
-        body,
-        ...keyPoints,
-      ].join(' ').toLowerCase()
-
-      // Conta quantas palavras batem
-      const score = words.reduce((s, w) => s + (searchable.includes(w) ? 1 : 0), 0)
-      if (score === 0) continue
-
-      if (!best || score > best.score) {
-        best = {
-          score,
-          answer: {
-            title: textLesson.title,
-            body,
-            keyPoints,
-            disciplineName: disc.name,
-            disciplineIcon: disc.icon,
-            disciplineColor: disc.color,
-            topicTitle: topic.title,
-            hasInteractive,
-          },
-        }
-      }
-    }
-  }
-
-  return best?.answer ?? null
-}
-
-// ── Markdown simples → texto limpo ────────────────────────────────────────────
+// ── Markdown simples → React nodes ────────────────────────────────────────────
 
 function renderBody(text: string) {
-  // Divide em parágrafos/linhas e limpa markdown básico
   const lines = text.split('\n')
   const elements: React.ReactNode[] = []
   let key = 0
@@ -138,13 +58,33 @@ function renderBody(text: string) {
 }
 
 function inlineMarkdown(text: string): React.ReactNode {
-  // Bold: **text**
   const parts = text.split(/\*\*(.*?)\*\*/g)
   return parts.map((p, i) =>
     i % 2 === 1
       ? <strong key={i} style={{ color: 'var(--text)', fontWeight: 600 }}>{p}</strong>
       : p
   )
+}
+
+// ── Motor de busca sobre conteúdo KV ─────────────────────────────────────────
+
+function findLocalContext(query: string, items: KVContentItem[]): string {
+  if (!query.trim() || items.length === 0) return ''
+  const words = query.toLowerCase().split(/\s+/).filter((w) => w.length >= 3)
+  if (words.length === 0) return ''
+
+  let best: { score: number; item: KVContentItem } | null = null
+
+  for (const item of items) {
+    const searchable = [item.titulo, item.topico, item.resumo, ...item.palavrasChave].join(' ').toLowerCase()
+    const score = words.reduce((s, w) => s + (searchable.includes(w) ? 1 : 0), 0)
+    if (score === 0) continue
+    if (!best || score > best.score) best = { score, item }
+  }
+
+  if (!best) return ''
+  const { item } = best
+  return `Título: ${item.titulo}\n\n${item.resumo}\n\nPalavras-chave: ${item.palavrasChave.join(', ')}`
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
@@ -154,11 +94,12 @@ const FREE_LIMIT = 3
 export default function LandingPage() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
-  const [answer, setAnswer] = useState<Answer | null>(null)
   const [aiAnswer, setAiAnswer] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [loginPrompt, setLoginPrompt] = useState(false)
   const [limitReached, setLimitReached] = useState(false)
+  const [kvItems, setKvItems] = useState<KVContentItem[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([])
   const [questionsUsed, setQuestionsUsed] = useState<number>(() => {
     try {
       const today = new Date().toISOString().split('T')[0]
@@ -172,7 +113,17 @@ export default function LandingPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const answerRef = useRef<HTMLDivElement>(null)
 
-  const hasAnswer = answer !== null || aiAnswer !== null || limitReached
+  const hasAnswer = aiAnswer !== null || limitReached
+
+  // Carrega conteúdo do KV para sugestões e contexto
+  useEffect(() => {
+    api.getAllContent().then((items) => {
+      setKvItems(items)
+      // Usa os títulos dos primeiros conteúdos como sugestões
+      const s = items.slice(0, 6).map((i) => i.titulo)
+      setSuggestions(s)
+    })
+  }, [])
 
   useEffect(() => {
     localStorage.setItem('pingo-landing-recent', JSON.stringify(recent))
@@ -185,24 +136,21 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (hasAnswer) answerRef.current?.scrollTo({ top: 0 })
-  }, [answer, aiAnswer, hasAnswer])
+  }, [aiAnswer, hasAnswer])
 
   async function handleSearch(q: string = query) {
     if (!q.trim()) return
 
-    // Verifica o limite
     if (questionsUsed >= FREE_LIMIT) {
       setLimitReached(true)
       return
     }
 
     setLoading(true)
-    setAnswer(null)
     setAiAnswer(null)
     setLimitReached(false)
     setLoginPrompt(false)
 
-    // Incrementa o contador
     const newCount = questionsUsed + 1
     setQuestionsUsed(newCount)
 
@@ -211,11 +159,8 @@ export default function LandingPage() {
       return [{ query: q, timestamp: Date.now() }, ...filtered].slice(0, 8)
     })
 
-    // Conteúdo local relevante para passar como contexto à IA
-    const local = findAnswer(q)
+    const context = findLocalContext(q, kvItems)
 
-    // Chama o endpoint de IA com o conteúdo local como contexto
-    const context = local ? `Título: ${local.title}\n\n${local.body}\n\nPontos-chave: ${local.keyPoints.join('; ')}` : ''
     try {
       const res = await fetch('/api/answer', {
         method: 'POST',
@@ -224,19 +169,12 @@ export default function LandingPage() {
       })
       if (res.ok) {
         const data = await res.json() as { answer: string }
-        const aiText = data.answer
-        const isRejection = aiText.startsWith('Boa tentativa!') || aiText.startsWith('Ei, aqui estudamos')
-        setAiAnswer(aiText)
-        setAnswer(isRejection ? null : local)
+        setAiAnswer(data.answer)
       } else {
-        // API com erro — mostra conteúdo local se existir
-        setAnswer(local)
-        if (!local) setAiAnswer('Ocorreu um erro ao obter a resposta. Tenta novamente.')
+        setAiAnswer('Ocorreu um erro ao obter a resposta. Tenta novamente.')
       }
     } catch {
-      // Sem rede — mostra conteúdo local se existir
-      setAnswer(local)
-      if (!local) setAiAnswer('Sem ligação. Verifica a tua internet e tenta novamente.')
+      setAiAnswer('Sem ligação. Verifica a tua internet e tenta novamente.')
     }
 
     setLoading(false)
@@ -250,7 +188,6 @@ export default function LandingPage() {
 
   function handleNew() {
     setQuery('')
-    setAnswer(null)
     setAiAnswer(null)
     setLimitReached(false)
     setLoginPrompt(false)
@@ -261,6 +198,8 @@ export default function LandingPage() {
     setRecent([])
     localStorage.removeItem('pingo-landing-recent')
   }
+
+  const isRejection = aiAnswer?.startsWith('Boa tentativa!') || aiAnswer?.startsWith('Ei, aqui estudamos')
 
   return (
     <div className="flex overflow-hidden" style={{ background: '#ffffff', height: '100dvh' }}>
@@ -333,7 +272,6 @@ export default function LandingPage() {
           className="flex items-center justify-between px-4 md:px-6 py-3 shrink-0"
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}
         >
-          {/* Logo — só visível em mobile (na sidebar em desktop) */}
           <div className="md:hidden">
             <span className="text-lg font-display font-extrabold tracking-tight" style={{ color: 'var(--text)' }}>
               pingo<span style={{ color: '#6270f5' }}>.team</span>
@@ -350,7 +288,7 @@ export default function LandingPage() {
           </button>
         </div>
 
-        {/* ── Idle: logo + pesquisa centrada ─────────────────────────────── */}
+        {/* ── Idle ─────────────────────────────────────────────────────────── */}
         {!hasAnswer && (
           <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-4 md:px-6 py-3 md:py-12 overflow-y-auto">
             <div className="mb-4 md:mb-8 text-center">
@@ -367,18 +305,20 @@ export default function LandingPage() {
 
             <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} large />
 
-            <div className="flex flex-wrap gap-1.5 md:gap-2 justify-center mt-3 md:mt-5 w-full" style={{ maxWidth: '42rem' }}>
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handleSuggestion(s)}
-                  className="text-xs md:text-sm px-3 py-1 md:px-3.5 md:py-1.5 rounded-full transition-all hover:bg-indigo-50"
-                  style={{ border: '1px solid var(--border)', color: 'var(--text-muted)', background: 'var(--surface)' }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+            {suggestions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 md:gap-2 justify-center mt-3 md:mt-5 w-full" style={{ maxWidth: '42rem' }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleSuggestion(s)}
+                    className="text-xs md:text-sm px-3 py-1 md:px-3.5 md:py-1.5 rounded-full transition-all hover:bg-indigo-50"
+                    style={{ border: '1px solid var(--border)', color: 'var(--text-muted)', background: 'var(--surface)' }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Banner CTA */}
             <div
@@ -397,10 +337,9 @@ export default function LandingPage() {
           </div>
         )}
 
-        {/* ── Com resposta: conteúdo em cima, input fixo em baixo ────────── */}
+        {/* ── Com resposta ─────────────────────────────────────────────────── */}
         {hasAnswer && (
           <>
-            {/* Zona de resposta com scroll */}
             <div ref={answerRef} className="flex-1 overflow-y-auto">
               <div className="max-w-2xl mx-auto px-6 py-8">
 
@@ -428,72 +367,16 @@ export default function LandingPage() {
                   </div>
                 )}
 
-                {/* Sem resultado */}
-                {!loading && !limitReached && !answer && !aiAnswer && (
-                  <div className="text-center py-20">
-                    <p className="text-4xl mb-4">🔍</p>
-                    <p className="text-lg font-display font-bold mb-2" style={{ color: 'var(--text)' }}>
-                      Não encontrei nada sobre "{query}"
-                    </p>
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                      Tenta pesquisar por um tema diferente. Sugestões:
-                    </p>
-                    <div className="flex flex-wrap gap-2 justify-center mt-4">
-                      {SUGGESTIONS.map((s) => (
-                        <button key={s} onClick={() => handleSuggestion(s)} className="text-sm px-3.5 py-1.5 rounded-full transition-all hover:bg-indigo-50" style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Resposta da IA sem conteúdo local (rejeição, erro, off-topic) */}
-                {!loading && !limitReached && !answer && aiAnswer && (
+                {/* Resposta */}
+                {!loading && !limitReached && aiAnswer && (
                   <>
-                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{aiAnswer}</p>
-                    <TextToSpeech text={aiAnswer} variant="light" />
-                  </>
-                )}
-
-                {!loading && !limitReached && answer && (
-                  <>
-                    {/* Etiqueta da fonte */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-base">{answer.disciplineIcon}</span>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${answer.disciplineColor}18`, color: answer.disciplineColor }}>
-                        {answer.disciplineName}
-                      </span>
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{answer.topicTitle}</span>
-                    </div>
-
-                    {/* Título */}
-                    <h2 className="text-2xl font-display font-extrabold mb-4" style={{ color: 'var(--text)' }}>
-                      {answer.title}
-                    </h2>
-
-                    <TextToSpeech text={`${answer.title}. ${aiAnswer ?? answer.body}`} variant="light" />
-
-                    {/* Corpo em Markdown — usa resposta da IA se disponível */}
-                    <div className="mt-4">{renderBody(aiAnswer ?? answer.body)}</div>
-
-                    {/* Pontos-chave */}
-                    {answer.keyPoints.length > 0 && (
-                      <div className="mt-6 p-4 rounded-xl" style={{ background: 'rgba(98,112,245,0.05)', border: '1px solid rgba(98,112,245,0.12)' }}>
-                        <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#6270f5' }}>Pontos-chave</p>
-                        <ul className="flex flex-col gap-2">
-                          {answer.keyPoints.map((kp, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-                              <span className="mt-0.5 shrink-0" style={{ color: '#6270f5' }}>✦</span>
-                              {kp}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                    {!isRejection && (
+                      <TextToSpeech text={aiAnswer} variant="light" />
                     )}
+                    <div className="mt-3">{renderBody(aiAnswer)}</div>
 
-                    {/* CTA interactivo */}
-                    {answer.hasInteractive && (
+                    {/* CTA interactivo — só se não for rejeição */}
+                    {!isRejection && (
                       <div className="mt-6">
                         {loginPrompt ? (
                           <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl" style={{ background: 'rgba(98,112,245,0.08)', border: '1px solid rgba(98,112,245,0.2)' }}>
@@ -551,7 +434,7 @@ function SearchInput({
     <form
       onSubmit={(e) => { e.preventDefault(); onSearch(value) }}
       className="relative w-full"
-    style={{ maxWidth: large ? '42rem' : '100%' }}
+      style={{ maxWidth: large ? '42rem' : '100%' }}
     >
       <input
         ref={inputRef}

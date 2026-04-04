@@ -13,7 +13,7 @@
 
 import { useState, useRef } from 'react'
 import { useAdminStore, type ContentDraft, type DraftFlashcard, type DraftQuestion } from '@/store/useAdminStore'
-import { STATIC_DISCIPLINES } from '@/lib/contentBridge'
+import { DISCIPLINE_OPTIONS } from '@/lib/contentBridge'
 import { api } from '@/lib/api'
 import {
   Plus, ArrowLeft, Sparkles, Save, Trash2,
@@ -30,15 +30,14 @@ type DraftData = Omit<ContentDraft, 'id' | 'createdAt'>
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AdminLearningsPage() {
-  const { disciplines: adminDisciplines, contentDrafts, saveDraft, updateDraft, deleteDraft } = useAdminStore()
+  const { disciplines: adminDisciplines, contentDrafts, saveDraft, updateDraft, deleteDraft, publishLearning } = useAdminStore()
   const [view, setView] = useState<View>('list')
   const [editingDraft, setEditingDraft] = useState<ContentDraft | null>(null)
 
   const allDisciplines = [
     ...adminDisciplines.map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year })),
-    ...STATIC_DISCIPLINES
-      .filter((d) => !adminDisciplines.some((a) => a.id === d.id))
-      .map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year })),
+    ...DISCIPLINE_OPTIONS
+      .filter((d) => !adminDisciplines.some((a) => a.id === d.id)),
   ]
 
   async function publishData(data: DraftData) {
@@ -50,6 +49,7 @@ export default function AdminLearningsPage() {
   }
 
   async function handlePublishDraft(draft: ContentDraft) {
+    publishLearning({ ...draft })
     await publishData({ ...draft })
     deleteDraft(draft.id)
     setView('list')
@@ -74,6 +74,7 @@ export default function AdminLearningsPage() {
           setView('list')
         }}
         onPublish={async (data) => {
+          publishLearning(data)
           if (editingDraft) {
             await publishData({ ...editingDraft, ...data })
             deleteDraft(editingDraft.id)

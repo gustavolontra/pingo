@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useStore } from '@/store/useStore'
 import { api, type KVDiscipline, type KVContentItem } from '@/lib/api'
+import { getDisciplineOption } from '@/lib/contentBridge'
 import type { Discipline, Topic, Lesson, TextContent, FlashcardContent, QuizContent } from '@/types'
 
 function buildLessonsFromItem(item: KVContentItem): Lesson[] {
@@ -71,19 +72,40 @@ function buildLessonsFromItem(item: KVContentItem): Lesson[] {
 }
 
 function buildDisciplines(kvDisciplines: KVDiscipline[], content: KVContentItem[]): Discipline[] {
-  return kvDisciplines.map((d) => {
-    const items = content.filter((c) => c.disciplineId === d.id)
-    const lessons = items.flatMap(buildLessonsFromItem)
+  // Mapa de disciplinas: primeiro as do KV, depois inferidas dos conteúdos
+  const discMap = new Map<string, KVDiscipline>()
+  kvDisciplines.forEach((d) => discMap.set(d.id, d))
 
-    const topic: Topic = {
-      id: `topic-${d.id}`,
+  // Para cada conteúdo cujo disciplineId não tem entrada no KV,
+  // usa a lista de opções predefinidas ou um fallback genérico
+  for (const item of content) {
+    if (discMap.has(item.disciplineId)) continue
+    const opt = getDisciplineOption(item.disciplineId)
+    discMap.set(opt.id, { id: opt.id, name: opt.name, subject: opt.subject, year: opt.year, color: opt.color, icon: opt.icon })
+  }
+
+  return Array.from(discMap.values()).map((d) => {
+    const items = content.filter((c) => c.disciplineId === d.id)
+
+    // Agrupa por tópico
+    const topicMap = new Map<string, Lesson[]>()
+    for (const item of items) {
+      const key = item.topico || 'Geral'
+      if (!topicMap.has(key)) topicMap.set(key, [])
+      topicMap.get(key)!.push(...buildLessonsFromItem(item))
+    }
+
+    const topics: Topic[] = Array.from(topicMap.entries()).map(([topicTitle, lessons], i) => ({
+      id: `topic-${d.id}-${i}`,
       disciplineId: d.id,
-      title: d.subject,
-      description: `Conteúdo de ${d.name}`,
-      order: 1,
+      title: topicTitle,
+      description: '',
+      order: i + 1,
       isUnlocked: true,
       lessons,
-    }
+    }))
+
+    const totalLessons = topics.reduce((s, t) => s + t.lessons.length, 0)
 
     return {
       id: d.id,
@@ -92,8 +114,8 @@ function buildDisciplines(kvDisciplines: KVDiscipline[], content: KVContentItem[
       year: d.year,
       color: d.color,
       icon: d.icon,
-      topics: [topic],
-      totalLessons: lessons.length,
+      topics,
+      totalLessons,
       completedLessons: 0,
     } satisfies Discipline
   })
@@ -108,7 +130,7 @@ export function useKVContent() {
         api.getDisciplines(),
         api.getAllContent(),
       ])
-      if (disciplines.length > 0) {
+      if (content.length > 0) {
         setDisciplinesFromKV(buildDisciplines(disciplines, content))
       }
     }
