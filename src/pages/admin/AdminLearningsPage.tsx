@@ -14,7 +14,7 @@
 import { useState, useRef } from 'react'
 import { useAdminStore, type ContentDraft, type DraftFlashcard, type DraftQuestion } from '@/store/useAdminStore'
 import { DISCIPLINE_OPTIONS } from '@/lib/contentBridge'
-import { api } from '@/lib/api'
+import { api, type KVContentItem } from '@/lib/api'
 import {
   Plus, ArrowLeft, Sparkles, Save, Trash2,
   ChevronDown, ChevronUp, Send, Pencil, FileText,
@@ -33,6 +33,9 @@ export default function AdminLearningsPage() {
   const { disciplines: adminDisciplines, contentDrafts, saveDraft, updateDraft, deleteDraft, publishLearning } = useAdminStore()
   const [view, setView] = useState<View>('list')
   const [editingDraft, setEditingDraft] = useState<ContentDraft | null>(null)
+  const [publishPending, setPublishPending] = useState<{ data: DraftData; fromDraft: ContentDraft | null } | null>(null)
+  const [existingItems, setExistingItems] = useState<KVContentItem[]>([])
+  const [publishing, setPublishing] = useState(false)
 
   const allDisciplines = [
     ...adminDisciplines.map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year })),
@@ -56,35 +59,96 @@ export default function AdminLearningsPage() {
     setEditingDraft(null)
   }
 
+  // Intercepta o publicar — verifica se já existe conteúdo para a disciplina
+  async function handlePublishIntent(data: DraftData, fromDraft: ContentDraft | null) {
+    const items = await api.getContentByDiscipline(data.disciplineId)
+    if (items.length > 0) {
+      setExistingItems(items)
+      setPublishPending({ data, fromDraft })
+    } else {
+      await doPublish(data, fromDraft)
+    }
+  }
+
+  async function doPublish(data: DraftData, fromDraft: ContentDraft | null) {
+    setPublishing(true)
+    publishLearning(data)
+    if (fromDraft) {
+      await publishData({ ...fromDraft, ...data })
+      deleteDraft(fromDraft.id)
+      setEditingDraft(null)
+    } else {
+      await publishData(data)
+    }
+    setPublishPending(null)
+    setExistingItems([])
+    setPublishing(false)
+    setView('list')
+  }
+
   // ── Editor views ─────────────────────────────────────────────────────────
 
   if (view === 'editor') {
     return (
-      <Editor
-        disciplines={allDisciplines}
-        initial={editingDraft ?? undefined}
-        onBack={() => { setEditingDraft(null); setView('list') }}
-        onDraft={(data) => {
-          if (editingDraft) {
-            updateDraft(editingDraft.id, data)
-          } else {
-            saveDraft(data)
-          }
-          setEditingDraft(null)
-          setView('list')
-        }}
-        onPublish={async (data) => {
-          publishLearning(data)
-          if (editingDraft) {
-            await publishData({ ...editingDraft, ...data })
-            deleteDraft(editingDraft.id)
+      <>
+        <Editor
+          disciplines={allDisciplines}
+          initial={editingDraft ?? undefined}
+          onBack={() => { setEditingDraft(null); setView('list') }}
+          onDraft={(data) => {
+            if (editingDraft) {
+              updateDraft(editingDraft.id, data)
+            } else {
+              saveDraft(data)
+            }
             setEditingDraft(null)
-          } else {
-            await publishData(data)
-          }
-          setView('list')
-        }}
-      />
+            setView('list')
+          }}
+          onPublish={(data) => handlePublishIntent(data, editingDraft)}
+        />
+
+        {/* Modal: já existe conteúdo nesta disciplina */}
+        {publishPending && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p className="font-display font-bold text-lg mb-1" style={{ color: 'var(--text)' }}>
+                Esta matéria já tem conteúdo publicado
+              </p>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                Já existe {existingItems.length} conteúdo{existingItems.length !== 1 ? 's' : ''} publicado{existingItems.length !== 1 ? 's' : ''} em <strong>{allDisciplines.find(d => d.id === publishPending.data.disciplineId)?.name ?? publishPending.data.disciplineId}</strong>:
+              </p>
+              <ul className="mb-5 flex flex-col gap-1.5">
+                {existingItems.map((item) => (
+                  <li key={item.id} className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--surface-2)', color: 'var(--text)' }}>
+                    {item.titulo}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>
+                O que queres fazer?
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => doPublish(publishPending.data, publishPending.fromDraft)}
+                  disabled={publishing}
+                  className="btn-primary flex items-center justify-center gap-2 py-3"
+                >
+                  {publishing ? <Loader2 size={15} className="animate-spin" /> : null}
+                  Adicionar a esta matéria
+                </button>
+                <button
+                  onClick={() => { setPublishPending(null); setExistingItems([]) }}
+                  disabled={publishing}
+                  className="flex items-center justify-center py-3 rounded-xl text-sm font-semibold"
+                  style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+                >
+                  Voltar e alterar a matéria
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 

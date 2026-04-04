@@ -305,20 +305,18 @@ export default function LandingPage() {
 
             <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} large />
 
-            {suggestions.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 md:gap-2 justify-center mt-3 md:mt-5 w-full" style={{ maxWidth: '42rem' }}>
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => handleSuggestion(s)}
-                    className="text-xs md:text-sm px-3 py-1 md:px-3.5 md:py-1.5 rounded-full transition-all hover:bg-indigo-50"
-                    style={{ border: '1px solid var(--border)', color: 'var(--text-muted)', background: 'var(--surface)' }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-1.5 md:gap-2 justify-center mt-3 md:mt-5 w-full" style={{ maxWidth: '42rem' }}>
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleSuggestion(s)}
+                  className="text-xs md:text-sm px-3 py-1 md:px-3.5 md:py-1.5 rounded-full transition-all hover:bg-indigo-50"
+                  style={{ border: '1px solid var(--border)', color: 'var(--text-muted)', background: 'var(--surface)' }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
 
             {/* Banner CTA */}
             <div
@@ -332,6 +330,13 @@ export default function LandingPage() {
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Inicia sessão para aceder a quizzes, flashcards e muito mais.</p>
                 </div>
                 <button onClick={() => navigate('/login')} className="btn-primary text-xs px-4 py-2 shrink-0">Entrar</button>
+              </div>
+              <div className="hidden md:flex items-center gap-3 px-5 py-3" style={{ borderTop: '1px solid rgba(98,112,245,0.15)', background: 'rgba(98,112,245,0.04)' }}>
+                <span className="text-base">🏆</span>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <strong style={{ color: 'var(--text)' }}>Qual é a tua posição no ranking da turma?</strong>
+                  {' '}Os teus colegas já estão a acumular XP — não fiques para trás.
+                </p>
               </div>
             </div>
           </div>
