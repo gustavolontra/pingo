@@ -151,7 +151,7 @@ export default function LandingPage() {
   }, [aiAnswer, hasAnswer])
 
   async function handleSearch(q: string = query) {
-    if (!q.trim()) return
+    if (!q.trim() || loading) return
 
     if (isDailyLimitReached) {
       setLimitReached(true)
