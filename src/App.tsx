@@ -7,7 +7,6 @@ import ExamSchedulePage from '@/pages/ExamSchedulePage'
 import LeaderboardPage from '@/pages/LeaderboardPage'
 import ProfilePage from '@/pages/ProfilePage'
 import StudentLoginPage from '@/pages/StudentLoginPage'
-import StudentRegisterPage from '@/pages/StudentRegisterPage'
 import AdminLoginPage from '@/pages/admin/AdminLoginPage'
 import AdminLayout from '@/components/admin/AdminLayout'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -36,7 +35,7 @@ export default function App() {
       {/* Página inicial pública */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<StudentLoginPage />} />
-      <Route path="/registar" element={<StudentRegisterPage />} />
+      <Route path="/registar" element={<StudentLoginPage />} />
 
       {/* App de estudante (protegido) */}
       <Route
