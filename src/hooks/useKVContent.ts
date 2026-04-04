@@ -72,12 +72,15 @@ function buildLessonsFromItem(item: KVContentItem): Lesson[] {
 }
 
 function buildDisciplines(kvDisciplines: KVDiscipline[], content: KVContentItem[]): Discipline[] {
-  // Mapa de disciplinas: primeiro as do KV, depois inferidas dos conteúdos
+  // Mapa de disciplinas: usa sempre o nome canónico de getDisciplineOption,
+  // mantendo cor/ícone do KV se disponíveis
   const discMap = new Map<string, KVDiscipline>()
-  kvDisciplines.forEach((d) => discMap.set(d.id, d))
+  kvDisciplines.forEach((d) => {
+    const opt = getDisciplineOption(d.id)
+    discMap.set(d.id, { ...d, name: opt.name, subject: opt.subject, year: opt.year })
+  })
 
-  // Para cada conteúdo cujo disciplineId não tem entrada no KV,
-  // usa a lista de opções predefinidas ou um fallback genérico
+  // Para conteúdos sem entrada no KV, infere pelo getDisciplineOption
   for (const item of content) {
     if (discMap.has(item.disciplineId)) continue
     const opt = getDisciplineOption(item.disciplineId)
