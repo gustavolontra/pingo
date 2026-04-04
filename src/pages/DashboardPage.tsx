@@ -1,4 +1,5 @@
 import { useStore } from '@/store/useStore'
+import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { formatMinutes } from '@/lib/utils'
 import { Flame, Clock, Zap, BookOpen } from 'lucide-react'
@@ -10,6 +11,8 @@ import StreakCalendar from '@/components/gamification/StreakCalendar'
 
 export default function DashboardPage() {
   const { user, dailyStats } = useStore()
+  const { studentName } = useStudentAuthStore()
+  const displayName = studentName || user.name
   const disciplines = useDisciplines()
   const thisWeekXP = dailyStats.slice(-7).reduce((sum, s) => sum + s.xpEarned, 0)
   const thisWeekMin = dailyStats.slice(-7).reduce((sum, s) => sum + s.minutesStudied, 0)
@@ -19,7 +22,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-display font-bold text-white">
-          Olá, {user.name.split(' ')[0]}! {user.streak > 0 ? '🔥' : '👋'}
+          Olá, {displayName.split(' ')[0]}! {user.streak > 0 ? '🔥' : '👋'}
         </h2>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           {user.streak > 0
