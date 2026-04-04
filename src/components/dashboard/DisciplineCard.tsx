@@ -11,11 +11,12 @@ export default function DisciplineCard({ discipline: d }: Props) {
   const plan = useStudyPlan(d)
   const daysLeft = d.examDate ? getDaysUntilExam(new Date(d.examDate)) : null
   const urgencyColor = daysLeft !== null ? getUrgencyColor(daysLeft) : '#6270f5'
+  const progressPct = d.totalLessons > 0 ? Math.round((d.completedLessons / d.totalLessons) * 100) : 0
 
   return (
     <div className="card flex items-center gap-5">
-      <ProgressRing value={plan?.progressPct ?? 0} size={72} color={d.color}>
-        <span className="text-xs font-bold" style={{ color: d.color }}>{plan?.progressPct ?? 0}%</span>
+      <ProgressRing value={progressPct} size={72} color={d.color}>
+        <span className="text-xs font-bold" style={{ color: d.color }}>{progressPct}%</span>
       </ProgressRing>
 
       <div className="flex-1 min-w-0">
