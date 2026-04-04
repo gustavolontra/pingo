@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { Mail, Lock } from 'lucide-react'
 
@@ -109,6 +109,12 @@ export default function StudentLoginPage() {
             </button>
           </form>
         </div>
+        <p className="text-center text-sm mt-4" style={{ color: 'var(--text-muted)' }}>
+          Não tens conta?{' '}
+          <Link to="/registar" className="font-semibold" style={{ color: '#6270f5' }}>
+            Criar conta
+          </Link>
+        </p>
       </div>
     </div>
   )

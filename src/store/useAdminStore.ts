@@ -255,9 +255,14 @@ export const useAdminStore = create<AdminState>()(
 
       createStudent: async ({ login, name, school, grade, password }) => {
         const passwordHash = await hashPassword(password)
+        const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim()
         const student: Student = {
           id: crypto.randomUUID(),
-          login, name, email: login, school, grade, passwordHash,
+          login: login.toLowerCase().trim(),
+          name: titleCase(name),
+          email: login.toLowerCase().trim(),
+          school: titleCase(school),
+          grade, passwordHash,
           createdAt: new Date().toISOString(),
           isActive: true,
           xp: 0, level: 1, streak: 0, lessonsCompleted: 0, totalStudyMinutes: 0,
