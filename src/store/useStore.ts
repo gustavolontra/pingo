@@ -34,6 +34,7 @@ interface AppState {
   sessions: StudySession[]
   dailyStats: DailyStats[]
   progress: StudentProgress
+  lastStudentId: string | null
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
   kvDisciplines: Discipline[]
@@ -44,6 +45,7 @@ interface AppState {
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
   setDisciplinesFromKV: (disciplines: Discipline[]) => void
+  resetForStudent: (studentId: string) => void
 }
 
 function todayKey() {
@@ -57,6 +59,7 @@ export const useStore = create<AppState>()(
       sessions: [],
       dailyStats: mockDailyStats,
       progress: { lessons: {}, examDates: {} },
+      lastStudentId: null,
       kvDisciplines: [],
 
       // ── Computed ──────────────────────────────────────────────────────────
@@ -182,14 +185,26 @@ export const useStore = create<AppState>()(
         }),
 
       setDisciplinesFromKV: (disciplines) => set({ kvDisciplines: disciplines }),
+
+      resetForStudent: (studentId) => {
+        if (get().lastStudentId === studentId) return
+        set({
+          user: { ...mockUser },
+          sessions: [],
+          dailyStats: [],
+          progress: { lessons: {}, examDates: {} },
+          lastStudentId: studentId,
+        })
+      },
     }),
     {
-      name: 'estudar-pt-v4',   // v4: zera dados mock de Marina/XP fictício
+      name: 'estudar-pt-v5',   // v5: per-student isolation via lastStudentId
       partialize: (state) => ({
         user: state.user,
         sessions: state.sessions,
         dailyStats: state.dailyStats,
         progress: state.progress,
+        lastStudentId: state.lastStudentId,
         // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),
     }

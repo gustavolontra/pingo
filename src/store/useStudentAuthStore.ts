@@ -44,13 +44,14 @@ export const useStudentAuthStore = create<StudentAuthState>()(
           (s) => s.login === email && s.passwordHash === hash && s.isActive
         )
         if (student) {
+          // Reset store if a different student is logging in
+          useStore.getState().resetForStudent(student.id)
           set({
             isAuthenticated: true,
             studentId: student.id,
             studentName: student.name,
             studentEmail: student.login,
           })
-          // Sync stats on login
           setTimeout(syncCurrentStudentStats, 100)
           return true
         }
