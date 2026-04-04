@@ -104,7 +104,10 @@ export default function LandingPage() {
     try {
       const today = new Date().toISOString().split('T')[0]
       const saved = JSON.parse(localStorage.getItem('pingo-q-daily') ?? '{}')
-      return saved.date === today ? (saved.count ?? 0) : 0
+      if (saved.date !== today) return 0
+      // Se o limite guardado for de uma versão anterior (ex: limite era 3), ignora
+      const count = saved.count ?? 0
+      return count > FREE_LIMIT ? FREE_LIMIT : count
     } catch { return 0 }
   })
   const [recent, setRecent] = useState<RecentItem[]>(() => {
