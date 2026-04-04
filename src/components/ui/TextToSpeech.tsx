@@ -98,9 +98,10 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
 
   const isLight = variant === 'light'
   const btnBase = `flex items-center justify-center rounded-full transition-all`
-  const surface = isLight ? 'var(--surface-2)' : 'rgba(255,255,255,0.08)'
-  const textMuted = isLight ? 'var(--text-muted)' : 'rgba(255,255,255,0.5)'
+  const surface = isLight ? 'var(--surface-2)' : 'rgba(255,255,255,0.12)'
+  const textMuted = isLight ? 'var(--text-muted)' : 'rgba(255,255,255,0.7)'
   const accent = '#6270f5'
+  const border = isLight ? '1px solid var(--border)' : '1px solid rgba(255,255,255,0.15)'
 
   if (noVoice) {
     return (
@@ -125,7 +126,7 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
         <button
           onClick={handlePlay}
           className={`${btnBase} gap-1.5 px-3`}
-          style={{ height: 34, background: status === 'paused' ? accent : surface, color: status === 'paused' ? 'white' : textMuted, borderRadius: 999, fontSize: 13, fontWeight: 600 }}
+          style={{ height: 34, background: status === 'paused' ? accent : surface, color: status === 'paused' ? 'white' : textMuted, borderRadius: 999, fontSize: 13, fontWeight: 600, border }}
         >
           <Play size={13} /> {status === 'paused' ? 'Continuar' : '🔊 Ouvir'}
         </button>
@@ -136,7 +137,7 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
         <button
           onClick={handleStop}
           className={`${btnBase} gap-1 px-2.5`}
-          style={{ height: 34, background: surface, color: textMuted, borderRadius: 999, fontSize: 13 }}
+          style={{ height: 34, background: surface, color: textMuted, borderRadius: 999, fontSize: 13, border }}
         >
           <Square size={11} /> Parar
         </button>
@@ -151,11 +152,12 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
               setSpeedIdx(i)
               if (status === 'playing') { window.speechSynthesis.cancel(); setStatus('idle') }
             }}
-            className="text-xs px-2 py-0.5 rounded-full transition-all"
+            className="text-xs px-2.5 py-1 rounded-full transition-all"
             style={{
-              background: speedIdx === i ? `${accent}20` : 'transparent',
+              background: speedIdx === i ? `${accent}20` : surface,
               color: speedIdx === i ? accent : textMuted,
               fontWeight: speedIdx === i ? 600 : 400,
+              border: speedIdx === i ? `1px solid ${accent}40` : border,
             }}
           >
             {s.label}
