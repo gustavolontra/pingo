@@ -98,6 +98,7 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false)
   const [loginPrompt, setLoginPrompt] = useState(false)
   const [limitReached, setLimitReached] = useState(false)
+  const [nudge, setNudge] = useState<0 | 1 | 2>(0) // 0=none 1=after 3rd 2=after 4th
   const [kvItems, setKvItems] = useState<KVContentItem[]>([])
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [questionsUsed, setQuestionsUsed] = useState<number>(() => {
@@ -161,9 +162,11 @@ export default function LandingPage() {
     setAiAnswer(null)
     setLimitReached(false)
     setLoginPrompt(false)
+    setNudge(0)
 
     const newCount = questionsUsed + 1
     setQuestionsUsed(newCount)
+    setNudge(newCount === FREE_LIMIT - 2 ? 1 : newCount === FREE_LIMIT - 1 ? 2 : 0)
 
     setRecent((prev) => {
       const filtered = prev.filter((r) => r.query !== q)
@@ -404,12 +407,12 @@ export default function LandingPage() {
                     )}
 
                     {/* Mensagens progressivas */}
-                    {!isRejection && questionsUsed === 3 && (
+                    {!isRejection && nudge === 1 && (
                       <p className="mt-5 text-sm text-center" style={{ color: 'var(--text-muted)' }}>
                         Estás a gostar? 😊 Ainda tens 2 pesquisas gratuitas hoje. Os teus colegas já estão a ganhar XP e a subir no ranking — não fiques para trás!
                       </p>
                     )}
-                    {!isRejection && questionsUsed === 4 && (
+                    {!isRejection && nudge === 2 && (
                       <div className="mt-5 px-4 py-3 rounded-xl text-sm text-center" style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.2)', color: '#f97316' }}>
                         Atenção — esta é a tua penúltima pesquisa gratuita de hoje! ⚡ Enquanto hesitas, os teus colegas já completaram mais uma aula. Entra e não percas terreno!
                       </div>
