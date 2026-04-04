@@ -243,7 +243,7 @@ export default function AdminSubjectsPage() {
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Flashcards ({editing.flashcards.length})</label>
                   <button
-                    onClick={() => setEditing({ ...editing, flashcards: [...editing.flashcards, { frente: '', verso: '' }] })}
+                    onClick={() => setEditing({ ...editing, flashcards: [{ frente: '', verso: '' }, ...editing.flashcards] })}
                     className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
                     style={{ color: '#6270f5', border: '1px solid rgba(98,112,245,0.3)' }}
                   >
@@ -273,7 +273,7 @@ export default function AdminSubjectsPage() {
                   <button
                     onClick={() => setEditing({
                       ...editing,
-                      quiz: [...editing.quiz, { pergunta: '', tipo: 'multiple-choice', opcoes: ['', '', '', ''], correta: 0, explicacao: '' }]
+                      quiz: [{ pergunta: '', tipo: 'multiple-choice', opcoes: ['', '', '', ''], correta: 0, explicacao: '' }, ...editing.quiz]
                     })}
                     className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
                     style={{ color: '#6270f5', border: '1px solid rgba(98,112,245,0.3)' }}
