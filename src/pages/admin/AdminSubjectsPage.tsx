@@ -23,9 +23,17 @@ export default function AdminSubjectsPage() {
   const [deleting, setDeleting] = useState(false)
 
   function discInfo(id: string) {
+    const opt = getDisciplineOption(id)
     const admin = adminDisciplines.find((d) => d.id === id)
-    if (admin) return { id: admin.id, name: admin.name, subject: admin.subject, year: admin.year, color: admin.color, icon: admin.icon }
-    return getDisciplineOption(id)
+    // Always use canonical name/subject from DISCIPLINE_OPTIONS; keep admin color/icon if set
+    return {
+      id,
+      name: opt.name,
+      subject: opt.subject,
+      year: opt.year,
+      color: admin?.color ?? opt.color,
+      icon: admin?.icon ?? opt.icon,
+    }
   }
 
   function reload() {
