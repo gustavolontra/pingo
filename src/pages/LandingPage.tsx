@@ -119,9 +119,16 @@ export default function LandingPage() {
   useEffect(() => {
     api.getAllContent().then((items) => {
       setKvItems(items)
-      // Usa os títulos dos primeiros conteúdos como sugestões
-      const s = items.slice(0, 6).map((i) => i.titulo)
-      setSuggestions(s)
+      // Recolhe todas as perguntas de flashcards de todos os itens
+      const allQuestions: string[] = []
+      for (const item of items) {
+        for (const fc of item.flashcards ?? []) {
+          if (fc.frente?.trim()) allQuestions.push(fc.frente.trim())
+        }
+      }
+      // Embaralha e pega as primeiras 6
+      const shuffled = allQuestions.sort(() => Math.random() - 0.5)
+      setSuggestions(shuffled.slice(0, 6))
     })
   }, [])
 
