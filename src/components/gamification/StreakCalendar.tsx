@@ -4,12 +4,16 @@ import type { DailyStats } from '@/types'
 interface Props { stats: DailyStats[] }
 
 export default function StreakCalendar({ stats }: Props) {
-  // Build last 28 days
+  // Start from the Monday of 3 weeks ago → always shows 4 full Mon–Sun weeks
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const mondayOffset = (today.getDay() + 6) % 7  // Mon=0 … Sun=6
+  const startMonday = new Date(today.getTime() - (mondayOffset + 21) * 86400000)
+
   const days = Array.from({ length: 28 }, (_, i) => {
-    const d = new Date(Date.now() - (27 - i) * 86400000)
+    const d = new Date(startMonday.getTime() + i * 86400000)
     const key = d.toISOString().split('T')[0]
     const entry = stats.find((s) => s.date === key)
-    return { date: d, studied: (entry?.minutesStudied ?? 0) > 0, minutes: entry?.minutesStudied ?? 0 }
+    return { date: d, future: d > today, minutes: entry?.minutesStudied ?? 0 }
   })
 
   const getColor = (minutes: number) => {
@@ -29,11 +33,11 @@ export default function StreakCalendar({ stats }: Props) {
         {days.map((d, i) => (
           <div
             key={i}
-            title={`${d.date.toLocaleDateString('pt-PT')}: ${d.minutes}min`}
+            title={`${d.date.toLocaleDateString('pt-PT')}${d.future ? '' : `: ${d.minutes}min`}`}
             className="aspect-square rounded-md transition-all cursor-default flex items-center justify-center"
-            style={{ background: getColor(d.minutes) }}
+            style={{ background: d.future ? 'transparent' : getColor(d.minutes), border: d.future ? '1px dashed var(--border)' : 'none' }}
           >
-            <span className="text-[9px] font-medium select-none" style={{ color: d.minutes > 0 ? 'rgba(255,255,255,0.85)' : 'var(--text-muted)', opacity: 0.8 }}>
+            <span className="text-[9px] font-medium select-none" style={{ color: d.minutes > 0 ? 'rgba(255,255,255,0.85)' : 'var(--text-muted)', opacity: d.future ? 0.4 : 0.8 }}>
               {d.date.getDate()}
             </span>
           </div>
