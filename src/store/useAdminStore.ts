@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { hashPassword } from '@/lib/crypto'
 import { api } from '@/lib/api'
+import { getDisciplineOption } from '@/lib/contentBridge'
 
 function syncDisciplines(disciplines: ManagedDiscipline[]) {
   api.putDisciplines(disciplines.map(({ id, name, subject, year, color, icon }) => ({
@@ -318,14 +319,17 @@ export const useAdminStore = create<AdminState>()(
         // Find or create discipline
         let disc = disciplines.find((d) => d.id === data.disciplineId)
         if (!disc) {
+          const opt = getDisciplineOption(data.disciplineId)
+          // opt.name !== opt.id means it was found in DISCIPLINE_OPTIONS (not a fallback)
+          const knownOpt = opt.name !== opt.id
           const defaults = disciplineDefaults(data.materia)
           disc = {
             id: data.disciplineId,
-            name: data.materia,
-            subject: data.materia,
+            name: knownOpt ? opt.name : data.materia,
+            subject: knownOpt ? opt.subject : data.materia,
             year: data.ano,
-            color: defaults.color,
-            icon: defaults.icon,
+            color: knownOpt ? opt.color : defaults.color,
+            icon: knownOpt ? opt.icon : defaults.icon,
             createdAt: new Date().toISOString(),
             topics: [],
           }
