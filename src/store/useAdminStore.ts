@@ -176,6 +176,9 @@ interface AdminState {
   updateDraft: (id: string, data: Partial<Omit<ContentDraft, 'id' | 'createdAt'>>) => void
   deleteDraft: (id: string) => void
 
+  // Publish learning (creates discipline + topic + lessons in one shot)
+  publishLearning: (data: Omit<ContentDraft, 'id' | 'createdAt'>) => void
+
   // Topics
   addTopic: (disciplineId: string, data: Pick<AdminTopic, 'title' | 'description'>) => void
   updateTopic: (disciplineId: string, topicId: string, data: Partial<Pick<AdminTopic, 'title' | 'description'>>) => void
@@ -201,6 +204,19 @@ function updateTopic(
   fn: (t: AdminTopic) => AdminTopic
 ): AdminTopic[] {
   return topics.map((t) => (t.id === topicId ? fn(t) : t))
+}
+
+function disciplineDefaults(materia: string): { color: string; icon: string } {
+  const m = materia.toLowerCase()
+  if (m.includes('hist')) return { color: '#e05252', icon: '🏛️' }
+  if (m.includes('geo')) return { color: '#10b981', icon: '🌍' }
+  if (m.includes('mat')) return { color: '#6270f5', icon: '📐' }
+  if (m.includes('port')) return { color: '#f59e0b', icon: '📖' }
+  if (m.includes('ciên') || m.includes('cien')) return { color: '#0ea5e9', icon: '🔬' }
+  if (m.includes('fís') || m.includes('fis')) return { color: '#8b5cf6', icon: '⚡' }
+  if (m.includes('quím') || m.includes('quim')) return { color: '#ec4899', icon: '🧪' }
+  if (m.includes('bio')) return { color: '#22c55e', icon: '🌿' }
+  return { color: '#6270f5', icon: '📚' }
 }
 
 function defaultContent(type: AdminLesson['type']): AdminLessonContent {
@@ -295,6 +311,107 @@ export const useAdminStore = create<AdminState>()(
 
       deleteDraft: (id) =>
         set({ contentDrafts: get().contentDrafts.filter((d) => d.id !== id) }),
+
+      publishLearning: (data) => {
+        let disciplines = [...get().disciplines]
+
+        // Find or create discipline
+        let disc = disciplines.find((d) => d.id === data.disciplineId)
+        if (!disc) {
+          const defaults = disciplineDefaults(data.materia)
+          disc = {
+            id: data.disciplineId,
+            name: data.materia,
+            subject: data.materia,
+            year: data.ano,
+            color: defaults.color,
+            icon: defaults.icon,
+            createdAt: new Date().toISOString(),
+            topics: [],
+          }
+          disciplines = [...disciplines, disc]
+        }
+
+        // Find or create topic
+        const existingTopic = disc.topics.find(
+          (t) => t.title.toLowerCase() === data.topico.toLowerCase()
+        )
+        const topicId = existingTopic?.id ?? crypto.randomUUID()
+        const baseOrder = existingTopic ? existingTopic.lessons.length : 0
+
+        // Build lessons
+        const newLessons: AdminLesson[] = [
+          {
+            id: crypto.randomUUID(),
+            topicId,
+            title: data.titulo,
+            type: 'text',
+            estimatedMinutes: 10,
+            xpReward: 50,
+            order: baseOrder + 1,
+            content: { type: 'text', body: data.resumo, keyPoints: data.palavrasChave },
+          },
+          ...(data.flashcards.length > 0 ? [{
+            id: crypto.randomUUID(),
+            topicId,
+            title: `Flashcards — ${data.titulo}`,
+            type: 'flashcard' as const,
+            estimatedMinutes: 5,
+            xpReward: 30,
+            order: baseOrder + 2,
+            content: {
+              type: 'flashcard' as const,
+              cards: data.flashcards.map((f) => ({
+                id: crypto.randomUUID(),
+                front: f.frente,
+                back: f.verso,
+              })),
+            },
+          }] : []),
+          ...(data.quiz.length > 0 ? [{
+            id: crypto.randomUUID(),
+            topicId,
+            title: `Quiz — ${data.titulo}`,
+            type: 'quiz' as const,
+            estimatedMinutes: 8,
+            xpReward: 40,
+            order: baseOrder + 3,
+            content: {
+              type: 'quiz' as const,
+              questions: data.quiz.map((q) => ({
+                id: crypto.randomUUID(),
+                text: q.pergunta,
+                type: q.tipo,
+                options: q.opcoes,
+                correctAnswer: q.correta,
+                explanation: q.explicacao,
+              })),
+            },
+          }] : []),
+        ]
+
+        // Merge topic into discipline
+        const updatedTopics = existingTopic
+          ? disc.topics.map((t) =>
+              t.id === topicId ? { ...t, lessons: [...t.lessons, ...newLessons] } : t
+            )
+          : [
+              ...disc.topics,
+              {
+                id: topicId,
+                disciplineId: data.disciplineId,
+                title: data.topico,
+                description: '',
+                order: disc.topics.length + 1,
+                lessons: newLessons,
+              },
+            ]
+
+        const updatedDisc = { ...disc, topics: updatedTopics }
+        const updated = disciplines.map((d) => (d.id === data.disciplineId ? updatedDisc : d))
+        set({ disciplines: updated })
+        syncDisciplines(updated)
+      },
 
       // ── Topics ──────────────────────────────────────────────────────────────
 

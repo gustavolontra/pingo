@@ -1,14 +1,12 @@
-import { useAdminStore } from '@/store/useAdminStore'
 import { useStore } from '@/store/useStore'
-import { mergeAllDisciplines } from '@/lib/contentBridge'
 import type { Discipline } from '@/types'
 
 export function useDisciplines(): Discipline[] {
-  const adminDisciplines = useAdminStore((s) => s.disciplines)
-  const hiddenStaticIds = useAdminStore((s) => s.hiddenStaticIds)
+  const kvDisciplines = useStore((s) => s.kvDisciplines)
   const progress = useStore((s) => s.progress)
 
-  const merged = mergeAllDisciplines(adminDisciplines, hiddenStaticIds)
+  // Fonte única de verdade para o aluno: KV (carregado via useKVContent no Layout)
+  const merged = kvDisciplines
 
   return merged.map((d) => {
     const examDate = progress.examDates[d.id]

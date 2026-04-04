@@ -1,19 +1,17 @@
 /**
  * useStore.ts  — store do aluno
  *
- * Disciplinas vêm sempre de mergeAllDisciplines(adminStore.disciplines),
- * que combina: conteúdo admin + ficheiros estáticos (historia7ano, geografia7ano…)
+ * Disciplinas vêm sempre do Cloudflare KV via useKVContent(),
+ * guardadas em kvDisciplines (não persistidas — recarregadas a cada visita).
  *
  * O progresso do aluno (isCompleted, score, examDate) é guardado aqui em separado
- * e sobreposto no momento da leitura.
+ * e sobreposto no momento da leitura via getDisciplines().
  */
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { User, Discipline, StudySession, DailyStats } from '@/types'
 import { mockUser, mockDailyStats } from '@/lib/mockData'
-import { mergeAllDisciplines } from '@/lib/contentBridge'
-import { useAdminStore } from '@/store/useAdminStore'
 import { syncCurrentStudentStats } from '@/store/useStudentAuthStore'
 
 // ── Tipos de progresso guardados pelo aluno ──────────────────────────────────
@@ -37,13 +35,14 @@ interface AppState {
   dailyStats: DailyStats[]
   progress: StudentProgress
 
+  /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
+  kvDisciplines: Discipline[]
+
   /** Computed: disciplinas com progresso do aluno aplicado */
   getDisciplines: () => Discipline[]
 
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
-
-  /** Mantido por compatibilidade com useKVContent (pode ficar vazio agora) */
   setDisciplinesFromKV: (disciplines: Discipline[]) => void
 }
 
@@ -58,12 +57,12 @@ export const useStore = create<AppState>()(
       sessions: [],
       dailyStats: mockDailyStats,
       progress: { lessons: {}, examDates: {} },
+      kvDisciplines: [],
 
       // ── Computed ──────────────────────────────────────────────────────────
 
       getDisciplines: () => {
-        const adminDisciplines = useAdminStore.getState().disciplines
-        const merged = mergeAllDisciplines(adminDisciplines)
+        const merged = get().kvDisciplines
         const { progress } = get()
 
         // Aplica progresso do aluno sobre o conteúdo
@@ -182,9 +181,7 @@ export const useStore = create<AppState>()(
           },
         }),
 
-      // Compatibilidade com useKVContent — já não faz nada porque
-      // as disciplinas vêm do adminStore via getDisciplines()
-      setDisciplinesFromKV: () => {},
+      setDisciplinesFromKV: (disciplines) => set({ kvDisciplines: disciplines }),
     }),
     {
       name: 'estudar-pt-v4',   // v4: zera dados mock de Marina/XP fictício
@@ -193,7 +190,7 @@ export const useStore = create<AppState>()(
         sessions: state.sessions,
         dailyStats: state.dailyStats,
         progress: state.progress,
-        // NÃO persiste disciplines — vêm sempre do adminStore no runtime
+        // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),
     }
   )

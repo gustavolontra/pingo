@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import type { Discipline } from '@/types'
 import { getDaysUntilExam } from '@/lib/utils'
 
-export function useStudyPlan(discipline: Discipline) {
+export function useStudyPlan(discipline: Discipline | undefined) {
   return useMemo(() => {
-    if (!discipline.examDate) return null
+    if (!discipline || !discipline.examDate) return null
     const daysLeft = Math.max(1, getDaysUntilExam(new Date(discipline.examDate)) - 1)
     const remaining = discipline.totalLessons - discipline.completedLessons
     const lessonsPerDay = Math.ceil(remaining / daysLeft)
