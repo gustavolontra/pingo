@@ -29,11 +29,19 @@ interface StudentProgress {
   examDates: Record<string, string>
 }
 
+export interface Exam {
+  id: string
+  subject: string   // display name, e.g. "História"
+  date: string      // ISO date string
+  studyNote: string
+}
+
 interface AppState {
   user: User
   sessions: StudySession[]
   dailyStats: DailyStats[]
   progress: StudentProgress
+  exams: Exam[]
   lastStudentId: string | null
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
@@ -46,6 +54,11 @@ interface AppState {
   setExamDate: (disciplineId: string, date: Date) => void
   setDisciplinesFromKV: (disciplines: Discipline[]) => void
   resetForStudent: (studentId: string) => void
+
+  addExam: (subject: string, date: string) => void
+  updateExam: (id: string, subject: string, date: string) => void
+  deleteExam: (id: string) => void
+  setExamStudyNote: (id: string, note: string) => void
 }
 
 function todayKey() {
@@ -59,6 +72,7 @@ export const useStore = create<AppState>()(
       sessions: [],
       dailyStats: mockDailyStats,
       progress: { lessons: {}, examDates: {} },
+      exams: [],
       lastStudentId: null,
       kvDisciplines: [],
 
@@ -193,9 +207,22 @@ export const useStore = create<AppState>()(
           sessions: [],
           dailyStats: [],
           progress: { lessons: {}, examDates: {} },
+          exams: [],
           lastStudentId: studentId,
         })
       },
+
+      addExam: (subject, date) =>
+        set({ exams: [...get().exams, { id: crypto.randomUUID(), subject, date, studyNote: '' }] }),
+
+      updateExam: (id, subject, date) =>
+        set({ exams: get().exams.map((e) => e.id === id ? { ...e, subject, date } : e) }),
+
+      deleteExam: (id) =>
+        set({ exams: get().exams.filter((e) => e.id !== id) }),
+
+      setExamStudyNote: (id, note) =>
+        set({ exams: get().exams.map((e) => e.id === id ? { ...e, studyNote: note } : e) }),
     }),
     {
       name: 'estudar-pt-v5',   // v5: per-student isolation via lastStudentId
@@ -204,6 +231,7 @@ export const useStore = create<AppState>()(
         sessions: state.sessions,
         dailyStats: state.dailyStats,
         progress: state.progress,
+        exams: state.exams,
         lastStudentId: state.lastStudentId,
         // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),
