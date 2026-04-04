@@ -98,4 +98,8 @@ export const api = {
     if (!res.ok) return []
     return res.json()
   },
+
+  async deleteContent(id: string, disciplineId: string): Promise<void> {
+    await fetch(`${BASE}/content?id=${id}&disciplineId=${disciplineId}`, { method: 'DELETE' })
+  },
 }

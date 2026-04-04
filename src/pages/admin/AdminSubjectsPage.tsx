@@ -1,37 +1,43 @@
 /**
  * AdminSubjectsPage — "Matérias Publicadas"
  *
- * Visualização read-only do conteúdo publicado via "Aprendizados".
+ * Visualização do conteúdo publicado via "Aprendizados".
  * Agrupa por disciplina → tópico.
- * Para adicionar conteúdo, usa "Aprendizados".
+ * Permite editar e apagar itens publicados.
  */
 
 import { useEffect, useState } from 'react'
 import { useAdminStore } from '@/store/useAdminStore'
-import { STATIC_DISCIPLINES } from '@/lib/contentBridge'
-import { api, type KVContentItem } from '@/lib/api'
-import { BookOpen, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { STATIC_DISCIPLINES, DISCIPLINE_TEMPLATES } from '@/lib/contentBridge'
+import { api, type KVContentItem, type KVFlashcard, type KVQuestion } from '@/lib/api'
+import { BookOpen, ChevronDown, ChevronUp, Loader2, Pencil, Trash2, X, Save, Plus } from 'lucide-react'
 
 export default function AdminSubjectsPage() {
   const { disciplines: adminDisciplines } = useAdminStore()
   const [items, setItems] = useState<KVContentItem[]>([])
   const [loading, setLoading] = useState(true)
   const [openDisc, setOpenDisc] = useState<string | null>(null)
+  const [editing, setEditing] = useState<KVContentItem | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<KVContentItem | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const allDisciplines = [
     ...adminDisciplines.map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year, color: d.color, icon: d.icon })),
-    ...STATIC_DISCIPLINES
+    ...[...STATIC_DISCIPLINES, ...DISCIPLINE_TEMPLATES]
       .filter((d) => !adminDisciplines.some((a) => a.id === d.id))
       .map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year, color: d.color, icon: d.icon })),
   ]
 
-  useEffect(() => {
+  function reload() {
+    setLoading(true)
     api.getAllContent()
       .then(setItems)
       .finally(() => setLoading(false))
-  }, [])
+  }
 
-  // Group items by disciplineId → topico
+  useEffect(() => { reload() }, [])
+
   const grouped = items.reduce<Record<string, Record<string, KVContentItem[]>>>((acc, item) => {
     if (!acc[item.disciplineId]) acc[item.disciplineId] = {}
     if (!acc[item.disciplineId][item.topico]) acc[item.disciplineId][item.topico] = []
@@ -40,6 +46,24 @@ export default function AdminSubjectsPage() {
   }, {})
 
   const disciplineIds = Object.keys(grouped)
+
+  async function handleSave() {
+    if (!editing) return
+    setSaving(true)
+    await api.putContent(editing)
+    setItems((prev) => prev.map((i) => i.id === editing.id ? editing : i))
+    setEditing(null)
+    setSaving(false)
+  }
+
+  async function handleDelete() {
+    if (!confirmDelete) return
+    setDeleting(true)
+    await api.deleteContent(confirmDelete.id, confirmDelete.disciplineId)
+    setItems((prev) => prev.filter((i) => i.id !== confirmDelete.id))
+    setConfirmDelete(null)
+    setDeleting(false)
+  }
 
   return (
     <div className="p-8 max-w-3xl">
@@ -76,7 +100,6 @@ export default function AdminSubjectsPage() {
 
             return (
               <div key={discId} className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-                {/* Discipline header */}
                 <button
                   onClick={() => setOpenDisc(isOpen ? null : discId)}
                   className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 transition-all text-left"
@@ -103,7 +126,6 @@ export default function AdminSubjectsPage() {
                     : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
                 </button>
 
-                {/* Topics + content */}
                 {isOpen && (
                   <div style={{ background: 'var(--surface-2)', borderTop: '1px solid var(--border)' }}>
                     {topicNames.map((topicName) => (
@@ -131,6 +153,22 @@ export default function AdminSubjectsPage() {
                                   <span>{new Date(item.createdAt).toLocaleDateString('pt-PT')}</span>
                                 </div>
                               </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => setEditing({ ...item })}
+                                  className="p-1.5 rounded-lg hover:bg-slate-100 transition-all"
+                                  title="Editar"
+                                >
+                                  <Pencil size={13} style={{ color: 'var(--text-muted)' }} />
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDelete(item)}
+                                  className="p-1.5 rounded-lg hover:bg-red-50 transition-all"
+                                  title="Apagar"
+                                >
+                                  <Trash2 size={13} style={{ color: '#ef4444' }} />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -143,6 +181,237 @@ export default function AdminSubjectsPage() {
           })}
         </div>
       )}
+
+      {/* ── Modal de edição ─────────────────────────────────────────────────── */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl flex flex-col" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+              <p className="font-display font-bold text-lg" style={{ color: 'var(--text)' }}>Editar conteúdo</p>
+              <button onClick={() => setEditing(null)}><X size={18} style={{ color: 'var(--text-muted)' }} /></button>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-5 overflow-y-auto">
+              {/* Título */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Título</label>
+                <input
+                  className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  value={editing.titulo}
+                  onChange={(e) => setEditing({ ...editing, titulo: e.target.value })}
+                />
+              </div>
+
+              {/* Tópico */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Tópico</label>
+                <input
+                  className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  value={editing.topico}
+                  onChange={(e) => setEditing({ ...editing, topico: e.target.value })}
+                />
+              </div>
+
+              {/* Resumo */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Resumo / Conteúdo</label>
+                <textarea
+                  rows={6}
+                  className="w-full rounded-xl px-3 py-2 text-sm outline-none resize-y"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  value={editing.resumo}
+                  onChange={(e) => setEditing({ ...editing, resumo: e.target.value })}
+                />
+              </div>
+
+              {/* Palavras-chave */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Palavras-chave (separadas por vírgula)</label>
+                <input
+                  className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  value={editing.palavrasChave.join(', ')}
+                  onChange={(e) => setEditing({ ...editing, palavrasChave: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
+                />
+              </div>
+
+              {/* Flashcards */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Flashcards ({editing.flashcards.length})</label>
+                  <button
+                    onClick={() => setEditing({ ...editing, flashcards: [...editing.flashcards, { frente: '', verso: '' }] })}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
+                    style={{ color: '#6270f5', border: '1px solid rgba(98,112,245,0.3)' }}
+                  >
+                    <Plus size={11} /> Adicionar
+                  </button>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {editing.flashcards.map((fc, i) => (
+                    <FlashcardEditor
+                      key={i}
+                      fc={fc}
+                      onChange={(updated) => {
+                        const fcs = [...editing.flashcards]
+                        fcs[i] = updated
+                        setEditing({ ...editing, flashcards: fcs })
+                      }}
+                      onDelete={() => setEditing({ ...editing, flashcards: editing.flashcards.filter((_, idx) => idx !== i) })}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Quiz */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Questões ({editing.quiz.length})</label>
+                  <button
+                    onClick={() => setEditing({
+                      ...editing,
+                      quiz: [...editing.quiz, { pergunta: '', tipo: 'multiple-choice', opcoes: ['', '', '', ''], correta: 0, explicacao: '' }]
+                    })}
+                    className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
+                    style={{ color: '#6270f5', border: '1px solid rgba(98,112,245,0.3)' }}
+                  >
+                    <Plus size={11} /> Adicionar
+                  </button>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {editing.quiz.map((q, i) => (
+                    <QuestionEditor
+                      key={i}
+                      q={q}
+                      onChange={(updated) => {
+                        const qs = [...editing.quiz]
+                        qs[i] = updated
+                        setEditing({ ...editing, quiz: qs })
+                      }}
+                      onDelete={() => setEditing({ ...editing, quiz: editing.quiz.filter((_, idx) => idx !== i) })}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 px-6 py-4 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
+              <button onClick={() => setEditing(null)} className="px-4 py-2 rounded-xl text-sm" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                Cancelar
+              </button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary flex items-center gap-2 text-sm px-5 py-2">
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirmação de eliminação ────────────────────────────────────────── */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p className="font-display font-bold mb-2" style={{ color: 'var(--text)' }}>Apagar conteúdo?</p>
+            <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+              "<strong>{confirmDelete.titulo}</strong>" será removido permanentemente do KV.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setConfirmDelete(null)} className="px-4 py-2 rounded-xl text-sm" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                style={{ background: '#ef4444' }}
+              >
+                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                Apagar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Sub-componentes ────────────────────────────────────────────────────────────
+
+function FlashcardEditor({ fc, onChange, onDelete }: { fc: KVFlashcard; onChange: (fc: KVFlashcard) => void; onDelete: () => void }) {
+  return (
+    <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold" style={{ color: '#6270f5' }}>🃏 Flashcard</span>
+        <button onClick={onDelete}><X size={13} style={{ color: '#ef4444' }} /></button>
+      </div>
+      <input
+        placeholder="Frente"
+        className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+        value={fc.frente}
+        onChange={(e) => onChange({ ...fc, frente: e.target.value })}
+      />
+      <input
+        placeholder="Verso"
+        className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+        value={fc.verso}
+        onChange={(e) => onChange({ ...fc, verso: e.target.value })}
+      />
+    </div>
+  )
+}
+
+function QuestionEditor({ q, onChange, onDelete }: { q: KVQuestion; onChange: (q: KVQuestion) => void; onDelete: () => void }) {
+  return (
+    <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold" style={{ color: '#6270f5' }}>❓ Questão</span>
+        <button onClick={onDelete}><X size={13} style={{ color: '#ef4444' }} /></button>
+      </div>
+      <input
+        placeholder="Pergunta"
+        className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+        value={q.pergunta}
+        onChange={(e) => onChange({ ...q, pergunta: e.target.value })}
+      />
+      <div className="flex flex-col gap-1">
+        {q.opcoes.map((op, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              type="radio"
+              checked={q.correta === i}
+              onChange={() => onChange({ ...q, correta: i })}
+              title="Marcar como correta"
+            />
+            <input
+              placeholder={`Opção ${i + 1}`}
+              className="flex-1 rounded-lg px-2.5 py-1.5 text-xs outline-none"
+              style={{ background: 'var(--surface)', border: `1px solid ${q.correta === i ? '#6270f5' : 'var(--border)'}`, color: 'var(--text)' }}
+              value={op}
+              onChange={(e) => {
+                const opcoes = [...q.opcoes]
+                opcoes[i] = e.target.value
+                onChange({ ...q, opcoes })
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <input
+        placeholder="Explicação da resposta correta"
+        className="w-full rounded-lg px-2.5 py-1.5 text-xs outline-none"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
+        value={q.explicacao}
+        onChange={(e) => onChange({ ...q, explicacao: e.target.value })}
+      />
     </div>
   )
 }
