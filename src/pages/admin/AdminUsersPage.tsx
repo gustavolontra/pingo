@@ -134,7 +134,7 @@ export default function AdminUsersPage() {
             <div className="flex gap-3">
               <button className="btn-ghost flex-1" onClick={() => setConfirmDeleteId(null)}>Cancelar</button>
               <button
-                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+                className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold force-white transition-all"
                 style={{ background: '#dc2626' }}
                 onClick={() => handleDelete(confirmDeleteId)}
               >

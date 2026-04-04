@@ -60,7 +60,7 @@ export default function AudioLesson({ lesson, onComplete }: Props) {
               className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-all hover:scale-105"
               style={{ background: 'linear-gradient(135deg, #6270f5, #4f4de8)' }}
             >
-              {isPlaying ? <Pause size={18} className="text-white" /> : <Play size={18} className="text-white ml-0.5" />}
+              {isPlaying ? <Pause size={18} className="force-white" /> : <Play size={18} className="force-white ml-0.5" />}
             </button>
 
             <div className="flex-1">

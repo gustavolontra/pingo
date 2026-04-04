@@ -143,6 +143,14 @@
     border: 1px solid var(--border);
   }
 }
+/* ── Tema claro: text-white foi escrito para tema escuro — corrigir globalmente ── */
+.text-white { color: var(--text) !important; }
+
+/* Restaurar branco onde o fundo é escuro/colorido */
+.btn-primary,
+.btn-primary *,
+.force-white { color: white !important; }
+
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d9f0; border-radius: 3px; }
