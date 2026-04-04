@@ -302,11 +302,7 @@ export default function ExamSchedulePage() {
         <div className="card text-center py-12">
           <p className="text-3xl mb-3">📅</p>
           <p className="font-semibold" style={{ color: 'var(--text)' }}>Nenhum exame agendado</p>
-          <p className="text-sm mt-1 mb-4" style={{ color: 'var(--text-muted)' }}>Adiciona o teu primeiro exame para começar.</p>
-          <button onClick={() => setAdding(true)} className="btn-primary inline-flex items-center gap-2">
-            <Plus size={15} />
-            Adicionar exame
-          </button>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Clica em "Novo exame" para começar.</p>
         </div>
       )}
 
