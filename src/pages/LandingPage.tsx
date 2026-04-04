@@ -351,27 +351,27 @@ export default function LandingPage() {
 
         {/* ── Idle: logo + pesquisa centrada ─────────────────────────────── */}
         {!hasAnswer && (
-          <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-4 md:px-6 py-6 md:py-12 overflow-y-auto">
-            <div className="mb-6 md:mb-8 text-center">
+          <div className="flex-1 flex flex-col items-center justify-start md:justify-center px-4 md:px-6 py-3 md:py-12 overflow-y-auto">
+            <div className="mb-4 md:mb-8 text-center">
               <img
                 src="/favicon.svg"
                 alt="Pingo"
-                className="w-14 h-14 mx-auto mb-4"
+                className="w-10 h-10 md:w-14 md:h-14 mx-auto mb-2 md:mb-4"
                 style={{ filter: 'drop-shadow(0 8px 24px rgba(98,112,245,0.35))' }}
               />
-              <h2 className="text-3xl font-display font-normal" style={{ color: 'var(--text)' }}>
+              <h2 className="text-2xl md:text-3xl font-display font-normal" style={{ color: 'var(--text)' }}>
                 O que vamos aprender hoje?
               </h2>
             </div>
 
             <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} large />
 
-            <div className="flex flex-wrap gap-2 justify-center mt-5 w-full" style={{ maxWidth: '42rem' }}>
+            <div className="flex flex-wrap gap-1.5 md:gap-2 justify-center mt-3 md:mt-5 w-full" style={{ maxWidth: '42rem' }}>
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
                   onClick={() => handleSuggestion(s)}
-                  className="text-sm px-3.5 py-1.5 rounded-full transition-all hover:bg-indigo-50"
+                  className="text-xs md:text-sm px-3 py-1 md:px-3.5 md:py-1.5 rounded-full transition-all hover:bg-indigo-50"
                   style={{ border: '1px solid var(--border)', color: 'var(--text-muted)', background: 'var(--surface)' }}
                 >
                   {s}
@@ -381,7 +381,7 @@ export default function LandingPage() {
 
             {/* Banner CTA */}
             <div
-              className="mt-6 md:mt-10 w-full rounded-2xl overflow-hidden"
+              className="mt-4 md:mt-10 w-full rounded-2xl overflow-hidden"
               style={{ maxWidth: '28rem', background: 'rgba(98,112,245,0.07)', border: '1px solid rgba(98,112,245,0.2)' }}
             >
               <div className="flex items-center gap-4 px-5 py-4">
