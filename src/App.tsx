@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import LandingPage from '@/pages/LandingPage'
 import Layout from '@/components/layout/Layout'
 import DashboardPage from '@/pages/DashboardPage'
 import StudyPage from '@/pages/StudyPage'
@@ -14,6 +15,7 @@ import AdminSubjectsPage from '@/pages/admin/AdminSubjectsPage'
 import AdminStudentDetailPage from '@/pages/admin/AdminStudentDetailPage'
 import AdminDisciplineContentPage from '@/pages/admin/AdminDisciplineContentPage'
 import AdminLearningsPage from '@/pages/admin/AdminLearningsPage'
+import AdminActivityLogPage from '@/pages/admin/AdminActivityLogPage'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
@@ -30,8 +32,8 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
-      {/* Login de estudante */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Página inicial pública */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<StudentLoginPage />} />
 
       {/* App de estudante (protegido) */}
@@ -66,6 +68,7 @@ export default function App() {
         <Route path="materias" element={<AdminSubjectsPage />} />
         <Route path="materias/:id" element={<AdminDisciplineContentPage />} />
         <Route path="aprendizados" element={<AdminLearningsPage />} />
+        <Route path="log" element={<AdminActivityLogPage />} />
       </Route>
     </Routes>
   )

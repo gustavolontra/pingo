@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
-import { LayoutDashboard, Users, BookOpen, LogOut, FileText } from 'lucide-react'
+import { LayoutDashboard, Users, BookOpen, LogOut, FileText, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/admin/usuarios', icon: Users, label: 'Utilizadores' },
   { to: '/admin/materias', icon: BookOpen, label: 'Matérias Publicadas' },
   { to: '/admin/aprendizados', icon: FileText, label: 'Aprendizados' },
+  { to: '/admin/log', icon: Activity, label: 'Log de Atividade' },
 ]
 
 export default function AdminLayout() {
