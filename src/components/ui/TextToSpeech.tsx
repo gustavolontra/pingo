@@ -111,25 +111,23 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2 mt-3">
-      {/* Play / Pause */}
+    <div className="flex flex-wrap items-center gap-2 mt-3">
+      {/* Play / Pause — botão principal com label */}
       {status === 'playing' ? (
         <button
           onClick={handlePause}
-          className={btnBase}
-          style={{ width: 32, height: 32, background: accent, color: 'white' }}
-          title="Pausar"
+          className={`${btnBase} gap-1.5 px-3`}
+          style={{ height: 34, background: accent, color: 'white', borderRadius: 999, fontSize: 13, fontWeight: 600 }}
         >
-          <Pause size={13} />
+          <Pause size={13} /> Pausar
         </button>
       ) : (
         <button
           onClick={handlePlay}
-          className={btnBase}
-          style={{ width: 32, height: 32, background: status === 'paused' ? accent : surface, color: status === 'paused' ? 'white' : textMuted }}
-          title={status === 'paused' ? 'Continuar' : 'Ouvir'}
+          className={`${btnBase} gap-1.5 px-3`}
+          style={{ height: 34, background: status === 'paused' ? accent : surface, color: status === 'paused' ? 'white' : textMuted, borderRadius: 999, fontSize: 13, fontWeight: 600 }}
         >
-          <Play size={13} />
+          <Play size={13} /> {status === 'paused' ? 'Continuar' : '🔊 Ouvir'}
         </button>
       )}
 
@@ -137,26 +135,21 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
       {status !== 'idle' && (
         <button
           onClick={handleStop}
-          className={btnBase}
-          style={{ width: 28, height: 28, background: surface, color: textMuted }}
-          title="Parar"
+          className={`${btnBase} gap-1 px-2.5`}
+          style={{ height: 34, background: surface, color: textMuted, borderRadius: 999, fontSize: 13 }}
         >
-          <Square size={11} />
+          <Square size={11} /> Parar
         </button>
       )}
 
       {/* Speed selector */}
-      <div className="flex items-center gap-1 ml-1">
+      <div className="flex items-center gap-1">
         {SPEEDS.map((s, i) => (
           <button
             key={s.label}
             onClick={() => {
               setSpeedIdx(i)
-              // If playing, restart with new speed
-              if (status === 'playing') {
-                window.speechSynthesis.cancel()
-                setStatus('idle')
-              }
+              if (status === 'playing') { window.speechSynthesis.cancel(); setStatus('idle') }
             }}
             className="text-xs px-2 py-0.5 rounded-full transition-all"
             style={{
@@ -171,14 +164,7 @@ export default function TextToSpeech({ text, variant = 'default' }: Props) {
       </div>
 
       {status === 'playing' && (
-        <span className="text-xs ml-1 animate-pulse" style={{ color: accent }}>
-          🔊 A ler…
-        </span>
-      )}
-      {status === 'paused' && (
-        <span className="text-xs ml-1" style={{ color: textMuted }}>
-          ⏸ Pausado
-        </span>
+        <span className="text-xs animate-pulse" style={{ color: accent }}>A ler…</span>
       )}
     </div>
   )
