@@ -224,15 +224,7 @@ export const mockDisciplines: Discipline[] = [
 
 export const mockLeaderboard: LeaderboardEntry[] = []
 
-export const mockDailyStats: DailyStats[] = [
-  { date: '2024-10-01', minutesStudied: 45, lessonsCompleted: 3, xpEarned: 180, disciplines: ['hgp-6'] },
-  { date: '2024-10-02', minutesStudied: 30, lessonsCompleted: 2, xpEarned: 120, disciplines: ['hgp-6'] },
-  { date: '2024-10-03', minutesStudied: 60, lessonsCompleted: 4, xpEarned: 240, disciplines: ['hgp-6'] },
-  { date: '2024-10-04', minutesStudied: 20, lessonsCompleted: 1, xpEarned: 50, disciplines: ['hgp-6'] },
-  { date: '2024-10-05', minutesStudied: 75, lessonsCompleted: 5, xpEarned: 320, disciplines: ['hgp-6'] },
-  { date: '2024-10-06', minutesStudied: 0, lessonsCompleted: 0, xpEarned: 0, disciplines: [] },
-  { date: '2024-10-07', minutesStudied: 50, lessonsCompleted: 3, xpEarned: 200, disciplines: ['hgp-6'] },
-]
+export const mockDailyStats: DailyStats[] = []
 
 // Additional disciplines (to add when expanding)
 export const additionalDisciplines: Omit<Discipline, 'topics'>[] = [

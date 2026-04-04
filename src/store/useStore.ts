@@ -187,7 +187,7 @@ export const useStore = create<AppState>()(
       setDisciplinesFromKV: () => {},
     }),
     {
-      name: 'estudar-pt-v3',   // versão nova para limpar localStorage antigo
+      name: 'estudar-pt-v4',   // v4: zera dados mock de Marina/XP fictício
       partialize: (state) => ({
         user: state.user,
         sessions: state.sessions,
