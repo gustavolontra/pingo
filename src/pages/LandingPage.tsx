@@ -316,7 +316,7 @@ export default function LandingPage() {
               </h2>
             </div>
 
-            <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} large />
+            <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} large loading={loading} />
 
             <div className="flex flex-wrap gap-1.5 md:gap-2 justify-center mt-3 md:mt-5 w-full" style={{ maxWidth: '42rem' }}>
               {suggestions.map((s) => (
@@ -431,7 +431,7 @@ export default function LandingPage() {
                 style={{ borderTop: '1px solid var(--border)', background: '#ffffff' }}
               >
                 <div className="max-w-2xl mx-auto">
-                  <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} />
+                  <SearchInput value={query} onChange={setQuery} onSearch={handleSearch} inputRef={inputRef} loading={loading} />
                 </div>
               </div>
             )}
@@ -473,15 +473,18 @@ function LimitGate({ navigate }: { navigate: (p: string) => void }) {
 // ── Campo de pesquisa ─────────────────────────────────────────────────────────
 
 function SearchInput({
-  value, onChange, onSearch, inputRef, large = false,
+  value, onChange, onSearch, inputRef, large = false, loading = false,
 }: {
   value: string
   onChange: (v: string) => void
   onSearch: (q: string) => void
   inputRef: React.RefObject<HTMLInputElement>
   large?: boolean
+  loading?: boolean
 }) {
   const hasValue = value.trim().length > 0
+  const size = large ? 32 : 28
+
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); onSearch(value) }}
@@ -493,33 +496,44 @@ function SearchInput({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Pesquisa qualquer tema…"
+        placeholder={loading ? 'A pensar…' : 'Pesquisa qualquer tema…'}
+        disabled={loading}
         className="w-full outline-none transition-all"
         style={{
           background: 'var(--surface)',
-          border: '1px solid var(--border)',
+          border: `1px solid ${loading ? 'rgba(98,112,245,0.4)' : 'var(--border)'}`,
           borderRadius: 999,
           color: 'var(--text)',
           fontSize: '0.9375rem',
           padding: '0.75rem 3.2rem 0.75rem 1.4rem',
-          boxShadow: '0 1px 6px rgba(0,0,0,0.06)',
+          boxShadow: loading ? '0 0 0 3px rgba(98,112,245,0.12)' : '0 1px 6px rgba(0,0,0,0.06)',
+          opacity: loading ? 0.7 : 1,
         }}
         autoFocus={large}
       />
       <button
         type="submit"
+        disabled={loading}
         className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full transition-all"
         style={{
-          width: large ? 32 : 28,
-          height: large ? 32 : 28,
-          background: hasValue ? '#6270f5' : 'var(--surface-2)',
-          border: `1px solid ${hasValue ? '#6270f5' : 'var(--border)'}`,
-          color: hasValue ? 'white' : 'var(--text-muted)',
+          width: size,
+          height: size,
+          background: loading ? '#6270f5' : hasValue ? '#6270f5' : 'var(--surface-2)',
+          border: `1px solid ${hasValue || loading ? '#6270f5' : 'var(--border)'}`,
+          color: 'white',
+          cursor: loading ? 'default' : 'pointer',
         }}
       >
-        <svg width={14} height={14} viewBox="0 0 13 13" fill="none">
-          <path d="M6.5 11V2M6.5 2L2.5 6M6.5 2L10.5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        {loading ? (
+          <svg width={14} height={14} viewBox="0 0 14 14" fill="none" className="animate-spin">
+            <circle cx="7" cy="7" r="5.5" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+            <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        ) : (
+          <svg width={14} height={14} viewBox="0 0 13 13" fill="none">
+            <path d="M6.5 11V2M6.5 2L2.5 6M6.5 2L10.5 6" stroke={hasValue ? 'white' : 'var(--text-muted)'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
       </button>
     </form>
   )
