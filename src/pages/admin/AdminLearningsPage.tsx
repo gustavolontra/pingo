@@ -101,7 +101,10 @@ export default function AdminLearningsPage() {
             keywords: result.palavrasChave?.length ?? 0,
           })
         }
-      } catch { /* consolidation failed silently */ }
+      } catch {
+        // Consolidation failed — still show success since content was published
+        setConsolidateDone({ flashcards: 0, quiz: 0, keywords: 0 })
+      }
       setConsolidating(false)
     } else {
       setPublishPending(null)
