@@ -4,6 +4,10 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import { Mail, Lock, User, School } from 'lucide-react'
 
+function toTitleCase(str: string) {
+  return str.trim().replace(/\S+/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+}
+
 const GRADE_OPTIONS = [
   '7.º ano', '8.º ano', '9.º ano',
   '5.º ano', '6.º ano',
@@ -149,7 +153,7 @@ function RegisterForm({ navigate }: { navigate: (p: string) => void }) {
     const emailNorm = form.login.toLowerCase().trim()
     if (students.some((s) => s.login === emailNorm)) { setError('Este email já está registado.'); return }
     setLoading(true)
-    await createStudent({ ...form, login: emailNorm })
+    await createStudent({ ...form, name: toTitleCase(form.name), school: toTitleCase(form.school), login: emailNorm })
     await login(emailNorm, form.password)
     setLoading(false)
     navigate('/dashboard')
