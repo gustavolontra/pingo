@@ -24,6 +24,7 @@ interface StudentAuthState {
   studentId: string | null
   studentName: string | null
   studentEmail: string | null
+  studentHandle: string | null  // gerado do email, ex: "marina" de "marina@gmail.com"
 
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
@@ -36,6 +37,7 @@ export const useStudentAuthStore = create<StudentAuthState>()(
       studentId: null,
       studentName: null,
       studentEmail: null,
+      studentHandle: null,
 
       login: async (email, password) => {
         const hash = await hashPassword(password)
@@ -51,6 +53,7 @@ export const useStudentAuthStore = create<StudentAuthState>()(
             studentId: student.id,
             studentName: student.name,
             studentEmail: student.login,
+            studentHandle: student.login.split('@')[0],
           })
           setTimeout(syncCurrentStudentStats, 100)
           return true
@@ -63,6 +66,7 @@ export const useStudentAuthStore = create<StudentAuthState>()(
         studentId: null,
         studentName: null,
         studentEmail: null,
+        studentHandle: null,
       }),
     }),
     { name: 'pingo-student-auth-v1' }

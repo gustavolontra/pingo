@@ -36,6 +36,18 @@ export interface Exam {
   studyNote: string
 }
 
+export interface Book {
+  id: string
+  titulo: string
+  autor: string
+  capa?: string        // URL or base64
+  dataInicio: string   // ISO
+  dataFim?: string     // ISO
+  status: 'lendo' | 'lido'
+  resumo?: string
+  partilhado: boolean
+}
+
 interface AppState {
   user: User
   sessions: StudySession[]
@@ -43,6 +55,8 @@ interface AppState {
   progress: StudentProgress
   /** Exames guardados por studentId — nunca apagados ao trocar de aluno */
   examsByStudent: Record<string, Exam[]>
+  /** Livros guardados por studentId — nunca apagados ao trocar de aluno */
+  booksByStudent: Record<string, Book[]>
   lastStudentId: string | null
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
@@ -52,6 +66,8 @@ interface AppState {
   getDisciplines: () => Discipline[]
   /** Exames do aluno atual */
   getExams: () => Exam[]
+  /** Livros do aluno atual */
+  getBooks: () => Book[]
 
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
@@ -62,6 +78,11 @@ interface AppState {
   updateExam: (id: string, subject: string, date: string) => void
   deleteExam: (id: string) => void
   setExamStudyNote: (id: string, note: string) => void
+
+  addBook: (data: Pick<Book, 'titulo' | 'autor' | 'capa'>) => void
+  updateBook: (id: string, data: Partial<Pick<Book, 'titulo' | 'autor' | 'capa'>>) => void
+  deleteBook: (id: string) => void
+  markBookRead: (id: string, resumo: string | undefined, partilhado: boolean) => void
 }
 
 function todayKey() {
@@ -76,6 +97,7 @@ export const useStore = create<AppState>()(
       dailyStats: mockDailyStats,
       progress: { lessons: {}, examDates: {} },
       examsByStudent: {},
+      booksByStudent: {},
       lastStudentId: null,
       kvDisciplines: [],
 
@@ -85,6 +107,12 @@ export const useStore = create<AppState>()(
         const id = get().lastStudentId
         if (!id) return []
         return get().examsByStudent[id] ?? []
+      },
+
+      getBooks: () => {
+        const id = get().lastStudentId
+        if (!id) return []
+        return get().booksByStudent[id] ?? []
       },
 
       getDisciplines: () => {
@@ -244,6 +272,46 @@ export const useStore = create<AppState>()(
         const prev = get().examsByStudent[sid] ?? []
         set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) => e.id === examId ? { ...e, studyNote: note } : e) } })
       },
+
+      addBook: (data) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().booksByStudent[sid] ?? []
+        const book: Book = {
+          ...data,
+          id: crypto.randomUUID(),
+          dataInicio: new Date().toISOString().split('T')[0],
+          status: 'lendo',
+          partilhado: false,
+        }
+        set({ booksByStudent: { ...get().booksByStudent, [sid]: [...prev, book] } })
+      },
+
+      updateBook: (bookId, data) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().booksByStudent[sid] ?? []
+        set({ booksByStudent: { ...get().booksByStudent, [sid]: prev.map((b) => b.id === bookId ? { ...b, ...data } : b) } })
+      },
+
+      deleteBook: (bookId) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().booksByStudent[sid] ?? []
+        set({ booksByStudent: { ...get().booksByStudent, [sid]: prev.filter((b) => b.id !== bookId) } })
+      },
+
+      markBookRead: (bookId, resumo, partilhado) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().booksByStudent[sid] ?? []
+        set({
+          booksByStudent: {
+            ...get().booksByStudent,
+            [sid]: prev.map((b) =>
+              b.id === bookId
+                ? { ...b, status: 'lido', dataFim: new Date().toISOString().split('T')[0], resumo, partilhado }
+                : b
+            ),
+          },
+        })
+      },
     }),
     {
       name: 'estudar-pt-v6',   // v6: exams per-student, never reset on login
@@ -253,6 +321,7 @@ export const useStore = create<AppState>()(
         dailyStats: state.dailyStats,
         progress: state.progress,
         examsByStudent: state.examsByStudent,
+        booksByStudent: state.booksByStudent,
         lastStudentId: state.lastStudentId,
         // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),

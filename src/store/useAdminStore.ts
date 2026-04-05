@@ -34,6 +34,7 @@ export interface Student {
   lessonsCompleted: number
   totalStudyMinutes: number
   lastActiveAt?: string
+  sharedBooks?: { bookId: string; titulo: string; autor: string; resumo: string; dataFim: string }[]
 }
 
 // ─── Content types ────────────────────────────────────────────────────────────
@@ -165,6 +166,7 @@ interface AdminState {
   createStudent: (data: { login: string; name: string; school: string; grade: string; password: string }) => Promise<void>
   updateStudent: (id: string, data: Partial<Pick<Student, 'name' | 'email' | 'school' | 'grade' | 'isActive'>>) => void
   syncStudentStats: (id: string, stats: Pick<Student, 'xp' | 'level' | 'streak' | 'lessonsCompleted' | 'totalStudyMinutes'>) => void
+  updateStudentSharedBooks: (id: string, books: NonNullable<Student['sharedBooks']>) => void
   deleteStudent: (id: string) => void
 
   // Disciplines
@@ -277,6 +279,13 @@ export const useAdminStore = create<AdminState>()(
         set({
           students: get().students.map((s) =>
             s.id === id ? { ...s, ...stats, lastActiveAt: new Date().toISOString() } : s
+          ),
+        }),
+
+      updateStudentSharedBooks: (id: string, books: NonNullable<Student['sharedBooks']>) =>
+        set({
+          students: get().students.map((s) =>
+            s.id === id ? { ...s, sharedBooks: books } : s
           ),
         }),
 

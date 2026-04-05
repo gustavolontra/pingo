@@ -1,15 +1,16 @@
 import { useStore } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { formatMinutes, formatDate } from '@/lib/utils'
-import { Flame, Zap, Clock } from 'lucide-react'
+import { Flame, Zap, Clock, BookMarked } from 'lucide-react'
 
 const rarityColors = { common: '#94a3b8', rare: '#60a5fa', epic: '#c084fc', legendary: '#fbbf24' }
 const rarityLabels = { common: 'Comum', rare: 'Raro', epic: 'Épico', legendary: 'Lendário' }
 
 export default function ProfilePage() {
-  const { user } = useStore()
-  const { studentName } = useStudentAuthStore()
+  const { user, getBooks } = useStore()
+  const { studentName, studentHandle } = useStudentAuthStore()
   const displayName = studentName || user.name
+  const sharedBooks = getBooks().filter((b) => b.partilhado && b.status === 'lido')
   const xpProgress = Math.round((user.xp / user.xpForNextLevel) * 100)
 
   return (
@@ -24,6 +25,9 @@ export default function ProfilePage() {
         </div>
         <div className="flex-1">
           <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text)' }}>{displayName}</h2>
+          {studentHandle && (
+            <p className="text-sm font-medium" style={{ color: '#6270f5' }}>@{studentHandle}</p>
+          )}
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             Membro desde {formatDate(user.joinedAt, "MMMM 'de' yyyy")}
           </p>
@@ -56,6 +60,24 @@ export default function ProfilePage() {
       </div>
 
       {/* Badges */}
+      {/* Livros partilhados */}
+      {sharedBooks.length > 0 && (
+        <div className="card">
+          <h3 className="font-display font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+            <BookMarked size={16} style={{ color: '#6270f5' }} /> Livros lidos e partilhados
+          </h3>
+          <div className="flex flex-col gap-3">
+            {sharedBooks.map((b) => (
+              <div key={b.id} className="p-3 rounded-xl space-y-1" style={{ background: 'var(--surface-2)', border: '1px solid rgba(16,185,129,0.15)' }}>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{b.titulo}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{b.autor}</p>
+                {b.resumo && <p className="text-xs mt-1.5" style={{ color: 'var(--text)' }}>{b.resumo}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {user.badges.length > 0 ? (
         <div className="card">
           <h3 className="font-display font-semibold mb-4" style={{ color: 'var(--text)' }}>
