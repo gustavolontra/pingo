@@ -303,13 +303,27 @@ export const useStore = create<AppState>()(
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().friendsByStudent[sid] ?? []
         if (prev.includes(friendId)) return
-        set({ friendsByStudent: { ...get().friendsByStudent, [sid]: [...prev, friendId] } })
+        // Amizade mútua: adiciona nos dois lados
+        const prevOther = get().friendsByStudent[friendId] ?? []
+        const updatedFriends = { ...get().friendsByStudent, [sid]: [...prev, friendId] }
+        if (!prevOther.includes(sid)) {
+          updatedFriends[friendId] = [...prevOther, sid]
+        }
+        set({ friendsByStudent: updatedFriends })
       },
 
       removeFriend: (friendId) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().friendsByStudent[sid] ?? []
-        set({ friendsByStudent: { ...get().friendsByStudent, [sid]: prev.filter((id) => id !== friendId) } })
+        const prevOther = get().friendsByStudent[friendId] ?? []
+        // Remove dos dois lados
+        set({
+          friendsByStudent: {
+            ...get().friendsByStudent,
+            [sid]: prev.filter((id) => id !== friendId),
+            [friendId]: prevOther.filter((id) => id !== sid),
+          },
+        })
       },
 
       ignoreSuggestion: (friendId) => {
