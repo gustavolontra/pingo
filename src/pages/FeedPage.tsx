@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAdminStore, type FeedItem } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useStore } from '@/store/useStore'
@@ -261,9 +261,11 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
 export default function FeedPage() {
   const feedItems = useAdminStore((s) => s.feedItems)
   const { studentId } = useStudentAuthStore()
-  const { getFriends } = useStore()
+  const { getFriends, markFeedSeen } = useStore()
   const friendIds = getFriends()
   const [challengeOpen, setChallengeOpen] = useState(false)
+
+  useEffect(() => { markFeedSeen() }, [feedItems.length])
   const [tab, setTab] = useState<'todos' | 'amigos'>('amigos')
 
   const shown = tab === 'amigos'

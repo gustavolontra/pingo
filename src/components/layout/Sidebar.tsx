@@ -18,10 +18,11 @@ const navItems = [
 ]
 
 export default function Sidebar() {
-  const { user, getFriends, getIgnoredSuggestions } = useStore()
+  const { user, getFriends, getIgnoredSuggestions, lastSeenFeedAt } = useStore()
   const disciplines = useDisciplines()
   const { studentName, studentId, logout } = useStudentAuthStore()
   const students = useAdminStore((s) => s.students)
+  const feedItems = useAdminStore((s) => s.feedItems)
   const navigate = useNavigate()
   const xpPct = Math.round((user.xp / user.xpForNextLevel) * 100)
 
@@ -32,6 +33,11 @@ export default function Sidebar() {
   const suggestionCount = students.filter(
     (s) => s.id !== studentId && s.school === me?.school && !friendIds.includes(s.id) && !ignoredIds.includes(s.id)
   ).length
+
+  // Feed: unseen items count
+  const unseenFeedCount = lastSeenFeedAt
+    ? feedItems.filter((f) => f.data > lastSeenFeedAt && f.autorId !== studentId).length
+    : feedItems.filter((f) => f.autorId !== studentId).length
 
   function handleLogout() {
     logout()
@@ -81,9 +87,12 @@ export default function Sidebar() {
         <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
           Conta
         </p>
-        {navItems.slice(1).map(({ to, icon: Icon, label }) => (
-          <SideNavItem key={to} to={to} icon={Icon} label={label} badge={to === '/amigos' && suggestionCount > 0 ? suggestionCount : undefined} />
-        ))}
+        {navItems.slice(1).map(({ to, icon: Icon, label }) => {
+          let badge: number | undefined
+          if (to === '/amigos' && suggestionCount > 0) badge = suggestionCount
+          if (to === '/feed' && unseenFeedCount > 0) badge = unseenFeedCount
+          return <SideNavItem key={to} to={to} icon={Icon} label={label} badge={badge} />
+        })}
       </nav>
 
       {/* User card */}

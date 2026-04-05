@@ -63,6 +63,8 @@ interface AppState {
   /** Sugestões ignoradas por studentId */
   ignoredSuggestionsByStudent: Record<string, string[]>
   lastStudentId: string | null
+  /** Timestamp da última vez que o aluno viu o feed */
+  lastSeenFeedAt: string | null
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
   kvDisciplines: Discipline[]
@@ -99,6 +101,8 @@ interface AppState {
 
   /** Fetch per-student data from server */
   fetchServerData: (studentId: string) => Promise<void>
+  /** Marca o feed como visto agora */
+  markFeedSeen: () => void
 }
 
 function todayKey() {
@@ -117,6 +121,7 @@ export const useStore = create<AppState>()(
       friendsByStudent: {},
       ignoredSuggestionsByStudent: {},
       lastStudentId: null,
+      lastSeenFeedAt: null,
       kvDisciplines: [],
 
       // ── Computed ──────────────────────────────────────────────────────────
@@ -397,6 +402,8 @@ export const useStore = create<AppState>()(
           progress,
         })
       },
+
+      markFeedSeen: () => set({ lastSeenFeedAt: new Date().toISOString() }),
     }),
     {
       name: 'estudar-pt-v6',   // v6: exams per-student, never reset on login
@@ -410,6 +417,7 @@ export const useStore = create<AppState>()(
         friendsByStudent: state.friendsByStudent,
         ignoredSuggestionsByStudent: state.ignoredSuggestionsByStudent,
         lastStudentId: state.lastStudentId,
+        lastSeenFeedAt: state.lastSeenFeedAt,
         // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),
     }
