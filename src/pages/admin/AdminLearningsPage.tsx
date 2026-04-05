@@ -13,7 +13,7 @@
 
 import { useState, useRef } from 'react'
 import { useAdminStore, type ContentDraft, type DraftFlashcard, type DraftQuestion } from '@/store/useAdminStore'
-import { DISCIPLINE_OPTIONS } from '@/lib/contentBridge'
+import { DISCIPLINE_OPTIONS, getDisciplineOption } from '@/lib/contentBridge'
 import { api, type KVContentItem } from '@/lib/api'
 import {
   Plus, ArrowLeft, Sparkles, Save, Trash2,
@@ -397,10 +397,7 @@ function Editor({
       try {
         const items = await api.getAllContent()
         const ids = [...new Set(items.filter(i => !i.id.startsWith('synth-')).map(i => i.disciplineId))]
-        const discs = ids.map(id => {
-          const d = disciplines.find(x => x.id === id)
-          return { id, name: d?.name ?? id }
-        })
+        const discs = ids.map(id => ({ id, name: getDisciplineOption(id).name }))
         setPublishedDiscs(discs)
       } catch { setPublishedDiscs([]) }
       setLoadingDiscs(false)
