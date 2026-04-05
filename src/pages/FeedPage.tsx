@@ -97,37 +97,61 @@ function FeedCard({ item }: { item: FeedItem }) {
 
 // ── Modal: Lançar desafio ─────────────────────────────────────────────────────
 
+type Peer = { id: string; nome: string; handle: string }
+
 function ChallengeModal({ onClose }: { onClose: () => void }) {
   const { addFeedItem, students } = useAdminStore()
   const { studentId, studentName, studentHandle } = useStudentAuthStore()
   const [handleInput, setHandleInput] = useState('')
-  const [target, setTarget] = useState<{ id: string; nome: string; handle: string } | null>(null)
+  const [targets, setTargets] = useState<Peer[]>([])
   const [notFound, setNotFound] = useState(false)
+  const [alreadyAdded, setAlreadyAdded] = useState(false)
   const [text, setText] = useState('')
 
+  // Sugestões filtradas enquanto escreve
+  const query = handleInput.replace(/^@/, '').toLowerCase()
+  const suggestions = query.length >= 1
+    ? students.filter(
+        (s) =>
+          s.id !== studentId &&
+          !targets.some((t) => t.id === s.id) &&
+          s.login.split('@')[0].toLowerCase().startsWith(query)
+      ).slice(0, 5)
+    : []
+
+  function addTarget(s: typeof students[number]) {
+    if (targets.some((t) => t.id === s.id)) { setAlreadyAdded(true); return }
+    setTargets((prev) => [...prev, { id: s.id, nome: s.name, handle: s.login.split('@')[0] }])
+    setHandleInput('')
+    setNotFound(false)
+    setAlreadyAdded(false)
+  }
+
   function handleSearch() {
-    const h = handleInput.replace(/^@/, '').trim().toLowerCase()
+    const h = query.trim()
     if (!h) return
     const found = students.find(
       (s) => s.login.split('@')[0].toLowerCase() === h && s.id !== studentId
     )
-    if (found) {
-      setTarget({ id: found.id, nome: found.name, handle: found.login.split('@')[0] })
-      setNotFound(false)
-    } else {
-      setTarget(null)
-      setNotFound(true)
-    }
+    if (!found) { setNotFound(true); setAlreadyAdded(false); return }
+    setNotFound(false)
+    addTarget(found)
+  }
+
+  function removeTarget(id: string) {
+    setTargets((prev) => prev.filter((t) => t.id !== id))
   }
 
   function handleSend() {
-    if (!text.trim() || !studentId || !target) return
+    if (!text.trim() || !studentId || targets.length === 0) return
+    const mentions = targets.map((t) => `@${t.handle}`).join(', ')
+    const names = targets.map((t) => t.nome).join(', ')
     addFeedItem({
       autorId: studentId,
       autorNome: studentName ?? 'Aluno',
       autorAt: studentHandle ?? '',
       tipo: 'desafio',
-      conteudo: `desafiou @${target.handle} (${target.nome}):\n\n${text.trim()}`,
+      conteudo: `desafiou ${mentions} (${names}):\n\n${text.trim()}`,
     })
     onClose()
   }
@@ -142,59 +166,91 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* Passo 1 — encontrar colega */}
+        {/* Selecionar colegas */}
         <div>
           <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-            Quem queres desafiar?
+            Quem queres desafiar? <span style={{ fontWeight: 400 }}>(podes adicionar vários)</span>
           </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>@</span>
-              <input
-                value={handleInput}
-                onChange={(e) => { setHandleInput(e.target.value); setTarget(null); setNotFound(false) }}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="handle da colega"
-                className="w-full pl-7 pr-3 py-2.5 rounded-xl text-sm outline-none"
-                style={{ background: 'var(--surface-2)', border: `1px solid ${notFound ? '#ef4444' : 'var(--border)'}`, color: 'var(--text)' }}
-              />
+
+          {/* Chips dos selecionados */}
+          {targets.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {targets.map((t) => (
+                <span
+                  key={t.id}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}
+                >
+                  @{t.handle}
+                  <button onClick={() => removeTarget(t.id)} className="ml-0.5 hover:opacity-70">
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
             </div>
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}
-            >
-              Procurar
-            </button>
+          )}
+
+          {/* Campo de procura */}
+          <div className="relative">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>@</span>
+                <input
+                  value={handleInput}
+                  onChange={(e) => { setHandleInput(e.target.value); setNotFound(false); setAlreadyAdded(false) }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="handle do colega"
+                  className="w-full pl-7 pr-3 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: 'var(--surface-2)', border: `1px solid ${notFound ? '#ef4444' : 'var(--border)'}`, color: 'var(--text)' }}
+                />
+              </div>
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}
+              >
+                Adicionar
+              </button>
+            </div>
+
+            {/* Sugestões dropdown */}
+            {suggestions.length > 0 && (
+              <div
+                className="absolute left-0 right-14 top-full mt-1 rounded-xl overflow-hidden z-10"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
+              >
+                {suggestions.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => addTarget(s)}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:opacity-80 transition-opacity"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                  >
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}>
+                      {s.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{s.name}</p>
+                      <p className="text-xs" style={{ color: '#6270f5' }}>@{s.login.split('@')[0]}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Resultado */}
-          {notFound && (
-            <p className="text-xs mt-1.5" style={{ color: '#ef4444' }}>Nenhum colega com esse @.</p>
-          )}
-          {target && (
-            <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}>
-                {target.nome.charAt(0)}
-              </div>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{target.nome}</p>
-                <p className="text-xs" style={{ color: '#6270f5' }}>@{target.handle}</p>
-              </div>
-            </div>
-          )}
+          {notFound && <p className="text-xs mt-1.5" style={{ color: '#ef4444' }}>Nenhum colega com esse @.</p>}
+          {alreadyAdded && <p className="text-xs mt-1.5" style={{ color: '#f97316' }}>Esse colega já foi adicionado.</p>}
         </div>
 
-        {/* Passo 2 — escrever o desafio */}
-        {target && (
+        {/* Escrever o desafio */}
+        {targets.length > 0 && (
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-              O desafio
-            </label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>O desafio</label>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={`Ex: @${target.handle}, aceitas ler 2 livros esta semana?`}
+              placeholder={`Ex: Quem lê mais livros esta semana?`}
               rows={3}
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
@@ -205,9 +261,9 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
         <div className="flex gap-3">
           <button
             onClick={handleSend}
-            disabled={!target || !text.trim()}
+            disabled={targets.length === 0 || !text.trim()}
             className="btn-primary flex-1"
-            style={{ opacity: !target || !text.trim() ? 0.5 : 1 }}
+            style={{ opacity: targets.length === 0 || !text.trim() ? 0.5 : 1 }}
           >
             Publicar desafio
           </button>
