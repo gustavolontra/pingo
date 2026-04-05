@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore, type Exam } from '@/store/useStore'
 import { Calendar, Pencil, Trash2, Plus, BookOpen, Lock, ChevronDown, ChevronUp, X } from 'lucide-react'
+import SubjectIcon from '@/components/ui/SubjectIcon'
 
 // ── Lista fixa de matérias do 3.º Ciclo ──────────────────────────────────────
 
@@ -151,7 +152,7 @@ function ExamCard({ exam }: { exam: Exam }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{icon}</span>
+          <SubjectIcon icon={icon} size={22} color={color} />
           <div>
             <p className="font-display font-semibold" style={{ color: 'var(--text)' }}>{exam.subject}</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDate(exam.date)}</p>

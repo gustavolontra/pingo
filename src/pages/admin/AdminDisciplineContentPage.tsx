@@ -4,6 +4,7 @@ import { useAdminStore, type AdminTopic, type AdminLesson } from '@/store/useAdm
 import {
   ArrowLeft, Plus, Trash2, ChevronRight, FileText, HelpCircle, Layers, X, BookOpen,
 } from 'lucide-react'
+import SubjectIcon from '@/components/ui/SubjectIcon'
 import TextEditor from '@/components/admin/lesson-editors/TextEditor'
 import QuizEditor from '@/components/admin/lesson-editors/QuizEditor'
 import FlashcardEditor from '@/components/admin/lesson-editors/FlashcardEditor'
@@ -72,7 +73,7 @@ export default function AdminDisciplineContentPage() {
             <ArrowLeft size={13} /> Matérias
           </button>
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-xl">{discipline.icon}</span>
+            <SubjectIcon icon={discipline.icon} size={18} color={discipline.color} />
             <div>
               <p className="font-display font-bold text-sm leading-tight" style={{ color: discipline.color }}>
                 {discipline.name}

@@ -4,6 +4,7 @@ import { useDisciplines } from '@/hooks/useDisciplines'
 import type { Lesson, Topic } from '@/types'
 import { cn } from '@/lib/utils'
 import { Lock, CheckCircle2, ChevronDown, ChevronRight, Zap, Clock, BookOpen, HelpCircle, Headphones, Layers, Video, PenLine } from 'lucide-react'
+import SubjectIcon from '@/components/ui/SubjectIcon'
 import QuizLesson from '@/components/study/QuizLesson'
 import TextLesson from '@/components/study/TextLesson'
 import AudioLesson from '@/components/study/AudioLesson'
@@ -69,7 +70,7 @@ export default function StudyPage() {
         </ProgressRing>
         <div>
           <h2 className="text-xl font-display font-bold text-white">
-            {discipline.icon} {discipline.name}
+            <SubjectIcon icon={discipline.icon} size={20} color={discipline.color} /> {discipline.name}
           </h2>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
             {discipline.completedLessons} de {discipline.totalLessons} aulas concluídas

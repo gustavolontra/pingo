@@ -11,6 +11,7 @@ import { useAdminStore } from '@/store/useAdminStore'
 import { getDisciplineOption } from '@/lib/contentBridge'
 import { api, type KVContentItem, type KVFlashcard, type KVQuestion } from '@/lib/api'
 import { BookOpen, ChevronDown, ChevronUp, Loader2, Pencil, Trash2, X, Save, Plus, Layers, HelpCircle } from 'lucide-react'
+import SubjectIcon from '@/components/ui/SubjectIcon'
 
 export default function AdminSubjectsPage() {
   const { disciplines: adminDisciplines } = useAdminStore()
@@ -114,10 +115,10 @@ export default function AdminSubjectsPage() {
                 >
                   {disc?.icon && (
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                       style={{ background: disc.color ? `${disc.color}18` : 'var(--surface-2)' }}
                     >
-                      {disc.icon}
+                      <SubjectIcon icon={disc.icon} size={20} color={disc.color} />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">

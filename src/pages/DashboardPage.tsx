@@ -3,6 +3,7 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { formatMinutes } from '@/lib/utils'
 import { Flame, Clock, Zap, BookOpen, Calendar } from 'lucide-react'
+import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useNavigate } from 'react-router-dom'
 import StatCard from '@/components/ui/StatCard'
 import WeeklyChart from '@/components/dashboard/WeeklyChart'
@@ -17,6 +18,8 @@ const SUBJECT_ICONS: Record<string, string> = {
   'Educação Tecnológica': '🔧', 'Educação Física': '🏃', 'TIC': '💻',
   'Educação Musical': '🎵', 'EMRC': '✝️', 'Cidadania e Desenvolvimento': '🤝',
 }
+// resolve emoji string for a subject name, used in SubjectIcon
+function examSubjectIcon(name: string) { return SUBJECT_ICONS[name] ?? '📚' }
 
 function daysUntil(dateStr: string) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -99,7 +102,7 @@ export default function DashboardPage() {
                       className="flex items-center gap-2 px-3 py-2 rounded-xl"
                       style={{ background: 'var(--surface-2)', border: `1px solid ${color}25` }}
                     >
-                      <span className="text-base shrink-0">{SUBJECT_ICONS[exam.subject] ?? '📚'}</span>
+                      <SubjectIcon icon={examSubjectIcon(exam.subject)} size={18} className="shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{exam.subject}</p>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>

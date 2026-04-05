@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { LayoutDashboard, Calendar, Trophy, User, LogOut } from 'lucide-react'
+import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useStore } from '@/store/useStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
@@ -57,7 +58,7 @@ export default function Sidebar() {
             )}
             style={({ isActive }) => isActive ? { background: `${d.color}15`, color: d.color } : { color: 'var(--text-muted)' }}
           >
-            <span>{d.icon}</span>
+            <SubjectIcon icon={d.icon} size={16} />
             <span className="flex-1 truncate">{d.name}</span>
             <div className="w-1.5 h-1.5 rounded-full shrink-0"
               style={{ background: `${Math.round((d.completedLessons / d.totalLessons) * 100)}%` === '100%' ? '#10b981' : d.color }} />

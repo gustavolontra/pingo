@@ -3,6 +3,7 @@ import type { Discipline } from '@/types'
 import { getDaysUntilExam, getUrgencyColor } from '@/lib/utils'
 import { useStudyPlan } from '@/hooks/useStudyPlan'
 import ProgressRing from '@/components/ui/ProgressRing'
+import SubjectIcon from '@/components/ui/SubjectIcon'
 import { AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react'
 
 interface Props { discipline: Discipline }
@@ -21,7 +22,7 @@ export default function DisciplineCard({ discipline: d }: Props) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span>{d.icon}</span>
+          <SubjectIcon icon={d.icon} size={16} />
           <h3 className="font-display font-semibold text-white truncate">{d.name}</h3>
         </div>
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
