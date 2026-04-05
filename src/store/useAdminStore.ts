@@ -186,6 +186,7 @@ interface AdminState {
 
   // Feed
   addFeedItem: (item: Omit<FeedItem, 'id' | 'data' | 'reacoes'>) => void
+  deleteFeedItem: (itemId: string) => void
   reactToFeedItem: (itemId: string, tipo: string, studentId: string) => void
 
   // Disciplines
@@ -328,6 +329,9 @@ export const useAdminStore = create<AdminState>()(
             ...get().feedItems,
           ],
         }),
+
+      deleteFeedItem: (itemId) =>
+        set({ feedItems: get().feedItems.filter((f) => f.id !== itemId) }),
 
       reactToFeedItem: (itemId, tipo, studentId) =>
         set({

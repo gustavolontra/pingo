@@ -41,8 +41,10 @@ const REACTIONS = [
 // ── Card de publicação ────────────────────────────────────────────────────────
 
 function FeedCard({ item }: { item: FeedItem }) {
-  const { reactToFeedItem } = useAdminStore()
+  const { reactToFeedItem, deleteFeedItem } = useAdminStore()
   const { studentId } = useStudentAuthStore()
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const isOwner = studentId === item.autorId
 
   return (
     <div className="card space-y-3">
@@ -66,6 +68,29 @@ function FeedCard({ item }: { item: FeedItem }) {
           </div>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{timeAgo(item.data)}</p>
         </div>
+        {isOwner && !confirmDelete && (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="p-1.5 rounded-lg hover:opacity-70 shrink-0"
+            title="Apagar publicação"
+          >
+            <X size={14} style={{ color: 'var(--text-muted)' }} />
+          </button>
+        )}
+        {isOwner && confirmDelete && (
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => deleteFeedItem(item.id)}
+              className="px-2 py-1 rounded-lg text-xs font-semibold"
+              style={{ background: '#ef444420', color: '#ef4444' }}
+            >
+              Apagar
+            </button>
+            <button onClick={() => setConfirmDelete(false)}>
+              <X size={13} style={{ color: 'var(--text-muted)' }} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Conteúdo */}
