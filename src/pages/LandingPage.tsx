@@ -190,11 +190,16 @@ export default function LandingPage() {
       const reader = res.body.getReader()
       const dec = new TextDecoder()
       let accumulated = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        accumulated += dec.decode(value, { stream: true })
-        setAiAnswer(accumulated)
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          accumulated += dec.decode(value, { stream: true })
+          setAiAnswer(accumulated)
+        }
+      } catch {
+        // stream interrupted — keep whatever was accumulated
+        if (!accumulated) setAiAnswer('Ocorreu um erro ao obter a resposta. Tenta novamente.')
       }
     } catch {
       setAiAnswer('Sem ligação. Verifica a tua internet e tenta novamente.')

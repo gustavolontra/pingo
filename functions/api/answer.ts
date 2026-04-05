@@ -83,11 +83,10 @@ ${context || '(sem conteúdo específico encontrado para este tema)'}`
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Transfer-Encoding': 'chunked',
+      'Cache-Control': 'no-cache',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
-      'X-Content-Type-Options': 'nosniff',
     },
   })
 }
