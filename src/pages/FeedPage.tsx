@@ -98,18 +98,36 @@ function FeedCard({ item }: { item: FeedItem }) {
 // ── Modal: Lançar desafio ─────────────────────────────────────────────────────
 
 function ChallengeModal({ onClose }: { onClose: () => void }) {
-  const { addFeedItem } = useAdminStore()
+  const { addFeedItem, students } = useAdminStore()
   const { studentId, studentName, studentHandle } = useStudentAuthStore()
+  const [handleInput, setHandleInput] = useState('')
+  const [target, setTarget] = useState<{ id: string; nome: string; handle: string } | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const [text, setText] = useState('')
 
+  function handleSearch() {
+    const h = handleInput.replace(/^@/, '').trim().toLowerCase()
+    if (!h) return
+    const found = students.find(
+      (s) => s.login.split('@')[0].toLowerCase() === h && s.id !== studentId
+    )
+    if (found) {
+      setTarget({ id: found.id, nome: found.name, handle: found.login.split('@')[0] })
+      setNotFound(false)
+    } else {
+      setTarget(null)
+      setNotFound(true)
+    }
+  }
+
   function handleSend() {
-    if (!text.trim() || !studentId) return
+    if (!text.trim() || !studentId || !target) return
     addFeedItem({
       autorId: studentId,
       autorNome: studentName ?? 'Aluno',
       autorAt: studentHandle ?? '',
       tipo: 'desafio',
-      conteudo: text.trim(),
+      conteudo: `desafiou @${target.handle} (${target.nome}):\n\n${text.trim()}`,
     })
     onClose()
   }
@@ -123,23 +141,73 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
             <X size={16} style={{ color: 'var(--text-muted)' }} />
           </button>
         </div>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          Desafia os teus colegas a ler um livro, completar uma matéria ou qualquer outra coisa!
-        </p>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Ex: Quem lê 3 livros este mês? Aceito o desafio!"
-          rows={4}
-          className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
-          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-        />
+
+        {/* Passo 1 — encontrar colega */}
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+            Quem queres desafiar?
+          </label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>@</span>
+              <input
+                value={handleInput}
+                onChange={(e) => { setHandleInput(e.target.value); setTarget(null); setNotFound(false) }}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="handle da colega"
+                className="w-full pl-7 pr-3 py-2.5 rounded-xl text-sm outline-none"
+                style={{ background: 'var(--surface-2)', border: `1px solid ${notFound ? '#ef4444' : 'var(--border)'}`, color: 'var(--text)' }}
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}
+            >
+              Procurar
+            </button>
+          </div>
+
+          {/* Resultado */}
+          {notFound && (
+            <p className="text-xs mt-1.5" style={{ color: '#ef4444' }}>Nenhum colega com esse @.</p>
+          )}
+          {target && (
+            <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}>
+                {target.nome.charAt(0)}
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{target.nome}</p>
+                <p className="text-xs" style={{ color: '#6270f5' }}>@{target.handle}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Passo 2 — escrever o desafio */}
+        {target && (
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+              O desafio
+            </label>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={`Ex: @${target.handle}, aceitas ler 2 livros esta semana?`}
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+            />
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button
             onClick={handleSend}
-            disabled={!text.trim()}
+            disabled={!target || !text.trim()}
             className="btn-primary flex-1"
-            style={{ opacity: !text.trim() ? 0.5 : 1 }}
+            style={{ opacity: !target || !text.trim() ? 0.5 : 1 }}
           >
             Publicar desafio
           </button>
