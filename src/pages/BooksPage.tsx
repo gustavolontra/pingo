@@ -36,12 +36,11 @@ function BookFormModal({
   onClose,
 }: {
   initial?: Book
-  onSave: (titulo: string, autor: string, capa: string) => void
+  onSave: (titulo: string, autor: string) => void
   onClose: () => void
 }) {
   const [titulo, setTitulo] = useState(initial?.titulo ?? '')
   const [autor, setAutor] = useState(initial?.autor ?? '')
-  const [capa, setCapa] = useState(initial?.capa ?? '')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
@@ -76,21 +75,12 @@ function BookFormModal({
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Capa (URL — opcional)</label>
-            <input
-              value={capa}
-              onChange={(e) => setCapa(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-            />
-          </div>
+
         </div>
 
         <div className="flex gap-3 pt-1">
           <button
-            onClick={() => { if (titulo.trim() && autor.trim()) onSave(titulo.trim(), autor.trim(), capa.trim()) }}
+            onClick={() => { if (titulo.trim() && autor.trim()) onSave(titulo.trim(), autor.trim()) }}
             disabled={!titulo.trim() || !autor.trim()}
             className="btn-primary flex-1"
             style={{ opacity: !titulo.trim() || !autor.trim() ? 0.5 : 1 }}
@@ -213,8 +203,8 @@ function BookCard({
       {editing && (
         <BookFormModal
           initial={book}
-          onSave={(titulo, autor, capa) => {
-            updateBook(book.id, { titulo, autor, capa: capa || undefined })
+          onSave={(titulo, autor) => {
+            updateBook(book.id, { titulo, autor })
             setEditing(false)
           }}
           onClose={() => setEditing(false)}
@@ -429,7 +419,7 @@ export default function BooksPage() {
       {/* Modais */}
       {adding && (
         <BookFormModal
-          onSave={(titulo, autor, capa) => { addBook({ titulo, autor, capa: capa || undefined }); setAdding(false) }}
+          onSave={(titulo, autor) => { addBook({ titulo, autor }); setAdding(false) }}
           onClose={() => setAdding(false)}
         />
       )}
