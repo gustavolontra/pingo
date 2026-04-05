@@ -37,7 +37,7 @@ function urgencyColor(days: number) {
 export default function DashboardPage() {
   const { user, dailyStats, getExams } = useStore()
   const exams = getExams()
-  const { studentName } = useStudentAuthStore()
+  const { studentName, studentHandle } = useStudentAuthStore()
   const navigate = useNavigate()
   const displayName = studentName || user.name
   const disciplines = useDisciplines()
@@ -51,6 +51,9 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-display font-bold text-white">
           Olá, {displayName.split(' ')[0]}! {user.streak > 0 ? <Flame size={22} style={{ color: '#f59e0b', display: 'inline' }} /> : '👋'}
         </h2>
+        {studentHandle && (
+          <p className="text-sm font-medium mt-0.5" style={{ color: '#6270f5' }}>@{studentHandle}</p>
+        )}
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           {user.streak > 0
             ? `${user.streak} dias consecutivos de estudo. Não quebres a sequência!`
