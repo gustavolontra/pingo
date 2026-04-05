@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-display font-extrabold" style={{ color: 'var(--text)' }}>
-            pingo<span style={{ color: '#6270f5' }}>.team</span>
+            pingo<span style={{ color: '#6270f5' }}>.team</span><span style={{ fontSize: '10px', fontWeight: 500, color: '#9ca3af', letterSpacing: '0.05em', marginLeft: '4px', verticalAlign: 'middle' }}>beta</span>
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Área de Administração</p>
         </div>
