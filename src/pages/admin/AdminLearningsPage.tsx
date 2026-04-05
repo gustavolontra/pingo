@@ -462,15 +462,23 @@ function Editor({
   // ── Step: Input ────────────────────────────────────────────────────────────
 
   if (step === 'input') {
+    const selectedDiscName = disciplineId ? getDisciplineOption(disciplineId).name : null
     return (
       <div className="p-8 max-w-3xl">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={onBack} className="p-2 rounded-xl hover:bg-slate-100 transition-colors" style={{ color: 'var(--text-muted)' }}>
+          <button onClick={() => setStep('associar')} className="p-2 rounded-xl hover:bg-slate-100 transition-colors" style={{ color: 'var(--text-muted)' }}>
             <ArrowLeft size={18} />
           </button>
-          <h2 className="text-xl font-display font-bold" style={{ color: 'var(--text)' }}>
-            Novo aprendizado
-          </h2>
+          <div>
+            <h2 className="text-xl font-display font-bold" style={{ color: 'var(--text)' }}>
+              Novo aprendizado
+            </h2>
+            {selectedDiscName && (
+              <p className="text-sm mt-0.5" style={{ color: '#6270f5' }}>
+                A adicionar a: <strong>{selectedDiscName}</strong>
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-5">
