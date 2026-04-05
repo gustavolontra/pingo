@@ -36,6 +36,8 @@ export default function AdminLearningsPage() {
   const [publishPending, setPublishPending] = useState<{ data: DraftData; fromDraft: ContentDraft | null } | null>(null)
   const [existingItems, setExistingItems] = useState<KVContentItem[]>([])
   const [publishing, setPublishing] = useState(false)
+  const [consolidating, setConsolidating] = useState(false)
+  const [consolidateDone, setConsolidateDone] = useState<{ flashcards: number; quiz: number; keywords: number } | null>(null)
 
   const allDisciplines = [
     ...adminDisciplines.map((d) => ({ id: d.id, name: d.name, subject: d.subject, year: d.year })),
@@ -70,7 +72,7 @@ export default function AdminLearningsPage() {
     }
   }
 
-  async function doPublish(data: DraftData, fromDraft: ContentDraft | null) {
+  async function doPublish(data: DraftData, fromDraft: ContentDraft | null, isAddingToExisting = false) {
     setPublishing(true)
     publishLearning(data)
     if (fromDraft) {
@@ -80,10 +82,32 @@ export default function AdminLearningsPage() {
     } else {
       await publishData(data)
     }
-    setPublishPending(null)
-    setExistingItems([])
     setPublishing(false)
-    setView('list')
+
+    if (isAddingToExisting) {
+      // Regenerar flashcards/quiz/keywords consolidados para toda a disciplina
+      setConsolidating(true)
+      try {
+        const res = await fetch('/api/consolidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ disciplineId: data.disciplineId }),
+        })
+        if (res.ok) {
+          const result = await res.json() as { flashcards: unknown[]; quiz: unknown[]; palavrasChave: string[] }
+          setConsolidateDone({
+            flashcards: result.flashcards?.length ?? 0,
+            quiz: result.quiz?.length ?? 0,
+            keywords: result.palavrasChave?.length ?? 0,
+          })
+        }
+      } catch { /* consolidation failed silently */ }
+      setConsolidating(false)
+    } else {
+      setPublishPending(null)
+      setExistingItems([])
+      setView('list')
+    }
   }
 
   // ── Editor views ─────────────────────────────────────────────────────────
@@ -110,41 +134,80 @@ export default function AdminLearningsPage() {
         {/* Modal: já existe conteúdo nesta disciplina */}
         {publishPending && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
-            <div className="w-full max-w-md rounded-2xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <p className="font-display font-bold text-lg mb-1" style={{ color: 'var(--text)' }}>
-                Esta matéria já tem conteúdo publicado
-              </p>
-              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-                Já existe {existingItems.length} conteúdo{existingItems.length !== 1 ? 's' : ''} publicado{existingItems.length !== 1 ? 's' : ''} em <strong>{allDisciplines.find(d => d.id === publishPending.data.disciplineId)?.name ?? publishPending.data.disciplineId}</strong>:
-              </p>
-              <ul className="mb-5 flex flex-col gap-1.5">
-                {existingItems.map((item) => (
-                  <li key={item.id} className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--surface-2)', color: 'var(--text)' }}>
-                    {item.titulo}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>
-                O que queres fazer?
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => doPublish(publishPending.data, publishPending.fromDraft)}
-                  disabled={publishing}
-                  className="btn-primary flex items-center justify-center gap-2 py-3"
-                >
-                  {publishing ? <Loader2 size={15} className="animate-spin" /> : null}
-                  Adicionar a esta matéria
-                </button>
-                <button
-                  onClick={() => { setPublishPending(null); setExistingItems([]) }}
-                  disabled={publishing}
-                  className="flex items-center justify-center py-3 rounded-xl text-sm font-semibold"
-                  style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-                >
-                  Voltar e alterar a matéria
-                </button>
-              </div>
+            <div className="w-full max-w-md rounded-2xl p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+
+              {/* Estado: a consolidar */}
+              {consolidating && (
+                <div className="text-center py-4 space-y-3">
+                  <Loader2 size={28} className="animate-spin mx-auto" style={{ color: '#6270f5' }} />
+                  <p className="font-semibold" style={{ color: 'var(--text)' }}>A regenerar flashcards e quiz...</p>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                    A IA está a consolidar todo o conteúdo da matéria para melhorar as sugestões de pesquisa.
+                  </p>
+                </div>
+              )}
+
+              {/* Estado: consolidação concluída */}
+              {!consolidating && consolidateDone && (
+                <div className="text-center py-2 space-y-3">
+                  <Check size={28} className="mx-auto" style={{ color: '#10b981' }} />
+                  <p className="font-semibold" style={{ color: 'var(--text)' }}>Conteúdo publicado e atualizado!</p>
+                  <div className="flex justify-center gap-4 text-sm">
+                    <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--text)' }}>{consolidateDone.flashcards}</strong> flashcards</span>
+                    <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--text)' }}>{consolidateDone.quiz}</strong> questões</span>
+                    <span style={{ color: 'var(--text-muted)' }}><strong style={{ color: 'var(--text)' }}>{consolidateDone.keywords}</strong> palavras-chave</span>
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    As sugestões de pesquisa na página inicial serão atualizadas automaticamente.
+                  </p>
+                  <button
+                    onClick={() => { setPublishPending(null); setExistingItems([]); setConsolidateDone(null); setView('list') }}
+                    className="btn-primary w-full py-2.5"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              )}
+
+              {/* Estado: pergunta */}
+              {!consolidating && !consolidateDone && (
+                <>
+                  <div>
+                    <p className="font-display font-bold text-lg mb-1" style={{ color: 'var(--text)' }}>
+                      Esta matéria já tem conteúdo publicado
+                    </p>
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                      Já exist{existingItems.length !== 1 ? 'em' : 'e'} <strong>{existingItems.length} conteúdo{existingItems.length !== 1 ? 's' : ''}</strong> em <strong>{allDisciplines.find(d => d.id === publishPending.data.disciplineId)?.name ?? publishPending.data.disciplineId}</strong>:
+                    </p>
+                  </div>
+                  <ul className="flex flex-col gap-1.5">
+                    {existingItems.map((item) => (
+                      <li key={item.id} className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--surface-2)', color: 'var(--text)' }}>
+                        {item.titulo}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>O que queres fazer?</p>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => doPublish(publishPending.data, publishPending.fromDraft, true)}
+                      disabled={publishing}
+                      className="btn-primary flex items-center justify-center gap-2 py-3"
+                    >
+                      {publishing ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                      Adicionar a esta matéria
+                    </button>
+                    <button
+                      onClick={() => { setPublishPending(null); setExistingItems([]) }}
+                      disabled={publishing}
+                      className="flex items-center justify-center py-3 rounded-xl text-sm font-semibold"
+                      style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+                    >
+                      Voltar e alterar a matéria
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

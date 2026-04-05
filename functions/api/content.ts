@@ -32,11 +32,32 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
     return Response.json(items, { headers })
   }
 
-  const list = await env.PINGO_CONTENT.list({ prefix: 'content:' })
+  const [contentList, synthList] = await Promise.all([
+    env.PINGO_CONTENT.list({ prefix: 'content:' }),
+    env.PINGO_CONTENT.list({ prefix: 'synthesis:' }),
+  ])
   const all: ContentItem[] = []
-  for (const key of list.keys) {
+  for (const key of contentList.keys) {
     const raw = await env.PINGO_CONTENT.get(key.name)
     if (raw) all.push(...JSON.parse(raw))
+  }
+  // Include synthesis entries as virtual content items so LandingPage suggestions get richer
+  for (const key of synthList.keys) {
+    const raw = await env.PINGO_CONTENT.get(key.name)
+    if (!raw) continue
+    const s = JSON.parse(raw) as { disciplineId: string; flashcards: ContentItem['flashcards']; quiz: ContentItem['quiz']; palavrasChave: string[]; updatedAt: string }
+    all.push({
+      id: `synth-${s.disciplineId}`,
+      disciplineId: s.disciplineId,
+      topico: 'Síntese',
+      titulo: `Síntese — ${s.disciplineId}`,
+      resumo: '',
+      palavrasChave: s.palavrasChave ?? [],
+      flashcards: s.flashcards ?? [],
+      quiz: s.quiz ?? [],
+      createdAt: s.updatedAt,
+      updatedAt: s.updatedAt,
+    })
   }
   return Response.json(all, { headers })
 }
