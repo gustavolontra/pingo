@@ -275,7 +275,7 @@ export default function ExamSchedulePage() {
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text)' }}>📅 Gestão de Exames</h2>
+          <h2 className="text-2xl font-display font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}><Calendar size={22} style={{ color: '#6270f5' }} /> Gestão de Exames</h2>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             Agenda os teus exames, adiciona fichas de estudo e acompanha os prazos.
           </p>
@@ -300,7 +300,7 @@ export default function ExamSchedulePage() {
 
       {sorted.length === 0 && !adding && (
         <div className="card text-center py-12">
-          <p className="text-3xl mb-3">📅</p>
+          <Calendar size={40} className="mx-auto mb-3" style={{ color: '#6270f5', opacity: 0.5 }} />
           <p className="font-semibold" style={{ color: 'var(--text)' }}>Nenhum exame agendado</p>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Clica em "Novo exame" para começar.</p>
         </div>

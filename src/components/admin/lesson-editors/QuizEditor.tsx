@@ -1,5 +1,5 @@
 import { useAdminStore, type AdminQuizContent, type AdminQuestion } from '@/store/useAdminStore'
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react'
 import { useState } from 'react'
 
 interface Props {
@@ -67,7 +67,7 @@ export default function QuizEditor({ disciplineId, topicId, lessonId, content }:
 
       {content.questions.length === 0 && (
         <div className="text-center py-8 rounded-xl" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-          <p className="text-2xl mb-2">❓</p>
+          <HelpCircle size={32} className="mx-auto mb-2" />
           <p className="text-sm">Nenhuma questão. Adiciona uma acima.</p>
         </div>
       )}

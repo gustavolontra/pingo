@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 import { useAdminStore } from '@/store/useAdminStore'
 import { getDisciplineOption } from '@/lib/contentBridge'
 import { api, type KVContentItem, type KVFlashcard, type KVQuestion } from '@/lib/api'
-import { BookOpen, ChevronDown, ChevronUp, Loader2, Pencil, Trash2, X, Save, Plus } from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronUp, Loader2, Pencil, Trash2, X, Save, Plus, Layers, HelpCircle } from 'lucide-react'
 
 export default function AdminSubjectsPage() {
   const { disciplines: adminDisciplines } = useAdminStore()
@@ -155,8 +155,8 @@ export default function AdminSubjectsPage() {
                                   </div>
                                 )}
                                 <div className="flex items-center gap-3 mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                                  {item.flashcards?.length > 0 && <span>🃏 {item.flashcards.length} flashcards</span>}
-                                  {item.quiz?.length > 0 && <span>❓ {item.quiz.length} questões</span>}
+                                  {item.flashcards?.length > 0 && <span className="flex items-center gap-1"><Layers size={11} /> {item.flashcards.length} flashcards</span>}
+                                  {item.quiz?.length > 0 && <span className="flex items-center gap-1"><HelpCircle size={11} /> {item.quiz.length} questões</span>}
                                   <span>{new Date(item.createdAt).toLocaleDateString('pt-PT')}</span>
                                 </div>
                               </div>
@@ -354,7 +354,7 @@ function FlashcardEditor({ fc, onChange, onDelete }: { fc: KVFlashcard; onChange
   return (
     <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold" style={{ color: '#6270f5' }}>🃏 Flashcard</span>
+        <span className="text-xs font-semibold flex items-center gap-1" style={{ color: '#6270f5' }}><Layers size={12} /> Flashcard</span>
         <button onClick={onDelete}><X size={13} style={{ color: '#ef4444' }} /></button>
       </div>
       <input
@@ -379,7 +379,7 @@ function QuestionEditor({ q, onChange, onDelete }: { q: KVQuestion; onChange: (q
   return (
     <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold" style={{ color: '#6270f5' }}>❓ Questão</span>
+        <span className="text-xs font-semibold flex items-center gap-1" style={{ color: '#6270f5' }}><HelpCircle size={12} /> Questão</span>
         <button onClick={onDelete}><X size={13} style={{ color: '#ef4444' }} /></button>
       </div>
       <input

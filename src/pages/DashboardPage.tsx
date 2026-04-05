@@ -2,7 +2,7 @@ import { useStore } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { formatMinutes } from '@/lib/utils'
-import { Flame, Clock, Zap, BookOpen } from 'lucide-react'
+import { Flame, Clock, Zap, BookOpen, Calendar } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import StatCard from '@/components/ui/StatCard'
 import WeeklyChart from '@/components/dashboard/WeeklyChart'
@@ -45,7 +45,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h2 className="text-2xl font-display font-bold text-white">
-          Olá, {displayName.split(' ')[0]}! {user.streak > 0 ? '🔥' : '👋'}
+          Olá, {displayName.split(' ')[0]}! {user.streak > 0 ? <Flame size={22} style={{ color: '#f59e0b', display: 'inline' }} /> : '👋'}
         </h2>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           {user.streak > 0
@@ -83,8 +83,8 @@ export default function DashboardPage() {
             return (
               <div className="card space-y-2">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-display font-semibold" style={{ color: 'var(--text)' }}>
-                    📅 Próximos exames
+                  <h3 className="text-sm font-display font-semibold flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+                    <Calendar size={14} style={{ color: '#6270f5' }} /> Próximos exames
                   </h3>
                   <button onClick={() => navigate('/exames')} className="text-xs font-medium" style={{ color: '#6270f5' }}>
                     Ver todos

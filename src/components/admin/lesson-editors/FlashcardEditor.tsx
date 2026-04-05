@@ -1,5 +1,5 @@
 import { useAdminStore, type AdminFlashcardContent } from '@/store/useAdminStore'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Layers } from 'lucide-react'
 
 interface Props {
   disciplineId: string
@@ -48,7 +48,7 @@ export default function FlashcardEditor({ disciplineId, topicId, lessonId, conte
 
       {content.cards.length === 0 && (
         <div className="text-center py-8 rounded-xl" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
-          <p className="text-2xl mb-2">🃏</p>
+          <Layers size={32} className="mx-auto mb-2" />
           <p className="text-sm">Nenhum cartão. Clica em "Novo cartão".</p>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+import { Trophy } from 'lucide-react'
 
 const rankColors = ['#f59e0b', '#94a3b8', '#cd7f32']
 const rankIcons = ['🥇', '🥈', '🥉']
@@ -18,13 +19,13 @@ export default function LeaderboardPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text)' }}>🏆 Ranking</h2>
+        <h2 className="text-2xl font-display font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}><Trophy size={22} style={{ color: '#f59e0b' }} /> Ranking</h2>
         <p className="mt-1" style={{ color: 'var(--text-muted)' }}>Alunos ordenados por XP total</p>
       </div>
 
       {leaderboard.length === 0 ? (
         <div className="card text-center py-16">
-          <p className="text-4xl mb-3">🏆</p>
+          <Trophy size={48} className="mx-auto mb-3" style={{ color: '#f59e0b' }} />
           <p className="font-semibold" style={{ color: 'var(--text)' }}>Ainda não há dados de ranking</p>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
             O ranking aparece quando os alunos começarem a estudar.

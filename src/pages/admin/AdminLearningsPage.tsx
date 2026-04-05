@@ -18,7 +18,7 @@ import { api, type KVContentItem } from '@/lib/api'
 import {
   Plus, ArrowLeft, Sparkles, Save, Trash2,
   ChevronDown, ChevronUp, Send, Pencil, FileText,
-  Upload, Loader2, X, Check,
+  Upload, Loader2, X, Check, Layers, HelpCircle,
 } from 'lucide-react'
 
 const API_CONTENT = '/api/content'
@@ -213,8 +213,8 @@ export default function AdminLearningsPage() {
                     </div>
                     <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{d.titulo || '(sem título)'}</p>
                     <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {d.flashcards.length > 0 && <span>🃏 {d.flashcards.length} flashcards</span>}
-                      {d.quiz.length > 0 && <span>❓ {d.quiz.length} questões</span>}
+                      {d.flashcards.length > 0 && <span className="flex items-center gap-1"><Layers size={11} /> {d.flashcards.length} flashcards</span>}
+                      {d.quiz.length > 0 && <span className="flex items-center gap-1"><HelpCircle size={11} /> {d.quiz.length} questões</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">

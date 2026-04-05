@@ -400,7 +400,7 @@ function TopicItem({
       {isSelected && topic.lessons.length > 0 && (
         <div className="ml-5 flex flex-col gap-0.5 mt-0.5">
           {topic.lessons.map((lesson) => {
-            const lt = lesson.type === 'text' ? '📄' : lesson.type === 'quiz' ? '❓' : '🃏'
+            const LtIcon = lesson.type === 'text' ? BookOpen : lesson.type === 'quiz' ? HelpCircle : Layers
             return (
               <button
                 key={lesson.id}
@@ -408,7 +408,7 @@ function TopicItem({
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition-colors hover:bg-slate-100 w-full"
                 style={{ color: selectedLessonId === lesson.id ? '#6270f5' : 'var(--text-muted)', background: selectedLessonId === lesson.id ? 'rgba(98,112,245,0.06)' : undefined }}
               >
-                <span>{lt}</span>
+                <LtIcon size={12} />
                 <span className="truncate">{lesson.title}</span>
               </button>
             )

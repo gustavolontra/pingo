@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import type { Lesson, Topic } from '@/types'
 import { cn } from '@/lib/utils'
-import { Lock, CheckCircle2, ChevronDown, ChevronRight, Zap, Clock } from 'lucide-react'
+import { Lock, CheckCircle2, ChevronDown, ChevronRight, Zap, Clock, BookOpen, HelpCircle, Headphones, Layers, Video, PenLine } from 'lucide-react'
 import QuizLesson from '@/components/study/QuizLesson'
 import TextLesson from '@/components/study/TextLesson'
 import AudioLesson from '@/components/study/AudioLesson'
@@ -145,7 +145,15 @@ function TopicCard({ topic, isExpanded, onToggle, onSelectLesson }: {
   )
 }
 
-const icons: Record<string, string> = { text: '📖', quiz: '❓', audio: '🎧', flashcard: '🃏', video: '🎬', exercise: '✏️' }
+const LessonIcon = ({ type, size = 16 }: { type: string; size?: number }) => {
+  const props = { size, style: { flexShrink: 0 } }
+  if (type === 'quiz') return <HelpCircle {...props} />
+  if (type === 'audio') return <Headphones {...props} />
+  if (type === 'flashcard') return <Layers {...props} />
+  if (type === 'video') return <Video {...props} />
+  if (type === 'exercise') return <PenLine {...props} />
+  return <BookOpen {...props} />
+}
 const diffColors: Record<string, string> = { basico: '#10b981', intermedio: '#f59e0b', avancado: '#ef4444' }
 const diffLabel: Record<string, string> = { basico: 'Básico', intermedio: 'Intermédio', avancado: 'Avançado' }
 
@@ -158,7 +166,7 @@ function LessonRow({ lesson, onSelect }: { lesson: Lesson; onSelect: () => void 
         border: `1px solid ${lesson.isCompleted ? 'rgba(16,185,129,0.18)' : 'var(--border)'}`,
       }}
     >
-      <span className="text-xl shrink-0">{icons[lesson.type]}</span>
+      <span className="shrink-0" style={{ color: lesson.isCompleted ? '#94a3b8' : 'var(--text-muted)' }}><LessonIcon type={lesson.type} size={18} /></span>
       <div className="flex-1 min-w-0">
         <p className={cn('text-sm font-medium truncate', lesson.isCompleted ? 'text-slate-400' : 'text-white')}>
           {lesson.title}

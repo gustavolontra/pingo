@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart2 } from 'lucide-react'
 import type { DailyStats } from '@/types'
 
 interface Props { stats: DailyStats[] }
@@ -12,7 +13,7 @@ export default function WeeklyChart({ stats }: Props) {
 
   return (
     <div className="card">
-      <h3 className="font-display font-semibold text-white text-sm mb-4">📊 Minutos de estudo esta semana</h3>
+      <h3 className="font-display font-semibold text-white text-sm mb-4 flex items-center gap-2"><BarChart2 size={15} style={{ color: '#a5bbfd' }} /> Minutos de estudo esta semana</h3>
       <ResponsiveContainer width="100%" height={140}>
         <BarChart data={data} barSize={26} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
           <XAxis dataKey="day" tick={{ fill: '#7a92b4', fontSize: 11 }} axisLine={false} tickLine={false} />

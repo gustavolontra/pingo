@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Lesson } from '@/types'
-import { Zap, Clock, RotateCcw } from 'lucide-react'
+import { Zap, Clock, RotateCcw, Trophy } from 'lucide-react'
 import XPToast from '@/components/gamification/XPToast'
 import LevelUpModal from '@/components/gamification/LevelUpModal'
 import { useStore } from '@/store/useStore'
@@ -22,10 +22,10 @@ export default function LessonComplete({ lesson, score, xpEarned, onContinue, on
   const [showLevelUp, setShowLevelUp] = useState(newLevel > prevLevel)
 
   const getGrade = () => {
-    if (score >= 90) return { emoji: '🏆', label: 'Excelente!', color: '#f59e0b' }
-    if (score >= 70) return { emoji: '🎉', label: 'Muito bem!', color: '#10b981' }
-    if (score >= 50) return { emoji: '👍', label: 'Bom trabalho!', color: '#6270f5' }
-    return { emoji: '💪', label: 'Continua a tentar!', color: '#f59e0b' }
+    if (score >= 90) return { icon: <Trophy size={56} style={{ color: '#f59e0b' }} />, label: 'Excelente!', color: '#f59e0b' }
+    if (score >= 70) return { icon: <span className="text-6xl">🎉</span>, label: 'Muito bem!', color: '#10b981' }
+    if (score >= 50) return { icon: <span className="text-6xl">👍</span>, label: 'Bom trabalho!', color: '#6270f5' }
+    return { icon: <span className="text-6xl">💪</span>, label: 'Continua a tentar!', color: '#f59e0b' }
   }
 
   const grade = getGrade()
@@ -37,7 +37,7 @@ export default function LessonComplete({ lesson, score, xpEarned, onContinue, on
 
       <div className="max-w-md mx-auto text-center animate-pop">
         <div className="card space-y-6">
-          <div className="text-6xl">{grade.emoji}</div>
+          <div className="flex justify-center">{grade.icon}</div>
           <div>
             <h2 className="text-2xl font-display font-bold text-white">Aula Concluída!</h2>
             <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>{lesson.title}</p>
@@ -49,7 +49,7 @@ export default function LessonComplete({ lesson, score, xpEarned, onContinue, on
               <div className="text-5xl font-display font-black mb-1" style={{ color: grade.color }}>
                 {score}%
               </div>
-              <p className="text-sm font-semibold" style={{ color: grade.color }}>{grade.label}</p>
+              <p className="text-sm font-semibold" style={{ color: (grade as {color: string}).color }}>{grade.label}</p>
             </div>
           )}
 

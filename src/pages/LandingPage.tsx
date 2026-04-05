@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, LogIn, X, Zap, Lock, Trash2, Search } from 'lucide-react'
+import { Plus, LogIn, X, Zap, Lock, Trash2, Search, Trophy } from 'lucide-react'
 import { api, type KVContentItem } from '@/lib/api'
 import TextToSpeech from '@/components/ui/TextToSpeech'
 
@@ -345,7 +345,7 @@ export default function LandingPage() {
                 <button onClick={() => navigate('/login')} className="btn-primary text-xs px-4 py-2 shrink-0">Entrar</button>
               </div>
               <div className="hidden md:flex items-center gap-3 px-5 py-3" style={{ borderTop: '1px solid rgba(98,112,245,0.15)', background: 'rgba(98,112,245,0.04)' }}>
-                <span className="text-base">🏆</span>
+                <Trophy size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   <strong style={{ color: 'var(--text)' }}>Qual é a tua posição no ranking da turma?</strong>
                   {' '}Os teus colegas já estão a acumular XP — não fiques para trás.
@@ -413,7 +413,7 @@ export default function LandingPage() {
                     )}
                     {!isRejection && nudge === 2 && (
                       <div className="mt-5 px-4 py-3 rounded-xl text-sm text-center" style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.2)', color: '#f97316' }}>
-                        Atenção — esta é a tua penúltima pesquisa gratuita de hoje! ⚡ Enquanto hesitas, os teus colegas já completaram mais uma aula. Entra e não percas terreno!
+                        <span className="inline-flex items-center gap-1.5">Atenção — esta é a tua penúltima pesquisa gratuita de hoje! <Zap size={13} /> Enquanto hesitas, os teus colegas já completaram mais uma aula. Entra e não percas terreno!</span>
                       </div>
                     )}
                     {!isRejection && isDailyLimitReached && (
@@ -447,7 +447,7 @@ export default function LandingPage() {
 function LimitGate({ navigate }: { navigate: (p: string) => void }) {
   return (
     <div className="mt-6 px-5 py-6 rounded-2xl text-center space-y-4" style={{ background: 'rgba(98,112,245,0.07)', border: '1px solid rgba(98,112,245,0.25)' }}>
-      <p className="text-2xl">🏆</p>
+      <Trophy size={36} className="mx-auto" style={{ color: '#f59e0b' }} />
       <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
         Limite atingido por hoje!
       </p>
