@@ -4,7 +4,7 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import {
   BookMarked, Plus, Pencil, Trash2, CheckCircle2, X,
-  BookOpen, Search, Flame, Zap, User,
+  BookOpen, Search, Flame, Zap, User, Share2, List,
 } from 'lucide-react'
 
 type Tab = 'lendo' | 'lido'
@@ -354,16 +354,34 @@ function ColleagueModal({
               </div>
             </div>
 
-            {/* Livros partilhados */}
-            <div>
-              <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>
-                Livros lidos ({student.sharedBooks?.length ?? 0})
-              </p>
-              {!student.sharedBooks?.length ? (
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Ainda não partilhou nenhum livro.</p>
-              ) : (
+            {/* Lista completa (se partilhada) */}
+            {student.listaPartilhada && student.allBooks && student.allBooks.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>Lista de leituras</p>
+                <div className="flex flex-col gap-1.5">
+                  {student.allBooks.map((b, i) => (
+                    <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'var(--surface-2)' }}>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0" style={{ background: b.status === 'lido' ? 'rgba(16,185,129,0.1)' : 'rgba(98,112,245,0.1)', color: b.status === 'lido' ? '#10b981' : '#6270f5' }}>
+                        {b.status === 'lido' ? 'lido' : 'a ler'}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{b.titulo}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{b.autor}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Resumos partilhados */}
+            {(student.sharedBooks?.length ?? 0) > 0 && (
+              <div>
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>
+                  Resumos partilhados ({student.sharedBooks!.length})
+                </p>
                 <div className="flex flex-col gap-3">
-                  {student.sharedBooks.map((b) => (
+                  {student.sharedBooks!.map((b) => (
                     <div key={b.bookId} className="p-3 rounded-xl space-y-1" style={{ background: 'var(--surface-2)' }}>
                       <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{b.titulo}</p>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{b.autor}</p>
@@ -371,8 +389,12 @@ function ColleagueModal({
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {!student.listaPartilhada && !student.sharedBooks?.length && (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Ainda não partilhou nada.</p>
+            )}
           </>
         )}
       </div>
@@ -384,8 +406,12 @@ function ColleagueModal({
 
 export default function BooksPage() {
   const { getBooks, addBook, markBookRead } = useStore()
-  const { studentId, studentHandle } = useStudentAuthStore()
+  const { studentId, studentName, studentHandle } = useStudentAuthStore()
+  const { addFeedItem, toggleStudentListShare, students } = useAdminStore()
   const books = getBooks()
+
+  const student = students.find((s) => s.id === studentId)
+  const listaPartilhada = student?.listaPartilhada ?? false
 
   const [tab, setTab] = useState<Tab>('lendo')
   const [adding, setAdding] = useState(false)
@@ -400,16 +426,39 @@ export default function BooksPage() {
   function handleMarkDone(resumo: string | undefined, partilhado: boolean) {
     if (!markingBook || !studentId) return
     markBookRead(markingBook.id, resumo, partilhado)
-    if (partilhado) {
-      const updated = books.map((b) =>
-        b.id === markingBook.id
-          ? { ...b, status: 'lido' as const, dataFim: new Date().toISOString().split('T')[0], resumo, partilhado }
-          : b
-      )
-      syncSharedBooks(studentId, updated)
+    const updated = books.map((b) =>
+      b.id === markingBook.id
+        ? { ...b, status: 'lido' as const, dataFim: new Date().toISOString().split('T')[0], resumo, partilhado }
+        : b
+    )
+    syncSharedBooks(studentId, updated)
+    if (partilhado && resumo) {
+      addFeedItem({
+        autorId: studentId,
+        autorNome: studentName ?? 'Aluno',
+        autorAt: studentHandle ?? '',
+        tipo: 'resumo',
+        conteudo: `leu "${markingBook.titulo}" de ${markingBook.autor}${resumo ? `\n\n"${resumo}"` : ''}`,
+      })
     }
     setMarkingBook(null)
     setTab('lido')
+  }
+
+  function handleToggleList() {
+    if (!studentId) return
+    const next = !listaPartilhada
+    const allBooks = books.map((b) => ({ titulo: b.titulo, autor: b.autor, status: b.status }))
+    toggleStudentListShare(studentId, next, allBooks)
+    if (next) {
+      addFeedItem({
+        autorId: studentId,
+        autorNome: studentName ?? 'Aluno',
+        autorAt: studentHandle ?? '',
+        tipo: 'lista',
+        conteudo: `partilhou a sua lista de leituras (${books.length} livro${books.length !== 1 ? 's' : ''}: ${books.slice(0, 3).map(b => `"${b.titulo}"`).join(', ')}${books.length > 3 ? '...' : ''})`,
+      })
+    }
   }
 
   function handleSearch() {
@@ -420,7 +469,7 @@ export default function BooksPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-2xl font-display font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
             <BookMarked size={22} style={{ color: '#6270f5' }} /> Os meus livros
@@ -429,9 +478,24 @@ export default function BooksPage() {
             Regista o que estás a ler e partilha resumos com os teus colegas.
           </p>
         </div>
-        <button onClick={() => setAdding(true)} className="btn-primary flex items-center gap-2 shrink-0">
-          <Plus size={15} /> Adicionar livro
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={handleToggleList}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: listaPartilhada ? 'rgba(16,185,129,0.12)' : 'var(--surface-2)',
+              color: listaPartilhada ? '#10b981' : 'var(--text-muted)',
+              border: `1px solid ${listaPartilhada ? 'rgba(16,185,129,0.25)' : 'var(--border)'}`,
+            }}
+            title={listaPartilhada ? 'Lista visível no perfil público — clica para deixar de partilhar' : 'Partilhar lista no perfil público'}
+          >
+            {listaPartilhada ? <List size={14} /> : <Share2 size={14} />}
+            {listaPartilhada ? 'Lista partilhada' : 'Partilhar lista'}
+          </button>
+          <button onClick={() => setAdding(true)} className="btn-primary flex items-center gap-2">
+            <Plus size={15} /> Adicionar livro
+          </button>
+        </div>
       </div>
 
       {/* Encontrar colega */}

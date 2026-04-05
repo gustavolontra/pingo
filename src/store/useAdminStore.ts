@@ -35,6 +35,19 @@ export interface Student {
   totalStudyMinutes: number
   lastActiveAt?: string
   sharedBooks?: { bookId: string; titulo: string; autor: string; resumo: string; dataFim: string }[]
+  listaPartilhada?: boolean
+  allBooks?: { titulo: string; autor: string; status: 'lendo' | 'lido' }[]
+}
+
+export interface FeedItem {
+  id: string
+  autorId: string
+  autorNome: string
+  autorAt: string
+  tipo: 'resumo' | 'lista' | 'badge' | 'desafio'
+  conteudo: string
+  data: string
+  reacoes: Record<string, string[]>  // tipo → [studentId, ...]
 }
 
 // ─── Content types ────────────────────────────────────────────────────────────
@@ -157,6 +170,7 @@ interface AdminState {
   disciplines: ManagedDiscipline[]
   hiddenStaticIds: string[]
   contentDrafts: ContentDraft[]
+  feedItems: FeedItem[]
 
   // Auth
   login: (email: string, password: string) => Promise<boolean>
@@ -167,7 +181,12 @@ interface AdminState {
   updateStudent: (id: string, data: Partial<Pick<Student, 'name' | 'email' | 'school' | 'grade' | 'isActive'>>) => void
   syncStudentStats: (id: string, stats: Pick<Student, 'xp' | 'level' | 'streak' | 'lessonsCompleted' | 'totalStudyMinutes'>) => void
   updateStudentSharedBooks: (id: string, books: NonNullable<Student['sharedBooks']>) => void
+  toggleStudentListShare: (id: string, shared: boolean, allBooks: NonNullable<Student['allBooks']>) => void
   deleteStudent: (id: string) => void
+
+  // Feed
+  addFeedItem: (item: Omit<FeedItem, 'id' | 'data' | 'reacoes'>) => void
+  reactToFeedItem: (itemId: string, tipo: string, studentId: string) => void
 
   // Disciplines
   createDiscipline: (data: Omit<ManagedDiscipline, 'id' | 'createdAt' | 'topics'>) => void
@@ -238,6 +257,7 @@ export const useAdminStore = create<AdminState>()(
       disciplines: [],
       hiddenStaticIds: [],
       contentDrafts: [],
+      feedItems: [],
 
       // ── Auth ────────────────────────────────────────────────────────────────
 
@@ -289,8 +309,41 @@ export const useAdminStore = create<AdminState>()(
           ),
         }),
 
+      toggleStudentListShare: (id, shared, allBooks) =>
+        set({
+          students: get().students.map((s) =>
+            s.id === id ? { ...s, listaPartilhada: shared, allBooks } : s
+          ),
+        }),
+
       deleteStudent: (id) =>
         set({ students: get().students.filter((s) => s.id !== id) }),
+
+      // ── Feed ────────────────────────────────────────────────────────────────
+
+      addFeedItem: (item) =>
+        set({
+          feedItems: [
+            { ...item, id: crypto.randomUUID(), data: new Date().toISOString(), reacoes: {} },
+            ...get().feedItems,
+          ],
+        }),
+
+      reactToFeedItem: (itemId, tipo, studentId) =>
+        set({
+          feedItems: get().feedItems.map((f) => {
+            if (f.id !== itemId) return f
+            const prev = f.reacoes[tipo] ?? []
+            const already = prev.includes(studentId)
+            return {
+              ...f,
+              reacoes: {
+                ...f.reacoes,
+                [tipo]: already ? prev.filter((id) => id !== studentId) : [...prev, studentId],
+              },
+            }
+          }),
+        }),
 
       // ── Disciplines ─────────────────────────────────────────────────────────
 
