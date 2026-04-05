@@ -8,6 +8,7 @@ import LeaderboardPage from '@/pages/LeaderboardPage'
 import ProfilePage from '@/pages/ProfilePage'
 import BooksPage from '@/pages/BooksPage'
 import FeedPage from '@/pages/FeedPage'
+import FriendsPage from '@/pages/FriendsPage'
 import StudentLoginPage from '@/pages/StudentLoginPage'
 import AdminLoginPage from '@/pages/admin/AdminLoginPage'
 import AdminLayout from '@/components/admin/AdminLayout'
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="study/:disciplineId" element={<StudyPage />} />
         <Route path="exames" element={<ExamSchedulePage />} />
+        <Route path="amigos" element={<FriendsPage />} />
         <Route path="leituras" element={<BooksPage />} />
         <Route path="feed" element={<FeedPage />} />
         <Route path="ranking" element={<LeaderboardPage />} />

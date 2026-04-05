@@ -4,7 +4,7 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import {
   BookMarked, Plus, Pencil, Trash2, CheckCircle2, X,
-  BookOpen, Search, Flame, Zap, User, Share2, List,
+  BookOpen, Search, Flame, Zap, User, Share2, List, UserPlus, UserMinus,
 } from 'lucide-react'
 
 type Tab = 'lendo' | 'lido'
@@ -305,7 +305,11 @@ function ColleagueModal({
   onClose: () => void
 }) {
   const students = useAdminStore((s) => s.students)
+  const { getFriends, addFriend, removeFriend } = useStore()
+  const { studentId } = useStudentAuthStore()
   const student = students.find((s) => s.login.split('@')[0].toLowerCase() === handle.toLowerCase())
+  const friendIds = getFriends()
+  const isFriend = student ? friendIds.includes(student.id) : false
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
@@ -333,11 +337,24 @@ function ColleagueModal({
               >
                 {student.name.charAt(0)}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold" style={{ color: 'var(--text)' }}>{student.name}</p>
                 <p className="text-sm" style={{ color: '#6270f5' }}>@{student.login.split('@')[0]}</p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{student.school} · {student.grade}</p>
               </div>
+              {student.id !== studentId && (
+                <button
+                  onClick={() => isFriend ? removeFriend(student.id) : addFriend(student.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0"
+                  style={{
+                    background: isFriend ? 'rgba(239,68,68,0.08)' : 'rgba(98,112,245,0.1)',
+                    color: isFriend ? '#ef4444' : '#6270f5',
+                    border: `1px solid ${isFriend ? 'rgba(239,68,68,0.2)' : 'rgba(98,112,245,0.2)'}`,
+                  }}
+                >
+                  {isFriend ? <><UserMinus size={12} /> Remover</> : <><UserPlus size={12} /> Adicionar</>}
+                </button>
+              )}
             </div>
 
             {/* Stats */}

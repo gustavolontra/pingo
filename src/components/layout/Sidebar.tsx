@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom"
-import { LayoutDashboard, Calendar, Trophy, User, LogOut, BookMarked, Rss } from 'lucide-react'
+import { LayoutDashboard, Calendar, Trophy, User, LogOut, BookMarked, Rss, Users } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useStore } from '@/store/useStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/exames', icon: Calendar, label: 'Exames' },
+  { to: '/amigos', icon: Users, label: 'Amigos' },
   { to: '/leituras', icon: BookMarked, label: 'Leituras' },
   { to: '/feed', icon: Rss, label: 'Feed' },
   { to: '/ranking', icon: Trophy, label: 'Ranking' },

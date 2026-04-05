@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useAdminStore, type FeedItem } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
-import { Rss, ThumbsUp, Flame, Star, Plus, X, BookOpen, List, Trophy, Swords } from 'lucide-react'
+import { useStore } from '@/store/useStore'
+import { Rss, ThumbsUp, Flame, Star, Plus, X, BookOpen, List, Trophy, Swords, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -95,57 +97,28 @@ function FeedCard({ item }: { item: FeedItem }) {
   )
 }
 
-// ── Modal: Lançar desafio ─────────────────────────────────────────────────────
-
-type Peer = { id: string; nome: string; handle: string }
+// ── Modal: Lançar desafio (via lista de amigos) ───────────────────────────────
 
 function ChallengeModal({ onClose }: { onClose: () => void }) {
   const { addFeedItem, students } = useAdminStore()
   const { studentId, studentName, studentHandle } = useStudentAuthStore()
-  const [handleInput, setHandleInput] = useState('')
-  const [targets, setTargets] = useState<Peer[]>([])
-  const [notFound, setNotFound] = useState(false)
-  const [alreadyAdded, setAlreadyAdded] = useState(false)
+  const { getFriends } = useStore()
+  const navigate = useNavigate()
+  const [selected, setSelected] = useState<string[]>([])
   const [text, setText] = useState('')
 
-  // Sugestões filtradas enquanto escreve
-  const query = handleInput.replace(/^@/, '').toLowerCase()
-  const suggestions = query.length >= 1
-    ? students.filter(
-        (s) =>
-          s.id !== studentId &&
-          !targets.some((t) => t.id === s.id) &&
-          s.login.split('@')[0].toLowerCase().startsWith(query)
-      ).slice(0, 5)
-    : []
+  const friendIds = getFriends()
+  const friends = students.filter((s) => friendIds.includes(s.id))
 
-  function addTarget(s: typeof students[number]) {
-    if (targets.some((t) => t.id === s.id)) { setAlreadyAdded(true); return }
-    setTargets((prev) => [...prev, { id: s.id, nome: s.name, handle: s.login.split('@')[0] }])
-    setHandleInput('')
-    setNotFound(false)
-    setAlreadyAdded(false)
-  }
-
-  function handleSearch() {
-    const h = query.trim()
-    if (!h) return
-    const found = students.find(
-      (s) => s.login.split('@')[0].toLowerCase() === h && s.id !== studentId
-    )
-    if (!found) { setNotFound(true); setAlreadyAdded(false); return }
-    setNotFound(false)
-    addTarget(found)
-  }
-
-  function removeTarget(id: string) {
-    setTargets((prev) => prev.filter((t) => t.id !== id))
+  function toggle(id: string) {
+    setSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
   }
 
   function handleSend() {
-    if (!text.trim() || !studentId || targets.length === 0) return
-    const mentions = targets.map((t) => `@${t.handle}`).join(', ')
-    const names = targets.map((t) => t.nome).join(', ')
+    if (!text.trim() || !studentId || selected.length === 0) return
+    const targets = friends.filter((f) => selected.includes(f.id))
+    const mentions = targets.map((t) => `@${t.login.split('@')[0]}`).join(', ')
+    const names = targets.map((t) => t.name).join(', ')
     addFeedItem({
       autorId: studentId,
       autorNome: studentName ?? 'Aluno',
@@ -158,7 +131,7 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-      <div className="w-full max-w-md rounded-2xl p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="w-full max-w-md rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex items-center justify-between">
           <h3 className="font-display font-bold text-lg" style={{ color: 'var(--text)' }}>Lançar desafio</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70">
@@ -166,91 +139,69 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* Selecionar colegas */}
+        {/* Lista de amigos */}
         <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-            Quem queres desafiar? <span style={{ fontWeight: 400 }}>(podes adicionar vários)</span>
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
+            Seleciona os amigos a desafiar
           </label>
 
-          {/* Chips dos selecionados */}
-          {targets.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {targets.map((t) => (
-                <span
-                  key={t.id}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                  style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}
-                >
-                  @{t.handle}
-                  <button onClick={() => removeTarget(t.id)} className="ml-0.5 hover:opacity-70">
-                    <X size={10} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Campo de procura */}
-          <div className="relative">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>@</span>
-                <input
-                  value={handleInput}
-                  onChange={(e) => { setHandleInput(e.target.value); setNotFound(false); setAlreadyAdded(false) }}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="handle do colega"
-                  className="w-full pl-7 pr-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: 'var(--surface-2)', border: `1px solid ${notFound ? '#ef4444' : 'var(--border)'}`, color: 'var(--text)' }}
-                />
-              </div>
+          {friends.length === 0 ? (
+            <div className="text-center py-6 space-y-2">
+              <Users size={28} className="mx-auto opacity-30" style={{ color: 'var(--text-muted)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Ainda não tens amigos adicionados.</p>
               <button
-                onClick={handleSearch}
-                className="px-4 py-2 rounded-xl text-sm font-semibold"
-                style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}
+                onClick={() => { onClose(); navigate('/amigos') }}
+                className="text-sm font-semibold"
+                style={{ color: '#6270f5' }}
               >
-                Adicionar
+                Ir para Amigos →
               </button>
             </div>
-
-            {/* Sugestões dropdown */}
-            {suggestions.length > 0 && (
-              <div
-                className="absolute left-0 right-14 top-full mt-1 rounded-xl overflow-hidden z-10"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
-              >
-                {suggestions.map((s) => (
+          ) : (
+            <div className="flex flex-col gap-2">
+              {friends.map((f) => {
+                const isSelected = selected.includes(f.id)
+                const handle = f.login.split('@')[0]
+                return (
                   <button
-                    key={s.id}
-                    onClick={() => addTarget(s)}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:opacity-80 transition-opacity"
-                    style={{ borderBottom: '1px solid var(--border)' }}
+                    key={f.id}
+                    onClick={() => toggle(f.id)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+                    style={{
+                      background: isSelected ? 'rgba(98,112,245,0.1)' : 'var(--surface-2)',
+                      border: `1px solid ${isSelected ? 'rgba(98,112,245,0.3)' : 'var(--border)'}`,
+                    }}
                   >
-                    <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}>
-                      {s.name.charAt(0)}
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                      style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}
+                    >
+                      {f.name.charAt(0)}
                     </div>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{s.name}</p>
-                      <p className="text-xs" style={{ color: '#6270f5' }}>@{s.login.split('@')[0]}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{f.name}</p>
+                      <p className="text-xs" style={{ color: '#6270f5' }}>@{handle}</p>
                     </div>
+                    {isSelected && (
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: '#6270f5' }}>
+                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                    )}
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {notFound && <p className="text-xs mt-1.5" style={{ color: '#ef4444' }}>Nenhum colega com esse @.</p>}
-          {alreadyAdded && <p className="text-xs mt-1.5" style={{ color: '#f97316' }}>Esse colega já foi adicionado.</p>}
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Escrever o desafio */}
-        {targets.length > 0 && (
+        {/* Texto do desafio */}
+        {selected.length > 0 && (
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>O desafio</label>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={`Ex: Quem lê mais livros esta semana?`}
+              placeholder="Ex: Quem lê mais livros esta semana?"
               rows={3}
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
@@ -261,9 +212,9 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
         <div className="flex gap-3">
           <button
             onClick={handleSend}
-            disabled={targets.length === 0 || !text.trim()}
+            disabled={selected.length === 0 || !text.trim()}
             className="btn-primary flex-1"
-            style={{ opacity: targets.length === 0 || !text.trim() ? 0.5 : 1 }}
+            style={{ opacity: selected.length === 0 || !text.trim() ? 0.5 : 1 }}
           >
             Publicar desafio
           </button>
@@ -284,7 +235,15 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
 
 export default function FeedPage() {
   const feedItems = useAdminStore((s) => s.feedItems)
+  const { studentId } = useStudentAuthStore()
+  const { getFriends } = useStore()
+  const friendIds = getFriends()
   const [challengeOpen, setChallengeOpen] = useState(false)
+  const [tab, setTab] = useState<'todos' | 'amigos'>('amigos')
+
+  const shown = tab === 'amigos'
+    ? feedItems.filter((f) => f.autorId === studentId || friendIds.includes(f.autorId))
+    : feedItems
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
@@ -292,7 +251,7 @@ export default function FeedPage() {
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
-            <Rss size={22} style={{ color: '#6270f5' }} /> Feed da turma
+            <Rss size={22} style={{ color: '#6270f5' }} /> Feed
           </h2>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             Resumos, listas e desafios dos teus colegas.
@@ -307,18 +266,40 @@ export default function FeedPage() {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex rounded-xl p-1" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+        {([['amigos', 'Amigos', Users], ['todos', 'Todos', Rss]] as const).map(([key, label, Icon]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
+            style={{
+              background: tab === key ? 'var(--surface)' : 'transparent',
+              color: tab === key ? 'var(--text)' : 'var(--text-muted)',
+              boxShadow: tab === key ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+            }}
+          >
+            <Icon size={13} /> {label}
+          </button>
+        ))}
+      </div>
+
       {/* Feed */}
-      {feedItems.length === 0 ? (
+      {shown.length === 0 ? (
         <div className="card text-center py-14">
           <Rss size={36} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--text-muted)' }} />
-          <p className="font-semibold" style={{ color: 'var(--text)' }}>Ainda não há publicações</p>
+          <p className="font-semibold" style={{ color: 'var(--text)' }}>
+            {tab === 'amigos' ? 'Nenhuma publicação dos teus amigos' : 'Ainda não há publicações'}
+          </p>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Quando os teus colegas partilharem livros ou desafios, aparecem aqui.
+            {tab === 'amigos'
+              ? 'Adiciona amigos em "Amigos" para ver as publicações deles aqui.'
+              : 'Quando os teus colegas partilharem livros ou desafios, aparecem aqui.'}
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {feedItems.map((item) => (
+          {shown.map((item) => (
             <FeedCard key={item.id} item={item} />
           ))}
         </div>

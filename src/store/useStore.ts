@@ -57,6 +57,8 @@ interface AppState {
   examsByStudent: Record<string, Exam[]>
   /** Livros guardados por studentId — nunca apagados ao trocar de aluno */
   booksByStudent: Record<string, Book[]>
+  /** Amigos por studentId: array de studentIds */
+  friendsByStudent: Record<string, string[]>
   lastStudentId: string | null
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
@@ -68,6 +70,8 @@ interface AppState {
   getExams: () => Exam[]
   /** Livros do aluno atual */
   getBooks: () => Book[]
+  /** Amigos do aluno atual (lista de studentIds) */
+  getFriends: () => string[]
 
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
@@ -78,6 +82,9 @@ interface AppState {
   updateExam: (id: string, subject: string, date: string) => void
   deleteExam: (id: string) => void
   setExamStudyNote: (id: string, note: string) => void
+
+  addFriend: (friendId: string) => void
+  removeFriend: (friendId: string) => void
 
   addBook: (data: Pick<Book, 'titulo' | 'autor' | 'capa'>) => void
   updateBook: (id: string, data: Partial<Pick<Book, 'titulo' | 'autor' | 'capa'>>) => void
@@ -98,6 +105,7 @@ export const useStore = create<AppState>()(
       progress: { lessons: {}, examDates: {} },
       examsByStudent: {},
       booksByStudent: {},
+      friendsByStudent: {},
       lastStudentId: null,
       kvDisciplines: [],
 
@@ -113,6 +121,12 @@ export const useStore = create<AppState>()(
         const id = get().lastStudentId
         if (!id) return []
         return get().booksByStudent[id] ?? []
+      },
+
+      getFriends: () => {
+        const id = get().lastStudentId
+        if (!id) return []
+        return get().friendsByStudent[id] ?? []
       },
 
       getDisciplines: () => {
@@ -273,6 +287,19 @@ export const useStore = create<AppState>()(
         set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) => e.id === examId ? { ...e, studyNote: note } : e) } })
       },
 
+      addFriend: (friendId) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().friendsByStudent[sid] ?? []
+        if (prev.includes(friendId)) return
+        set({ friendsByStudent: { ...get().friendsByStudent, [sid]: [...prev, friendId] } })
+      },
+
+      removeFriend: (friendId) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().friendsByStudent[sid] ?? []
+        set({ friendsByStudent: { ...get().friendsByStudent, [sid]: prev.filter((id) => id !== friendId) } })
+      },
+
       addBook: (data) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
@@ -322,6 +349,7 @@ export const useStore = create<AppState>()(
         progress: state.progress,
         examsByStudent: state.examsByStudent,
         booksByStudent: state.booksByStudent,
+        friendsByStudent: state.friendsByStudent,
         lastStudentId: state.lastStudentId,
         // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),
