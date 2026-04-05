@@ -447,7 +447,7 @@ function Editor({
             )}
 
             <button
-              onClick={() => setStep('input')}
+              onClick={() => { setDisciplineId(''); setStep('input') }}
               className="flex items-center justify-center py-3 rounded-xl text-sm font-semibold transition-all"
               style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
             >
