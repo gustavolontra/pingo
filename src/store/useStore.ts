@@ -59,6 +59,8 @@ interface AppState {
   booksByStudent: Record<string, Book[]>
   /** Amigos por studentId: array de studentIds */
   friendsByStudent: Record<string, string[]>
+  /** Sugestões ignoradas por studentId */
+  ignoredSuggestionsByStudent: Record<string, string[]>
   lastStudentId: string | null
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
@@ -72,6 +74,8 @@ interface AppState {
   getBooks: () => Book[]
   /** Amigos do aluno atual (lista de studentIds) */
   getFriends: () => string[]
+  /** Sugestões ignoradas pelo aluno atual */
+  getIgnoredSuggestions: () => string[]
 
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
@@ -85,6 +89,7 @@ interface AppState {
 
   addFriend: (friendId: string) => void
   removeFriend: (friendId: string) => void
+  ignoreSuggestion: (friendId: string) => void
 
   addBook: (data: Pick<Book, 'titulo' | 'autor' | 'capa'>) => void
   updateBook: (id: string, data: Partial<Pick<Book, 'titulo' | 'autor' | 'capa'>>) => void
@@ -106,6 +111,7 @@ export const useStore = create<AppState>()(
       examsByStudent: {},
       booksByStudent: {},
       friendsByStudent: {},
+      ignoredSuggestionsByStudent: {},
       lastStudentId: null,
       kvDisciplines: [],
 
@@ -127,6 +133,12 @@ export const useStore = create<AppState>()(
         const id = get().lastStudentId
         if (!id) return []
         return get().friendsByStudent[id] ?? []
+      },
+
+      getIgnoredSuggestions: () => {
+        const id = get().lastStudentId
+        if (!id) return []
+        return get().ignoredSuggestionsByStudent[id] ?? []
       },
 
       getDisciplines: () => {
@@ -300,6 +312,13 @@ export const useStore = create<AppState>()(
         set({ friendsByStudent: { ...get().friendsByStudent, [sid]: prev.filter((id) => id !== friendId) } })
       },
 
+      ignoreSuggestion: (friendId) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().ignoredSuggestionsByStudent[sid] ?? []
+        if (prev.includes(friendId)) return
+        set({ ignoredSuggestionsByStudent: { ...get().ignoredSuggestionsByStudent, [sid]: [...prev, friendId] } })
+      },
+
       addBook: (data) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
@@ -350,6 +369,7 @@ export const useStore = create<AppState>()(
         examsByStudent: state.examsByStudent,
         booksByStudent: state.booksByStudent,
         friendsByStudent: state.friendsByStudent,
+        ignoredSuggestionsByStudent: state.ignoredSuggestionsByStudent,
         lastStudentId: state.lastStudentId,
         // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),

@@ -4,6 +4,7 @@ import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useStore } from '@/store/useStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+import { useAdminStore } from '@/store/useAdminStore'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -17,11 +18,20 @@ const navItems = [
 ]
 
 export default function Sidebar() {
-  const { user } = useStore()
+  const { user, getFriends, getIgnoredSuggestions } = useStore()
   const disciplines = useDisciplines()
-  const { studentName, logout } = useStudentAuthStore()
+  const { studentName, studentId, logout } = useStudentAuthStore()
+  const students = useAdminStore((s) => s.students)
   const navigate = useNavigate()
   const xpPct = Math.round((user.xp / user.xpForNextLevel) * 100)
+
+  // Badge: sugestões da mesma escola pendentes
+  const me = students.find((s) => s.id === studentId)
+  const friendIds = getFriends()
+  const ignoredIds = getIgnoredSuggestions()
+  const suggestionCount = students.filter(
+    (s) => s.id !== studentId && s.school === me?.school && !friendIds.includes(s.id) && !ignoredIds.includes(s.id)
+  ).length
 
   function handleLogout() {
     logout()
@@ -72,7 +82,7 @@ export default function Sidebar() {
           Conta
         </p>
         {navItems.slice(1).map(({ to, icon: Icon, label }) => (
-          <SideNavItem key={to} to={to} icon={Icon} label={label} />
+          <SideNavItem key={to} to={to} icon={Icon} label={label} badge={to === '/amigos' && suggestionCount > 0 ? suggestionCount : undefined} />
         ))}
       </nav>
 
@@ -116,7 +126,7 @@ export default function Sidebar() {
   )
 }
 
-function SideNavItem({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+function SideNavItem({ to, icon: Icon, label, badge }: { to: string; icon: any; label: string; badge?: number }) {
   return (
     <NavLink to={to}
       className={({ isActive }) => cn(
@@ -126,7 +136,12 @@ function SideNavItem({ to, icon: Icon, label }: { to: string; icon: any; label: 
       style={({ isActive }) => isActive ? { background: 'rgba(98,112,245,0.1)', color: '#6270f5' } : { color: 'var(--text-muted)' }}
     >
       <Icon size={17} />
-      {label}
+      <span className="flex-1">{label}</span>
+      {badge != null && (
+        <span className="text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center" style={{ background: '#6270f5', color: 'white', fontSize: '10px' }}>
+          {badge}
+        </span>
+      )}
     </NavLink>
   )
 }
