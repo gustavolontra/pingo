@@ -4,7 +4,7 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import {
   BookMarked, Plus, Pencil, Trash2, CheckCircle2, X,
-  BookOpen, Search, Flame, Zap, User, Share2, List, UserPlus, UserMinus,
+  BookOpen, Share2, List,
 } from 'lucide-react'
 
 type Tab = 'lendo' | 'lido'
@@ -295,130 +295,6 @@ function BookCard({
   )
 }
 
-// ── Modal: Perfil público de colega ──────────────────────────────────────────
-
-function ColleagueModal({
-  handle,
-  onClose,
-}: {
-  handle: string
-  onClose: () => void
-}) {
-  const students = useAdminStore((s) => s.students)
-  const { getFriends, addFriend, removeFriend } = useStore()
-  const { studentId } = useStudentAuthStore()
-  const student = students.find((s) => s.login.split('@')[0].toLowerCase() === handle.toLowerCase())
-  const friendIds = getFriends()
-  const isFriend = student ? friendIds.includes(student.id) : false
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-      <div className="w-full max-w-md rounded-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-        <div className="flex items-center justify-between">
-          <h3 className="font-display font-bold" style={{ color: 'var(--text)' }}>Perfil público</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70">
-            <X size={16} style={{ color: 'var(--text-muted)' }} />
-          </button>
-        </div>
-
-        {!student ? (
-          <div className="text-center py-8">
-            <User size={32} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--text-muted)' }} />
-            <p className="font-semibold" style={{ color: 'var(--text)' }}>Colega não encontrado</p>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Nenhum aluno com o @ <strong>@{handle}</strong>.</p>
-          </div>
-        ) : (
-          <>
-            {/* Header */}
-            <div className="flex items-center gap-4">
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold shrink-0"
-                style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}
-              >
-                {student.name.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold" style={{ color: 'var(--text)' }}>{student.name}</p>
-                <p className="text-sm" style={{ color: '#6270f5' }}>@{student.login.split('@')[0]}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{student.school} · {student.grade}</p>
-              </div>
-              {student.id !== studentId && (
-                <button
-                  onClick={() => isFriend ? removeFriend(student.id) : addFriend(student.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0"
-                  style={{
-                    background: isFriend ? 'rgba(239,68,68,0.08)' : 'rgba(98,112,245,0.1)',
-                    color: isFriend ? '#ef4444' : '#6270f5',
-                    border: `1px solid ${isFriend ? 'rgba(239,68,68,0.2)' : 'rgba(98,112,245,0.2)'}`,
-                  }}
-                >
-                  {isFriend ? <><UserMinus size={12} /> Remover</> : <><UserPlus size={12} /> Adicionar</>}
-                </button>
-              )}
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="px-3 py-2.5 rounded-xl text-center" style={{ background: 'var(--surface-2)' }}>
-                <Zap size={16} className="mx-auto mb-1" style={{ color: '#a78bfa' }} />
-                <p className="text-base font-bold" style={{ color: 'var(--text)' }}>{student.xp}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>XP</p>
-              </div>
-              <div className="px-3 py-2.5 rounded-xl text-center" style={{ background: 'var(--surface-2)' }}>
-                <Flame size={16} className="mx-auto mb-1" style={{ color: '#f59e0b' }} />
-                <p className="text-base font-bold" style={{ color: 'var(--text)' }}>{student.streak}d</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Sequência</p>
-              </div>
-            </div>
-
-            {/* Lista completa (se partilhada) */}
-            {student.listaPartilhada && student.allBooks && student.allBooks.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>Lista de leituras</p>
-                <div className="flex flex-col gap-1.5">
-                  {student.allBooks.map((b, i) => (
-                    <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'var(--surface-2)' }}>
-                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0" style={{ background: b.status === 'lido' ? 'rgba(16,185,129,0.1)' : 'rgba(98,112,245,0.1)', color: b.status === 'lido' ? '#10b981' : '#6270f5' }}>
-                        {b.status === 'lido' ? 'lido' : 'a ler'}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{b.titulo}</p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{b.autor}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Resumos partilhados */}
-            {(student.sharedBooks?.length ?? 0) > 0 && (
-              <div>
-                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>
-                  Resumos partilhados ({student.sharedBooks!.length})
-                </p>
-                <div className="flex flex-col gap-3">
-                  {student.sharedBooks!.map((b) => (
-                    <div key={b.bookId} className="p-3 rounded-xl space-y-1" style={{ background: 'var(--surface-2)' }}>
-                      <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{b.titulo}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{b.autor}</p>
-                      {b.resumo && <p className="text-xs mt-1.5" style={{ color: 'var(--text)' }}>{b.resumo}</p>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {!student.listaPartilhada && !student.sharedBooks?.length && (
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Ainda não partilhou nada.</p>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function BooksPage() {
@@ -433,8 +309,6 @@ export default function BooksPage() {
   const [tab, setTab] = useState<Tab>('lendo')
   const [adding, setAdding] = useState(false)
   const [markingBook, setMarkingBook] = useState<Book | null>(null)
-  const [searchHandle, setSearchHandle] = useState('')
-  const [lookupHandle, setLookupHandle] = useState<string | null>(null)
 
   const lendo = books.filter((b) => b.status === 'lendo')
   const lidos = books.filter((b) => b.status === 'lido')
@@ -478,11 +352,6 @@ export default function BooksPage() {
     }
   }
 
-  function handleSearch() {
-    const h = searchHandle.replace(/^@/, '').trim()
-    if (h) setLookupHandle(h)
-  }
-
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
@@ -513,36 +382,6 @@ export default function BooksPage() {
             <Plus size={15} /> Adicionar livro
           </button>
         </div>
-      </div>
-
-      {/* Encontrar colega */}
-      <div className="card">
-        <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>Encontrar colega</p>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>@</span>
-            <input
-              value={searchHandle}
-              onChange={(e) => setSearchHandle(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder={`${studentHandle ?? 'nometudante'}`}
-              className="w-full pl-7 pr-3 py-2 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
-            />
-          </div>
-          <button
-            onClick={handleSearch}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold"
-            style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}
-          >
-            <Search size={14} /> Ver perfil
-          </button>
-        </div>
-        {studentHandle && (
-          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-            O teu @ é <span className="font-semibold" style={{ color: '#6270f5' }}>@{studentHandle}</span>
-          </p>
-        )}
       </div>
 
       {/* Tabs */}
@@ -603,9 +442,6 @@ export default function BooksPage() {
         />
       )}
 
-      {lookupHandle && (
-        <ColleagueModal handle={lookupHandle} onClose={() => setLookupHandle(null)} />
-      )}
     </div>
   )
 }
