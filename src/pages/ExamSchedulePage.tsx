@@ -266,7 +266,7 @@ function ExamCard({ exam }: { exam: Exam }) {
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function ExamSchedulePage() {
-  const exams = useStore((s) => s.exams)
+  const exams = useStore((s) => s.getExams())
   const { addExam } = useStore()
   const [adding, setAdding] = useState(false)
 

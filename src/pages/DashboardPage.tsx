@@ -35,7 +35,8 @@ function urgencyColor(days: number) {
 }
 
 export default function DashboardPage() {
-  const { user, dailyStats, exams } = useStore()
+  const { user, dailyStats, getExams } = useStore()
+  const exams = getExams()
   const { studentName } = useStudentAuthStore()
   const navigate = useNavigate()
   const displayName = studentName || user.name

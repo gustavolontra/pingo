@@ -41,7 +41,8 @@ interface AppState {
   sessions: StudySession[]
   dailyStats: DailyStats[]
   progress: StudentProgress
-  exams: Exam[]
+  /** Exames guardados por studentId — nunca apagados ao trocar de aluno */
+  examsByStudent: Record<string, Exam[]>
   lastStudentId: string | null
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
@@ -49,6 +50,8 @@ interface AppState {
 
   /** Computed: disciplinas com progresso do aluno aplicado */
   getDisciplines: () => Discipline[]
+  /** Exames do aluno atual */
+  getExams: () => Exam[]
 
   completeLesson: (lessonId: string, score: number, durationMinutes: number) => void
   setExamDate: (disciplineId: string, date: Date) => void
@@ -72,11 +75,17 @@ export const useStore = create<AppState>()(
       sessions: [],
       dailyStats: mockDailyStats,
       progress: { lessons: {}, examDates: {} },
-      exams: [],
+      examsByStudent: {},
       lastStudentId: null,
       kvDisciplines: [],
 
       // ── Computed ──────────────────────────────────────────────────────────
+
+      getExams: () => {
+        const id = get().lastStudentId
+        if (!id) return []
+        return get().examsByStudent[id] ?? []
+      },
 
       getDisciplines: () => {
         const merged = get().kvDisciplines
@@ -202,36 +211,48 @@ export const useStore = create<AppState>()(
 
       resetForStudent: (studentId) => {
         if (get().lastStudentId === studentId) return
+        // Só reseta progresso/stats — exames nunca são apagados aqui
         set({
           user: { ...mockUser },
           sessions: [],
           dailyStats: [],
           progress: { lessons: {}, examDates: {} },
-          exams: [],
           lastStudentId: studentId,
         })
       },
 
-      addExam: (subject, date) =>
-        set({ exams: [...get().exams, { id: crypto.randomUUID(), subject, date, studyNote: '' }] }),
+      addExam: (subject, date) => {
+        const id = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[id] ?? []
+        set({ examsByStudent: { ...get().examsByStudent, [id]: [...prev, { id: crypto.randomUUID(), subject, date, studyNote: '' }] } })
+      },
 
-      updateExam: (id, subject, date) =>
-        set({ exams: get().exams.map((e) => e.id === id ? { ...e, subject, date } : e) }),
+      updateExam: (examId, subject, date) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) => e.id === examId ? { ...e, subject, date } : e) } })
+      },
 
-      deleteExam: (id) =>
-        set({ exams: get().exams.filter((e) => e.id !== id) }),
+      deleteExam: (examId) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.filter((e) => e.id !== examId) } })
+      },
 
-      setExamStudyNote: (id, note) =>
-        set({ exams: get().exams.map((e) => e.id === id ? { ...e, studyNote: note } : e) }),
+      setExamStudyNote: (examId, note) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) => e.id === examId ? { ...e, studyNote: note } : e) } })
+      },
     }),
     {
-      name: 'estudar-pt-v5',   // v5: per-student isolation via lastStudentId
+      name: 'estudar-pt-v6',   // v6: exams per-student, never reset on login
       partialize: (state) => ({
         user: state.user,
         sessions: state.sessions,
         dailyStats: state.dailyStats,
         progress: state.progress,
-        exams: state.exams,
+        examsByStudent: state.examsByStudent,
         lastStudentId: state.lastStudentId,
         // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
       }),
