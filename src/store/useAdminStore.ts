@@ -217,6 +217,10 @@ interface AdminState {
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
 
+  // Server data fetch
+  fetchStudents: () => Promise<void>
+  fetchFeed: () => Promise<void>
+
   // Students
   createStudent: (data: { login: string; name: string; school: string; grade: string; password: string }) => Promise<void>
   updateStudent: (id: string, data: Partial<Pick<Student, 'name' | 'email' | 'school' | 'grade' | 'isActive'>>) => void
@@ -308,6 +312,9 @@ export const useAdminStore = create<AdminState>()(
         const admin = get().admins.find((a) => a.email === email && a.passwordHash === hash)
         if (admin) {
           set({ isAuthenticated: true, currentAdmin: admin })
+          // Fetch server data
+          get().fetchStudents()
+          get().fetchFeed()
           return true
         }
         return false
@@ -315,66 +322,77 @@ export const useAdminStore = create<AdminState>()(
 
       logout: () => set({ isAuthenticated: false, currentAdmin: null }),
 
+      // ── Server data fetch ──────────────────────────────────────────────────
+
+      fetchStudents: async () => {
+        const students = await api.getStudents()
+        set({ students })
+      },
+
+      fetchFeed: async () => {
+        const feedItems = await api.getFeed()
+        set({ feedItems })
+      },
+
       // ── Students ────────────────────────────────────────────────────────────
 
       createStudent: async ({ login, name, school, grade, password }) => {
-        const passwordHash = await hashPassword(password)
-        const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim()
-        const student: Student = {
-          id: crypto.randomUUID(),
-          login: login.toLowerCase().trim(),
-          name: titleCase(name),
-          email: login.toLowerCase().trim(),
-          school: titleCase(school),
-          grade, passwordHash,
-          createdAt: new Date().toISOString(),
-          isActive: true,
-          xp: 0, level: 1, streak: 0, lessonsCompleted: 0, totalStudyMinutes: 0,
-        }
+        const student = await api.createStudent({ login, name, school, grade, password })
         set({ students: [...get().students, student] })
       },
 
-      updateStudent: (id, data) =>
-        set({ students: get().students.map((s) => (s.id === id ? { ...s, ...data } : s)) }),
+      updateStudent: (id, data) => {
+        set({ students: get().students.map((s) => (s.id === id ? { ...s, ...data } : s)) })
+        api.updateStudent(id, data)
+      },
 
-      syncStudentStats: (id, stats) =>
+      syncStudentStats: (id, stats) => {
         set({
           students: get().students.map((s) =>
             s.id === id ? { ...s, ...stats, lastActiveAt: new Date().toISOString() } : s
           ),
-        }),
+        })
+        api.updateStudent(id, { ...stats, lastActiveAt: new Date().toISOString() })
+      },
 
-      updateStudentSharedBooks: (id: string, books: NonNullable<Student['sharedBooks']>) =>
+      updateStudentSharedBooks: (id: string, books: NonNullable<Student['sharedBooks']>) => {
         set({
           students: get().students.map((s) =>
             s.id === id ? { ...s, sharedBooks: books } : s
           ),
-        }),
+        })
+        api.updateStudent(id, { sharedBooks: books })
+      },
 
-      toggleStudentListShare: (id, shared, allBooks) =>
+      toggleStudentListShare: (id, shared, allBooks) => {
         set({
           students: get().students.map((s) =>
             s.id === id ? { ...s, listaPartilhada: shared, allBooks } : s
           ),
-        }),
+        })
+        api.updateStudent(id, { listaPartilhada: shared, allBooks })
+      },
 
-      deleteStudent: (id) =>
-        set({ students: get().students.filter((s) => s.id !== id) }),
+      deleteStudent: (id) => {
+        set({ students: get().students.filter((s) => s.id !== id) })
+        api.deleteStudent(id)
+      },
 
       // ── Feed ────────────────────────────────────────────────────────────────
 
-      addFeedItem: (item) =>
-        set({
-          feedItems: [
-            { ...item, id: crypto.randomUUID(), data: new Date().toISOString(), reacoes: {} },
-            ...get().feedItems,
-          ],
-        }),
+      addFeedItem: (item) => {
+        const newItem = { ...item, id: crypto.randomUUID(), data: new Date().toISOString(), reacoes: {} }
+        set({ feedItems: [newItem, ...get().feedItems] })
+        api.addFeedItem(item)
+      },
 
-      deleteFeedItem: (itemId) =>
-        set({ feedItems: get().feedItems.filter((f) => f.id !== itemId) }),
+      deleteFeedItem: (itemId) => {
+        set({ feedItems: get().feedItems.filter((f) => f.id !== itemId) })
+        api.deleteFeedItem(itemId)
+      },
 
-      reactToFeedItem: (itemId, tipo, studentId) =>
+      reactToFeedItem: (itemId, tipo, studentId) => {
+        api.reactToFeedItem(itemId, tipo, studentId)
         set({
           feedItems: get().feedItems.map((f) => {
             if (f.id !== itemId) return f
@@ -388,7 +406,8 @@ export const useAdminStore = create<AdminState>()(
               },
             }
           }),
-        }),
+        })
+      },
 
       // ── Disciplines ─────────────────────────────────────────────────────────
 

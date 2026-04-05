@@ -102,4 +102,165 @@ export const api = {
   async deleteContent(id: string, disciplineId: string): Promise<void> {
     await fetch(`${BASE}/content?id=${id}&disciplineId=${disciplineId}`, { method: 'DELETE' })
   },
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  async login(email: string, password: string): Promise<{ studentId: string; name: string; email: string; handle: string; token: string } | null> {
+    const res = await fetch(`${BASE}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    if (!res.ok) return null
+    return res.json()
+  },
+
+  // ── Students ──────────────────────────────────────────────────────────────
+  async getStudents() {
+    const res = await fetch(`${BASE}/students`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async createStudent(data: { login: string; name: string; school: string; grade: string; password: string }) {
+    const res = await fetch(`${BASE}/students`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    return res.json()
+  },
+  async updateStudent(id: string, data: Record<string, unknown>) {
+    await fetch(`${BASE}/students`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...data }),
+    })
+  },
+  async deleteStudent(id: string) {
+    await fetch(`${BASE}/students?id=${id}`, { method: 'DELETE' })
+  },
+
+  // ── Feed ──────────────────────────────────────────────────────────────────
+  async getFeed() {
+    const res = await fetch(`${BASE}/feed`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async addFeedItem(item: { autorId: string; autorNome: string; autorAt: string; tipo: string; conteudo: string }) {
+    const res = await fetch(`${BASE}/feed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    })
+    return res.json()
+  },
+  async deleteFeedItem(id: string) {
+    await fetch(`${BASE}/feed?id=${id}`, { method: 'DELETE' })
+  },
+  async reactToFeedItem(id: string, tipo: string, studentId: string) {
+    await fetch(`${BASE}/feed`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, tipo, studentId }),
+    })
+  },
+
+  // ── Friends ───────────────────────────────────────────────────────────────
+  async getFriends(studentId: string): Promise<string[]> {
+    const res = await fetch(`${BASE}/friends?studentId=${studentId}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async addFriend(studentId: string, friendId: string) {
+    await fetch(`${BASE}/friends`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, friendId }),
+    })
+  },
+  async removeFriend(studentId: string, friendId: string) {
+    await fetch(`${BASE}/friends?studentId=${studentId}&friendId=${friendId}`, { method: 'DELETE' })
+  },
+
+  // ── Books ─────────────────────────────────────────────────────────────────
+  async getBooks(studentId: string) {
+    const res = await fetch(`${BASE}/books?studentId=${studentId}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async addBook(studentId: string, data: { titulo: string; autor: string; capa?: string }) {
+    const res = await fetch(`${BASE}/books`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, ...data }),
+    })
+    return res.json()
+  },
+  async updateBook(studentId: string, bookId: string, data: Record<string, unknown>) {
+    await fetch(`${BASE}/books`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, bookId, ...data }),
+    })
+  },
+  async deleteBook(studentId: string, bookId: string) {
+    await fetch(`${BASE}/books?studentId=${studentId}&bookId=${bookId}`, { method: 'DELETE' })
+  },
+
+  // ── Exams ─────────────────────────────────────────────────────────────────
+  async getExams(studentId: string) {
+    const res = await fetch(`${BASE}/exams?studentId=${studentId}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async addExam(studentId: string, subject: string, date: string) {
+    const res = await fetch(`${BASE}/exams`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, subject, date }),
+    })
+    return res.json()
+  },
+  async updateExam(studentId: string, examId: string, data: Record<string, unknown>) {
+    await fetch(`${BASE}/exams`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, examId, ...data }),
+    })
+  },
+  async deleteExam(studentId: string, examId: string) {
+    await fetch(`${BASE}/exams?studentId=${studentId}&examId=${examId}`, { method: 'DELETE' })
+  },
+
+  // ── Progress ──────────────────────────────────────────────────────────────
+  async getProgress(studentId: string) {
+    const res = await fetch(`${BASE}/progress?studentId=${studentId}`)
+    if (!res.ok) return { lessons: {}, examDates: {} }
+    return res.json()
+  },
+  async saveProgress(studentId: string, data: Record<string, unknown>) {
+    await fetch(`${BASE}/progress`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, ...data }),
+    })
+  },
+
+  // ── Suggestions ───────────────────────────────────────────────────────────
+  async getIgnoredSuggestions(studentId: string): Promise<string[]> {
+    const res = await fetch(`${BASE}/suggestions?studentId=${studentId}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async ignoreSuggestion(studentId: string, ignoredId: string) {
+    await fetch(`${BASE}/suggestions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, ignoredId }),
+    })
+  },
+
+  // ── Seed ──────────────────────────────────────────────────────────────────
+  async seed() {
+    await fetch(`${BASE}/seed`, { method: 'POST' })
+  },
 }

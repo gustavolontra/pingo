@@ -13,6 +13,7 @@ import { persist } from 'zustand/middleware'
 import type { User, Discipline, StudySession, DailyStats } from '@/types'
 import { mockUser, mockDailyStats } from '@/lib/mockData'
 import { syncCurrentStudentStats } from '@/store/useStudentAuthStore'
+import { api } from '@/lib/api'
 
 // ── Tipos de progresso guardados pelo aluno ──────────────────────────────────
 
@@ -95,6 +96,9 @@ interface AppState {
   updateBook: (id: string, data: Partial<Pick<Book, 'titulo' | 'autor' | 'capa'>>) => void
   deleteBook: (id: string) => void
   markBookRead: (id: string, resumo: string | undefined, partilhado: boolean) => void
+
+  /** Fetch per-student data from server */
+  fetchServerData: (studentId: string) => Promise<void>
 }
 
 function todayKey() {
@@ -248,9 +252,12 @@ export const useStore = create<AppState>()(
         })
 
         setTimeout(syncCurrentStudentStats, 100)
+        // Save progress to server
+        const sid = get().lastStudentId
+        if (sid) api.saveProgress(sid, { lessonId, score, completedAt: new Date().toISOString() })
       },
 
-      setExamDate: (disciplineId, date) =>
+      setExamDate: (disciplineId, date) => {
         set({
           progress: {
             ...get().progress,
@@ -259,7 +266,10 @@ export const useStore = create<AppState>()(
               [disciplineId]: date.toISOString(),
             },
           },
-        }),
+        })
+        const sid = get().lastStudentId
+        if (sid) api.saveProgress(sid, { disciplineId, examDate: date.toISOString() })
+      },
 
       setDisciplinesFromKV: (disciplines) => set({ kvDisciplines: disciplines }),
 
@@ -276,54 +286,47 @@ export const useStore = create<AppState>()(
       },
 
       addExam: (subject, date) => {
-        const id = get().lastStudentId ?? 'anon'
-        const prev = get().examsByStudent[id] ?? []
-        set({ examsByStudent: { ...get().examsByStudent, [id]: [...prev, { id: crypto.randomUUID(), subject, date, studyNote: '' }] } })
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        const exam = { id: crypto.randomUUID(), subject, date, studyNote: '' }
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: [...prev, exam] } })
+        api.addExam(sid, subject, date)
       },
 
       updateExam: (examId, subject, date) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().examsByStudent[sid] ?? []
         set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) => e.id === examId ? { ...e, subject, date } : e) } })
+        api.updateExam(sid, examId, { subject, date })
       },
 
       deleteExam: (examId) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().examsByStudent[sid] ?? []
         set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.filter((e) => e.id !== examId) } })
+        api.deleteExam(sid, examId)
       },
 
       setExamStudyNote: (examId, note) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().examsByStudent[sid] ?? []
         set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) => e.id === examId ? { ...e, studyNote: note } : e) } })
+        api.updateExam(sid, examId, { studyNote: note })
       },
 
       addFriend: (friendId) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().friendsByStudent[sid] ?? []
         if (prev.includes(friendId)) return
-        // Amizade mútua: adiciona nos dois lados
-        const prevOther = get().friendsByStudent[friendId] ?? []
-        const updatedFriends = { ...get().friendsByStudent, [sid]: [...prev, friendId] }
-        if (!prevOther.includes(sid)) {
-          updatedFriends[friendId] = [...prevOther, sid]
-        }
-        set({ friendsByStudent: updatedFriends })
+        set({ friendsByStudent: { ...get().friendsByStudent, [sid]: [...prev, friendId] } })
+        api.addFriend(sid, friendId)
       },
 
       removeFriend: (friendId) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().friendsByStudent[sid] ?? []
-        const prevOther = get().friendsByStudent[friendId] ?? []
-        // Remove dos dois lados
-        set({
-          friendsByStudent: {
-            ...get().friendsByStudent,
-            [sid]: prev.filter((id) => id !== friendId),
-            [friendId]: prevOther.filter((id) => id !== sid),
-          },
-        })
+        set({ friendsByStudent: { ...get().friendsByStudent, [sid]: prev.filter((id) => id !== friendId) } })
+        api.removeFriend(sid, friendId)
       },
 
       ignoreSuggestion: (friendId) => {
@@ -331,6 +334,7 @@ export const useStore = create<AppState>()(
         const prev = get().ignoredSuggestionsByStudent[sid] ?? []
         if (prev.includes(friendId)) return
         set({ ignoredSuggestionsByStudent: { ...get().ignoredSuggestionsByStudent, [sid]: [...prev, friendId] } })
+        api.ignoreSuggestion(sid, friendId)
       },
 
       addBook: (data) => {
@@ -344,18 +348,21 @@ export const useStore = create<AppState>()(
           partilhado: false,
         }
         set({ booksByStudent: { ...get().booksByStudent, [sid]: [...prev, book] } })
+        api.addBook(sid, data)
       },
 
       updateBook: (bookId, data) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
         set({ booksByStudent: { ...get().booksByStudent, [sid]: prev.map((b) => b.id === bookId ? { ...b, ...data } : b) } })
+        api.updateBook(sid, bookId, data)
       },
 
       deleteBook: (bookId) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
         set({ booksByStudent: { ...get().booksByStudent, [sid]: prev.filter((b) => b.id !== bookId) } })
+        api.deleteBook(sid, bookId)
       },
 
       markBookRead: (bookId, resumo, partilhado) => {
@@ -370,6 +377,24 @@ export const useStore = create<AppState>()(
                 : b
             ),
           },
+        })
+        api.updateBook(sid, bookId, { status: 'lido', dataFim: new Date().toISOString().split('T')[0], resumo, partilhado })
+      },
+
+      fetchServerData: async (studentId) => {
+        const [friends, ignored, books, exams, progress] = await Promise.all([
+          api.getFriends(studentId),
+          api.getIgnoredSuggestions(studentId),
+          api.getBooks(studentId),
+          api.getExams(studentId),
+          api.getProgress(studentId),
+        ])
+        set({
+          friendsByStudent: { ...get().friendsByStudent, [studentId]: friends },
+          ignoredSuggestionsByStudent: { ...get().ignoredSuggestionsByStudent, [studentId]: ignored },
+          booksByStudent: { ...get().booksByStudent, [studentId]: books },
+          examsByStudent: { ...get().examsByStudent, [studentId]: exams },
+          progress,
         })
       },
     }),

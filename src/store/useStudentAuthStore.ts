@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { hashPassword } from '@/lib/crypto'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStore } from '@/store/useStore'
+import { api } from '@/lib/api'
 
 export function syncCurrentStudentStats() {
   const studentId = useStudentAuthStore.getState().studentId
@@ -40,21 +40,20 @@ export const useStudentAuthStore = create<StudentAuthState>()(
       studentHandle: null,
 
       login: async (email, password) => {
-        const hash = await hashPassword(password)
-        const students = useAdminStore.getState().students
-        const student = students.find(
-          (s) => s.login === email && s.passwordHash === hash && s.isActive
-        )
-        if (student) {
-          // Reset store if a different student is logging in
-          useStore.getState().resetForStudent(student.id)
+        const result = await api.login(email, password)
+        if (result) {
+          useStore.getState().resetForStudent(result.studentId)
           set({
             isAuthenticated: true,
-            studentId: student.id,
-            studentName: student.name,
-            studentEmail: student.login,
-            studentHandle: student.login.split('@')[0],
+            studentId: result.studentId,
+            studentName: result.name,
+            studentEmail: result.email,
+            studentHandle: result.handle,
           })
+          // Refresh server data
+          useAdminStore.getState().fetchStudents()
+          useAdminStore.getState().fetchFeed()
+          useStore.getState().fetchServerData(result.studentId)
           setTimeout(syncCurrentStudentStats, 100)
           return true
         }
