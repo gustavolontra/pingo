@@ -181,17 +181,25 @@ export default function LandingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: q, context }),
       })
-      if (res.ok) {
-        const data = await res.json() as { answer: string }
-        setAiAnswer(data.answer)
-      } else {
+      if (!res.ok || !res.body) {
         setAiAnswer('Ocorreu um erro ao obter a resposta. Tenta novamente.')
+        setLoading(false)
+        return
+      }
+      setLoading(false)
+      const reader = res.body.getReader()
+      const dec = new TextDecoder()
+      let accumulated = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        accumulated += dec.decode(value, { stream: true })
+        setAiAnswer(accumulated)
       }
     } catch {
       setAiAnswer('Sem ligação. Verifica a tua internet e tenta novamente.')
+      setLoading(false)
     }
-
-    setLoading(false)
     setQuery('')
   }
 

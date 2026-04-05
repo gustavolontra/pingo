@@ -4,12 +4,10 @@ interface Env {
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
-  const headers = corsHeaders()
-
   const { query, context } = await request.json() as { query: string; context: string }
 
   if (!query?.trim()) {
-    return Response.json({ error: 'Missing query' }, { status: 400, headers })
+    return Response.json({ error: 'Missing query' }, { status: 400, headers: corsHeaders() })
   }
 
   const systemPrompt = `És um assistente de estudo para alunos do 3.º Ciclo do Ensino Básico português (7.º, 8.º e 9.º ano).
@@ -35,7 +33,7 @@ FORMATO DAS RESPOSTAS (só para perguntas escolares):
 Conteúdo da plataforma (usa como base quando relevante):
 ${context || '(sem conteúdo específico encontrado para este tema)'}`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'x-api-key': env.ANTHROPIC_API_KEY,
@@ -45,19 +43,53 @@ ${context || '(sem conteúdo específico encontrado para este tema)'}`
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 600,
+      stream: true,
       system: systemPrompt,
       messages: [{ role: 'user', content: query }],
     }),
   })
 
-  if (!response.ok) {
-    return Response.json({ error: 'AI unavailable' }, { status: 502, headers })
+  if (!anthropicRes.ok || !anthropicRes.body) {
+    return Response.json({ error: 'AI unavailable' }, { status: 502, headers: corsHeaders() })
   }
 
-  const data = await response.json() as { content: { text: string }[] }
-  const text = data.content?.[0]?.text ?? ''
+  // Forward Anthropic SSE stream, extracting only text deltas
+  const reader = anthropicRes.body.getReader()
+  const decoder = new TextDecoder()
 
-  return Response.json({ answer: text }, { headers })
+  const stream = new ReadableStream({
+    async pull(controller) {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) { controller.close(); return }
+
+        const chunk = decoder.decode(value, { stream: true })
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data: ')) continue
+          const data = line.slice(6).trim()
+          if (data === '[DONE]') { controller.close(); return }
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
+              controller.enqueue(new TextEncoder().encode(parsed.delta.text))
+            }
+          } catch { /* skip malformed lines */ }
+        }
+      }
+    },
+    cancel() { reader.cancel() },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Transfer-Encoding': 'chunked',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  })
 }
 
 export const onRequestOptions: PagesFunction = async () => {
