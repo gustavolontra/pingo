@@ -160,6 +160,47 @@ const INITIAL_ADMIN: AdminUser = {
   name: 'Gustavo Lontra',
 }
 
+// ─── Seed students (available on fresh installs) ─────────────────────────────
+
+const SEED_STUDENTS: Student[] = [
+  {
+    id: 'seed-marina', login: 'marinasarturiavila@gmail.com', name: 'Marina Sarturi Avila',
+    email: 'marinasarturiavila@gmail.com', school: 'Escola Secundária Da Maia',
+    grade: '7.º ano', passwordHash: '97c1b2425112be6676a52d66a11ecf55dd9fea89e39ef1b6f936c0b869094aad', // marina123
+    createdAt: '2026-03-20T10:00:00Z', isActive: true,
+    xp: 350, level: 3, streak: 5, lessonsCompleted: 12, totalStudyMinutes: 180,
+  },
+  {
+    id: 'seed-ana', login: 'anacosta@gmail.com', name: 'Ana Costa',
+    email: 'anacosta@gmail.com', school: 'Escola Secundária Da Maia',
+    grade: '7.º ano', passwordHash: 'e82827b00b2ca8620beb37f879778c082b292a52270390cff35b6fe3157f4e8b', // ana123
+    createdAt: '2026-03-21T09:00:00Z', isActive: true,
+    xp: 210, level: 2, streak: 3, lessonsCompleted: 8, totalStudyMinutes: 120,
+  },
+  {
+    id: 'seed-tiago', login: 'tiagosantos@gmail.com', name: 'Tiago Santos',
+    email: 'tiagosantos@gmail.com', school: 'Escola Secundária Da Maia',
+    grade: '8.º ano', passwordHash: 'c90dc61cae171669019bbabecad9c1c06aebb586cc1fb0b1a60efaa1594244dd', // tiago123
+    createdAt: '2026-03-22T11:00:00Z', isActive: true,
+    xp: 150, level: 2, streak: 1, lessonsCompleted: 5, totalStudyMinutes: 75,
+  },
+  {
+    id: 'seed-sofia', login: 'sofiaferreira@gmail.com', name: 'Sofia Ferreira',
+    email: 'sofiaferreira@gmail.com', school: 'Escola Secundária Da Maia',
+    grade: '7.º ano', passwordHash: 'a3e1a8a3ccd08f006f9df0b36f7a83809aff603bcd0ad5504821592c85ed3b22', // sofia123
+    createdAt: '2026-03-23T08:30:00Z', isActive: true,
+    xp: 420, level: 3, streak: 7, lessonsCompleted: 15, totalStudyMinutes: 210,
+  },
+]
+
+const SEED_FEED: FeedItem[] = [
+  {
+    id: 'seed-feed-1', autorId: 'seed-ana', autorNome: 'Ana Costa', autorAt: 'anacosta',
+    tipo: 'desafio', conteudo: 'quem lê 3 livros esse mês?',
+    data: new Date(Date.now() - 48 * 60000).toISOString(), reacoes: {},
+  },
+]
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 interface AdminState {
@@ -254,11 +295,11 @@ export const useAdminStore = create<AdminState>()(
       isAuthenticated: false,
       currentAdmin: null,
       admins: [INITIAL_ADMIN],
-      students: [],
+      students: SEED_STUDENTS,
       disciplines: [],
       hiddenStaticIds: [],
       contentDrafts: [],
-      feedItems: [],
+      feedItems: SEED_FEED,
 
       // ── Auth ────────────────────────────────────────────────────────────────
 
@@ -573,21 +614,37 @@ export const useAdminStore = create<AdminState>()(
     }),
     {
       name: 'pingo-admin-v1',
-      version: 2,
-      migrate: (state: unknown) => {
-        // v2: zerar stats de alunos que tinham XP do mockUser fictício
-        const s = state as { students?: Student[] } & Record<string, unknown>
-        return {
-          ...s,
-          students: (s.students ?? []).map((st) => ({
-            ...st,
-            xp: 0,
-            level: 1,
-            streak: 0,
-            lessonsCompleted: 0,
-            totalStudyMinutes: 0,
-          })),
+      version: 3,
+      migrate: (state: unknown, version: number) => {
+        const s = state as { students?: Student[]; feedItems?: FeedItem[] } & Record<string, unknown>
+        let students = s.students ?? []
+        let feedItems = s.feedItems ?? []
+
+        if (version < 2) {
+          // v2: zerar stats de alunos que tinham XP do mockUser fictício
+          students = students.map((st) => ({
+            ...st, xp: 0, level: 1, streak: 0, lessonsCompleted: 0, totalStudyMinutes: 0,
+          }))
         }
+
+        if (version < 3) {
+          // v3: merge seed students & feed into existing data
+          const existingIds = new Set(students.map((st) => st.id))
+          const existingLogins = new Set(students.map((st) => st.login))
+          for (const seed of SEED_STUDENTS) {
+            if (!existingIds.has(seed.id) && !existingLogins.has(seed.login)) {
+              students = [...students, seed]
+            }
+          }
+          const existingFeedIds = new Set(feedItems.map((f) => f.id))
+          for (const seed of SEED_FEED) {
+            if (!existingFeedIds.has(seed.id)) {
+              feedItems = [...feedItems, seed]
+            }
+          }
+        }
+
+        return { ...s, students, feedItems }
       },
     }
   )
