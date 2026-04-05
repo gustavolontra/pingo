@@ -24,7 +24,7 @@ import {
 const API_CONTENT = '/api/content'
 
 type View = 'list' | 'editor'
-type EditorStep = 'input' | 'analyzing' | 'review'
+type EditorStep = 'associar' | 'input' | 'analyzing' | 'review'
 type DraftData = Omit<ContentDraft, 'id' | 'createdAt'>
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -317,7 +317,9 @@ function Editor({
   onPublish: (data: DraftData) => Promise<void>
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
-  const [step, setStep] = useState<EditorStep>(initial ? 'review' : 'input')
+  const [step, setStep] = useState<EditorStep>(initial ? 'review' : 'associar')
+  const [publishedDiscs, setPublishedDiscs] = useState<{ id: string; name: string }[]>([])
+  const [loadingDiscs, setLoadingDiscs] = useState(false)
   const [rawContent, setRawContent] = useState(initial?.rawContent ?? '')
 
   // Review fields
@@ -385,6 +387,79 @@ function Editor({
     setSaving(true)
     await onPublish(getData())
     setSaving(false)
+  }
+
+  // ── Step: Associar ─────────────────────────────────────────────────────────
+
+  if (step === 'associar') {
+    async function loadPublished() {
+      setLoadingDiscs(true)
+      try {
+        const items = await api.getAllContent()
+        const ids = [...new Set(items.filter(i => !i.id.startsWith('synth-')).map(i => i.disciplineId))]
+        const discs = ids.map(id => {
+          const d = disciplines.find(x => x.id === id)
+          return { id, name: d?.name ?? id }
+        })
+        setPublishedDiscs(discs)
+      } catch { setPublishedDiscs([]) }
+      setLoadingDiscs(false)
+    }
+
+    return (
+      <div className="p-8 max-w-3xl">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={onBack} className="p-2 rounded-xl hover:bg-slate-100 transition-colors" style={{ color: 'var(--text-muted)' }}>
+            <ArrowLeft size={18} />
+          </button>
+          <h2 className="text-xl font-display font-bold" style={{ color: 'var(--text)' }}>Novo aprendizado</h2>
+        </div>
+
+        <div className="card space-y-5">
+          <div>
+            <p className="font-semibold mb-1" style={{ color: 'var(--text)' }}>Queres associar este conteúdo a uma matéria já publicada?</p>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Se sim, o conteúdo será adicionado à matéria existente e os flashcards, quiz e palavras-chave serão regenerados automaticamente para cobrir todo o material.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={async () => { await loadPublished(); /* discs loaded, show below */ }}
+              disabled={loadingDiscs}
+              className="btn-primary flex items-center justify-center gap-2 py-3"
+            >
+              {loadingDiscs ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+              Sim, associar a uma matéria existente
+            </button>
+
+            {publishedDiscs.length > 0 && (
+              <div className="flex flex-col gap-2 mt-1">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Seleciona a matéria:</p>
+                {publishedDiscs.map(d => (
+                  <button
+                    key={d.id}
+                    onClick={() => { setDisciplineId(d.id); setStep('input') }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all hover:opacity-80"
+                    style={{ background: 'rgba(98,112,245,0.08)', border: '1px solid rgba(98,112,245,0.2)', color: 'var(--text)' }}
+                  >
+                    <span className="font-medium text-sm">{d.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setStep('input')}
+              className="flex items-center justify-center py-3 rounded-xl text-sm font-semibold transition-all"
+              style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+            >
+              Não, criar conteúdo novo
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // ── Step: Input ────────────────────────────────────────────────────────────
