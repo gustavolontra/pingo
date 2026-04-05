@@ -70,7 +70,7 @@ function FeedCard({ item }: { item: FeedItem }) {
           </div>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{timeAgo(item.data)}</p>
         </div>
-        {isOwner && !confirmDelete && (
+        {!confirmDelete ? (
           <button
             onClick={() => setConfirmDelete(true)}
             className="p-1.5 rounded-lg hover:opacity-70 shrink-0"
@@ -78,8 +78,7 @@ function FeedCard({ item }: { item: FeedItem }) {
           >
             <X size={14} style={{ color: 'var(--text-muted)' }} />
           </button>
-        )}
-        {isOwner && confirmDelete && (
+        ) : (
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => deleteFeedItem(item.id)}
