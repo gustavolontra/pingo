@@ -42,9 +42,10 @@ const REACTIONS = [
 
 function FeedCard({ item }: { item: FeedItem }) {
   const { reactToFeedItem, deleteFeedItem } = useAdminStore()
-  const { studentId } = useStudentAuthStore()
+  const { studentId, studentHandle } = useStudentAuthStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const isOwner = studentId === item.autorId
+  const isOwner = (studentId != null && studentId === item.autorId)
+    || (studentHandle != null && studentHandle === item.autorAt)
 
   return (
     <div className="card space-y-3">
