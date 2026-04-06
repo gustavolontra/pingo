@@ -54,7 +54,9 @@ export default function Sidebar() {
         <h1 className="text-xl font-display font-extrabold tracking-tight" style={{ color: 'var(--text)' }}>
           pingo<span style={{ color: '#6270f5' }}>.team</span><span style={{ fontSize: '10px', fontWeight: 500, color: '#9ca3af', letterSpacing: '0.05em', marginLeft: '4px', verticalAlign: 'middle' }}>beta</span>
         </h1>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>3.º Ciclo · Ensino Básico</p>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          {me?.grade?.startsWith('5') || me?.grade?.startsWith('6') ? '2.º Ciclo' : '3.º Ciclo'} · Ensino Básico
+        </p>
       </div>
 
       {/* Nav */}

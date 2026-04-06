@@ -140,7 +140,7 @@ export default function ProfilePage() {
                   <select value={editGrade} onChange={(e) => setEditGrade(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl text-sm"
                     style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
-                    {['7.º ano', '8.º ano', '9.º ano'].map((g) => <option key={g} value={g}>{g}</option>)}
+                    {['5.º ano', '6.º ano', '7.º ano', '8.º ano', '9.º ano'].map((g) => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <div className="pt-2" style={{ borderTop: '1px solid var(--border)' }}>

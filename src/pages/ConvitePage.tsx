@@ -144,6 +144,8 @@ export default function ConvitePage() {
               style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)' }}
             >
               <option value="">Seleciona o ano</option>
+              <option value="5.º ano">5.º ano</option>
+              <option value="6.º ano">6.º ano</option>
               <option value="7.º ano">7.º ano</option>
               <option value="8.º ano">8.º ano</option>
               <option value="9.º ano">9.º ano</option>
