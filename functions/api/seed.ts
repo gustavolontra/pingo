@@ -9,6 +9,7 @@ const SEED_STUDENTS = [
     grade: '7.º ano', passwordHash: '97c1b2425112be6676a52d66a11ecf55dd9fea89e39ef1b6f936c0b869094aad',
     createdAt: '2026-03-20T10:00:00Z', isActive: true,
     xp: 350, level: 3, streak: 5, lessonsCompleted: 12, totalStudyMinutes: 180,
+    codigoConvite: 'PING-marinasarturiavila', convitesFeitos: [],
   },
   {
     id: 'seed-ana', login: 'anacosta@gmail.com', name: 'Ana Costa',
@@ -16,6 +17,7 @@ const SEED_STUDENTS = [
     grade: '7.º ano', passwordHash: 'e82827b00b2ca8620beb37f879778c082b292a52270390cff35b6fe3157f4e8b',
     createdAt: '2026-03-21T09:00:00Z', isActive: true,
     xp: 210, level: 2, streak: 3, lessonsCompleted: 8, totalStudyMinutes: 120,
+    codigoConvite: 'PING-anacosta', convitesFeitos: [],
   },
   {
     id: 'seed-tiago', login: 'tiagosantos@gmail.com', name: 'Tiago Santos',
@@ -23,6 +25,7 @@ const SEED_STUDENTS = [
     grade: '8.º ano', passwordHash: 'c90dc61cae171669019bbabecad9c1c06aebb586cc1fb0b1a60efaa1594244dd',
     createdAt: '2026-03-22T11:00:00Z', isActive: true,
     xp: 150, level: 2, streak: 1, lessonsCompleted: 5, totalStudyMinutes: 75,
+    codigoConvite: 'PING-tiagosantos', convitesFeitos: [],
   },
   {
     id: 'seed-sofia', login: 'sofiaferreira@gmail.com', name: 'Sofia Ferreira',
@@ -30,6 +33,7 @@ const SEED_STUDENTS = [
     grade: '7.º ano', passwordHash: 'a3e1a8a3ccd08f006f9df0b36f7a83809aff603bcd0ad5504821592c85ed3b22',
     createdAt: '2026-03-23T08:30:00Z', isActive: true,
     xp: 420, level: 3, streak: 7, lessonsCompleted: 15, totalStudyMinutes: 210,
+    codigoConvite: 'PING-sofiaferreira', convitesFeitos: [],
   },
 ]
 

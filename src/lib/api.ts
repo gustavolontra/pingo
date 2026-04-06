@@ -259,6 +259,43 @@ export const api = {
     })
   },
 
+  // ── Convites ───────────────────────────────────────────────────────────────
+  async submitConvite(data: { nome: string; escola: string; ano: string; email: string; codigoConvite: string }) {
+    const res = await fetch(`${BASE}/convites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    return res.json()
+  },
+  async getPedidosConvite() {
+    const res = await fetch(`${BASE}/convites`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async aprovarConvite(id: string): Promise<{ login: string; password: string } | null> {
+    const res = await fetch(`${BASE}/convites`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action: 'aprovar' }),
+    })
+    if (!res.ok) return null
+    return res.json()
+  },
+  async recusarConvite(id: string) {
+    await fetch(`${BASE}/convites`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action: 'recusar' }),
+    })
+  },
+  async getStudentByInviteCode(code: string) {
+    const res = await fetch(`${BASE}/convites?code=${encodeURIComponent(code)}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.inviter ?? null
+  },
+
   // ── Seed ──────────────────────────────────────────────────────────────────
   async seed() {
     await fetch(`${BASE}/seed`, { method: 'POST' })

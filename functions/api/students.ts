@@ -46,6 +46,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     const passwordHash = await hashPassword(password)
     const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim()
 
+    const handle = login.toLowerCase().trim().split('@')[0]
     const student: Student = {
       id: crypto.randomUUID(),
       login: login.toLowerCase().trim(),
@@ -61,6 +62,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       streak: 0,
       lessonsCompleted: 0,
       totalStudyMinutes: 0,
+      codigoConvite: `PING-${handle}`,
+      convitesFeitos: [],
     }
 
     const raw = await env.PINGO_CONTENT.get('students')

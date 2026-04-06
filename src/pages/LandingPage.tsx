@@ -452,19 +452,15 @@ function LimitGate({ navigate }: { navigate: (p: string) => void }) {
         Limite atingido por hoje!
       </p>
       <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        Os teus colegas já estão no ranking — cria a tua conta grátis agora e começa a subir também. Não deixes que a distância aumente!
+        Os teus colegas já estão no ranking — entra na tua conta e começa a subir também!
       </p>
-      <div className="flex gap-3 justify-center">
+      <div className="flex flex-col items-center gap-3">
         <button onClick={() => navigate('/login')} className="btn-primary px-5 py-2 text-sm">
           Iniciar sessão
         </button>
-        <button
-          onClick={() => navigate('/login?tab=registar')}
-          className="px-5 py-2 text-sm font-semibold rounded-xl transition-all"
-          style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)' }}
-        >
-          Criar conta
-        </button>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          O acesso é feito por convite. Pede um convite a um colega ou fala com o teu professor.
+        </p>
       </div>
     </div>
   )

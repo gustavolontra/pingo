@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminStore, type Student } from '@/store/useAdminStore'
 import { hashPassword } from '@/lib/crypto'
-import { UserPlus, Trash2, X, ChevronRight, Pencil } from 'lucide-react'
+import { UserPlus, Trash2, X, ChevronRight, Pencil, Check, Ban, Copy, Clock } from 'lucide-react'
 
 const GRADE_OPTIONS = [
   '1.º ano', '2.º ano', '3.º ano', '4.º ano',
@@ -12,13 +12,18 @@ const GRADE_OPTIONS = [
 const EMPTY_FORM = { login: '', name: '', school: '', grade: '7.º ano', password: '' }
 
 export default function AdminUsersPage() {
-  const { students, createStudent, updateStudent, deleteStudent } = useAdminStore()
+  const { students, createStudent, updateStudent, deleteStudent, pedidosConvite, fetchPedidosConvite, aprovarConvite, recusarConvite } = useAdminStore()
   const [showForm, setShowForm] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [approvedCreds, setApprovedCreds] = useState<{ login: string; password: string } | null>(null)
+
+  const pendentes = pedidosConvite.filter((p) => p.estado === 'pendente')
+
+  useEffect(() => { fetchPedidosConvite() }, [])
 
   function field(key: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -144,6 +149,88 @@ export default function AdminUsersPage() {
           </Modal>
         )
       })()}
+
+      {/* Pending invites */}
+      {pendentes.length > 0 && (
+        <div className="card mb-6 p-0 overflow-hidden">
+          <div className="px-5 py-3 flex items-center gap-2" style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--border)' }}>
+            <Clock size={15} style={{ color: '#f59e0b' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+              Pedidos pendentes
+            </span>
+            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#fef3c7', color: '#92400e' }}>
+              {pendentes.length}
+            </span>
+          </div>
+          {pendentes.map((p) => {
+            const inviterStudent = students.find((s) => s.id === p.convidadoPor)
+            return (
+              <div key={p.id} className="px-5 py-3 flex items-center gap-4" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{p.nome}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {p.escola} · {p.ano} · {p.email}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: '#6270f5' }}>
+                    Convidado por @{inviterStudent?.login.split('@')[0] ?? '?'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={async () => {
+                      const creds = await aprovarConvite(p.id)
+                      if (creds) setApprovedCreds(creds)
+                    }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+                    style={{ background: '#dcfce7', color: '#166534' }}
+                  >
+                    <Check size={13} /> Aprovar
+                  </button>
+                  <button
+                    onClick={() => recusarConvite(p.id)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors"
+                    style={{ background: '#fef2f2', color: '#dc2626' }}
+                  >
+                    <Ban size={13} /> Recusar
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Approved credentials modal */}
+      {approvedCreds && (
+        <Modal title="Aluno aprovado!" onClose={() => setApprovedCreds(null)}>
+          <div className="space-y-4">
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Partilha estes dados de acesso com o aluno:
+            </p>
+            <div className="rounded-xl p-4 space-y-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Login:</span>
+                <span className="text-sm font-mono font-semibold" style={{ color: 'var(--text)' }}>{approvedCreds.login}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Senha:</span>
+                <span className="text-sm font-mono font-semibold" style={{ color: 'var(--text)' }}>{approvedCreds.password}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`Login: ${approvedCreds.login}\nSenha: ${approvedCreds.password}`)
+              }}
+              className="btn-primary w-full flex items-center justify-center gap-2 py-2.5"
+            >
+              <Copy size={14} /> Copiar dados
+            </button>
+            <button onClick={() => setApprovedCreds(null)} className="btn-ghost w-full py-2">
+              Fechar
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {/* Table */}
       {students.length === 0 ? (

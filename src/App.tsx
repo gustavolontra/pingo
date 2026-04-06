@@ -19,6 +19,7 @@ import AdminStudentDetailPage from '@/pages/admin/AdminStudentDetailPage'
 import AdminDisciplineContentPage from '@/pages/admin/AdminDisciplineContentPage'
 import AdminLearningsPage from '@/pages/admin/AdminLearningsPage'
 import AdminActivityLogPage from '@/pages/admin/AdminActivityLogPage'
+import ConvitePage from '@/pages/ConvitePage'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<StudentLoginPage />} />
       <Route path="/registar" element={<StudentLoginPage />} />
+      <Route path="/convite/:codigo" element={<ConvitePage />} />
 
       {/* App de estudante (protegido) */}
       <Route

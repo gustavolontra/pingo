@@ -1,17 +1,33 @@
+import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+import { useAdminStore } from '@/store/useAdminStore'
 import { formatMinutes, formatDate } from '@/lib/utils'
-import { Flame, Zap, Clock, BookMarked } from 'lucide-react'
+import { Flame, Zap, Clock, BookMarked, Link2, Copy, Check, Users } from 'lucide-react'
 
 const rarityColors = { common: '#94a3b8', rare: '#60a5fa', epic: '#c084fc', legendary: '#fbbf24' }
 const rarityLabels = { common: 'Comum', rare: 'Raro', epic: 'Épico', legendary: 'Lendário' }
 
 export default function ProfilePage() {
   const { user, getBooks } = useStore()
-  const { studentName, studentHandle } = useStudentAuthStore()
+  const { studentName, studentHandle, studentId } = useStudentAuthStore()
+  const students = useAdminStore((s) => s.students)
   const displayName = studentName || user.name
   const sharedBooks = getBooks().filter((b) => b.partilhado && b.status === 'lido')
   const xpProgress = Math.round((user.xp / user.xpForNextLevel) * 100)
+  const [copied, setCopied] = useState(false)
+
+  const me = students.find((s) => s.id === studentId)
+  const inviteCode = me?.codigoConvite ?? ''
+  const inviteLink = inviteCode ? `${window.location.origin}/convite/${inviteCode}` : ''
+  const invitedBy = me?.convidadoPor ? students.find((s) => s.id === me.convidadoPor) : null
+  const invitedStudents = students.filter((s) => s.convidadoPor === studentId)
+
+  function copyLink() {
+    navigator.clipboard.writeText(inviteLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
@@ -75,6 +91,53 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Invite section */}
+      {inviteCode && (
+        <div className="card space-y-4">
+          <h3 className="font-display font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+            <Link2 size={16} style={{ color: '#6270f5' }} /> O meu convite
+          </h3>
+
+          {invitedBy && (
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Foste convidado por <strong style={{ color: '#6270f5' }}>@{invitedBy.login.split('@')[0]}</strong>
+            </p>
+          )}
+
+          <div className="flex items-center gap-2">
+            <div
+              className="flex-1 px-3 py-2.5 rounded-xl text-sm font-mono truncate"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+            >
+              {inviteLink}
+            </div>
+            <button onClick={copyLink} className="btn-primary px-3 py-2.5 flex items-center gap-1.5 shrink-0">
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? 'Copiado!' : 'Copiar'}
+            </button>
+          </div>
+
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+            Partilha este link com colegas para os convidares para o Pingo.
+          </p>
+
+          {invitedStudents.length > 0 && (
+            <div className="pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+              <p className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                <Users size={13} /> Convidaste {invitedStudents.length} colega{invitedStudents.length !== 1 ? 's' : ''}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {invitedStudents.map((s) => (
+                  <span key={s.id} className="text-xs px-2 py-1 rounded-lg" style={{ background: 'var(--surface-2)', color: 'var(--text)' }}>
+                    {s.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
