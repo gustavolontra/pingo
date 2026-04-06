@@ -161,6 +161,7 @@ export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
       codigoConvite: `PING-${handle}`,
       convidadoPor: pedido.convidadoPor,
       convitesFeitos: [],
+      mustChangePassword: true,
     }
 
     // Add student

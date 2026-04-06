@@ -40,6 +40,7 @@ export interface Student {
   codigoConvite: string
   convidadoPor?: string
   convitesFeitos: string[]
+  mustChangePassword?: boolean
 }
 
 export interface PedidoConvite {

@@ -104,7 +104,7 @@ export const api = {
   },
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  async login(email: string, password: string): Promise<{ studentId: string; name: string; email: string; handle: string; token: string } | null> {
+  async login(email: string, password: string): Promise<{ studentId: string; name: string; email: string; handle: string; token: string; mustChangePassword?: boolean } | null> {
     const res = await fetch(`${BASE}/auth`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

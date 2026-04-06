@@ -24,10 +24,12 @@ interface StudentAuthState {
   studentId: string | null
   studentName: string | null
   studentEmail: string | null
-  studentHandle: string | null  // gerado do email, ex: "marina" de "marina@gmail.com"
+  studentHandle: string | null
+  mustChangePassword: boolean
 
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
+  clearMustChangePassword: () => void
 }
 
 export const useStudentAuthStore = create<StudentAuthState>()(
@@ -38,6 +40,7 @@ export const useStudentAuthStore = create<StudentAuthState>()(
       studentName: null,
       studentEmail: null,
       studentHandle: null,
+      mustChangePassword: false,
 
       login: async (email, password) => {
         const result = await api.login(email, password)
@@ -49,6 +52,7 @@ export const useStudentAuthStore = create<StudentAuthState>()(
             studentName: result.name,
             studentEmail: result.email,
             studentHandle: result.handle,
+            mustChangePassword: result.mustChangePassword ?? false,
           })
           // Refresh server data
           useAdminStore.getState().fetchStudents()
@@ -66,7 +70,10 @@ export const useStudentAuthStore = create<StudentAuthState>()(
         studentName: null,
         studentEmail: null,
         studentHandle: null,
+        mustChangePassword: false,
       }),
+
+      clearMustChangePassword: () => set({ mustChangePassword: false }),
     }),
     { name: 'pingo-student-auth-v1' }
   )

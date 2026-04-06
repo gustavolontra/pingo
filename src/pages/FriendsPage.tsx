@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
-import { Users, UserPlus, UserMinus, Flame, Zap, BookMarked, X, Search, UserCheck } from 'lucide-react'
+import { Users, UserPlus, UserMinus, Flame, Zap, BookMarked, X, Search, UserCheck, Clock } from 'lucide-react'
 
 // ── Card de sugestão (mesma escola) ──────────────────────────────────────────
 
@@ -126,6 +126,15 @@ export default function FriendsPage() {
   const { getFriends, addFriend, removeFriend, ignoreSuggestion, getIgnoredSuggestions } = useStore()
   const { studentId } = useStudentAuthStore()
   const students = useAdminStore((s) => s.students)
+  const pedidosConvite = useAdminStore((s) => s.pedidosConvite)
+  const fetchPedidosConvite = useAdminStore((s) => s.fetchPedidosConvite)
+
+  useEffect(() => { fetchPedidosConvite() }, [])
+
+  // Convites que EU fiz e estão pendentes
+  const myPendingInvites = pedidosConvite.filter(
+    (p) => p.convidadoPor === studentId && p.estado === 'pendente'
+  )
 
   const friendIds = getFriends()
   const ignoredIds = getIgnoredSuggestions()
@@ -286,6 +295,39 @@ export default function FriendsPage() {
           </p>
         )}
       </div>
+
+      {/* Convites pendentes */}
+      {myPendingInvites.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Clock size={15} style={{ color: '#f59e0b' }} />
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+              Convites pendentes
+            </p>
+          </div>
+          {myPendingInvites.map((p) => (
+            <div
+              key={p.id}
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+              style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+                style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b' }}
+              >
+                {p.nome.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{p.nome}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{p.escola} · {p.ano}</p>
+              </div>
+              <span className="text-xs px-2 py-1 rounded-lg font-semibold shrink-0" style={{ background: 'rgba(245,158,11,0.1)', color: '#92400e' }}>
+                A aguardar aprovação
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Lista de amigos */}
       {friendIds.length > 0 && (

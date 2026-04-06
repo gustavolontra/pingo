@@ -48,7 +48,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     }
     await env.PINGO_CONTENT.put(`session:${token}`, JSON.stringify(session))
 
-    return Response.json({ studentId: student.id, name: student.name, email: student.email, handle, token }, { headers })
+    return Response.json({ studentId: student.id, name: student.name, email: student.email, handle, token, mustChangePassword: student.mustChangePassword ?? false }, { headers })
   } catch {
     return Response.json({ error: 'Internal error' }, { status: 500, headers })
   }

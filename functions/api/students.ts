@@ -80,7 +80,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
 export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
   try {
-    const { id, ...data } = await request.json() as { id: string; [key: string]: unknown }
+    const { id, newPassword, ...data } = await request.json() as { id: string; newPassword?: string; [key: string]: unknown }
+
+    // If newPassword is provided, hash it and set passwordHash + clear mustChangePassword
+    if (newPassword) {
+      data.passwordHash = await hashPassword(newPassword)
+      data.mustChangePassword = false
+    }
 
     const raw = await env.PINGO_CONTENT.get('students')
     const students: Student[] = raw ? JSON.parse(raw) : []
