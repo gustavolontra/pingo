@@ -16,6 +16,28 @@ export interface DisciplineOption {
 }
 
 export const DISCIPLINE_OPTIONS: DisciplineOption[] = [
+  // ── 2.º Ciclo (5.º e 6.º ano) ──
+  { id: 'portugues-5', name: 'Português 5.º Ano', subject: 'Português', year: 5, color: '#f59e0b', icon: '📖' },
+  { id: 'portugues-6', name: 'Português 6.º Ano', subject: 'Português', year: 6, color: '#f59e0b', icon: '📖' },
+  { id: 'matematica-5', name: 'Matemática 5.º Ano', subject: 'Matemática', year: 5, color: '#6270f5', icon: '📐' },
+  { id: 'matematica-6', name: 'Matemática 6.º Ano', subject: 'Matemática', year: 6, color: '#6270f5', icon: '📐' },
+  { id: 'hgp-5', name: 'HGP 5.º Ano', subject: 'História e Geografia de Portugal', year: 5, color: '#ef4444', icon: '🏛️' },
+  { id: 'hgp-6', name: 'HGP 6.º Ano', subject: 'História e Geografia de Portugal', year: 6, color: '#ef4444', icon: '🏛️' },
+  { id: 'ciencias-5', name: 'Ciências Naturais 5.º Ano', subject: 'Ciências Naturais', year: 5, color: '#06b6d4', icon: '🔬' },
+  { id: 'ciencias-6', name: 'Ciências Naturais 6.º Ano', subject: 'Ciências Naturais', year: 6, color: '#06b6d4', icon: '🔬' },
+  { id: 'ingles-5', name: 'Inglês 5.º Ano', subject: 'Inglês', year: 5, color: '#0ea5e9', icon: '🇬🇧' },
+  { id: 'ingles-6', name: 'Inglês 6.º Ano', subject: 'Inglês', year: 6, color: '#0ea5e9', icon: '🇬🇧' },
+  { id: 'evt-5', name: 'EVT 5.º Ano', subject: 'Educação Visual e Tecnológica', year: 5, color: '#ec4899', icon: '🎨' },
+  { id: 'evt-6', name: 'EVT 6.º Ano', subject: 'Educação Visual e Tecnológica', year: 6, color: '#ec4899', icon: '🎨' },
+  { id: 'musica-5', name: 'Educação Musical 5.º Ano', subject: 'Educação Musical', year: 5, color: '#a78bfa', icon: '🎵' },
+  { id: 'musica-6', name: 'Educação Musical 6.º Ano', subject: 'Educação Musical', year: 6, color: '#a78bfa', icon: '🎵' },
+  { id: 'ef-5', name: 'Educação Física 5.º Ano', subject: 'Educação Física', year: 5, color: '#22c55e', icon: '⚽' },
+  { id: 'ef-6', name: 'Educação Física 6.º Ano', subject: 'Educação Física', year: 6, color: '#22c55e', icon: '⚽' },
+  { id: 'emrc-5', name: 'EMRC 5.º Ano', subject: 'EMRC', year: 5, color: '#78716c', icon: '✝️' },
+  { id: 'emrc-6', name: 'EMRC 6.º Ano', subject: 'EMRC', year: 6, color: '#78716c', icon: '✝️' },
+  { id: 'cidadania-5', name: 'Cidadania 5.º Ano', subject: 'Cidadania e Desenvolvimento', year: 5, color: '#14b8a6', icon: '🤝' },
+  { id: 'cidadania-6', name: 'Cidadania 6.º Ano', subject: 'Cidadania e Desenvolvimento', year: 6, color: '#14b8a6', icon: '🤝' },
+  // ── 3.º Ciclo (7.º, 8.º e 9.º ano) ──
   { id: 'historia-7', name: 'História 7.º Ano', subject: 'História', year: 7, color: '#ef4444', icon: '🏛️' },
   { id: 'historia-8', name: 'História 8.º Ano', subject: 'História', year: 8, color: '#ef4444', icon: '🏛️' },
   { id: 'historia-9', name: 'História 9.º Ano', subject: 'História', year: 9, color: '#ef4444', icon: '🏛️' },
