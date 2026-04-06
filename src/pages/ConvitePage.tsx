@@ -193,6 +193,7 @@ export default function ConvitePage() {
             type="submit"
             disabled={submitting || !nome || !escola || !ano || !email || !termosAceites || !encarregadoAceite}
             className="btn-primary w-full py-2.5 flex items-center justify-center gap-2"
+            style={{ opacity: (!termosAceites || !encarregadoAceite) ? 0.4 : 1 }}
           >
             {submitting ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
             Pedir acesso
