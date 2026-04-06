@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useStore } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+import { useAdminStore } from '@/store/useAdminStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { formatMinutes } from '@/lib/utils'
-import { Flame, Clock, Zap, BookOpen, Calendar } from 'lucide-react'
+import { Flame, Clock, Zap, BookOpen, Calendar, UserPlus, Copy, Check } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useNavigate } from 'react-router-dom'
 import StatCard from '@/components/ui/StatCard'
@@ -37,9 +39,12 @@ function urgencyColor(days: number) {
 export default function DashboardPage() {
   const { user, dailyStats, getExams } = useStore()
   const exams = getExams()
-  const { studentName, studentHandle } = useStudentAuthStore()
+  const { studentName, studentHandle, studentId } = useStudentAuthStore()
+  const students = useAdminStore((s) => s.students)
   const navigate = useNavigate()
   const displayName = studentName || user.name
+  const me = students.find((s) => s.id === studentId)
+  const inviteCode = me?.codigoConvite ?? ''
   const disciplines = useDisciplines()
   const thisWeekXP = dailyStats.slice(-7).reduce((sum, s) => sum + s.xpEarned, 0)
   const thisWeekMin = dailyStats.slice(-7).reduce((sum, s) => sum + s.minutesStudied, 0)
@@ -68,6 +73,9 @@ export default function DashboardPage() {
         <StatCard icon={Zap} label="XP total" value={user.xp} color="#a78bfa" sub={`Esta semana: +${thisWeekXP}`} />
         <StatCard icon={BookOpen} label="Nível" value={user.level} color="#10b981" sub={`${user.xp}/${user.xpForNextLevel} XP`} />
       </div>
+
+      {/* Invite banner */}
+      {inviteCode && <InviteBanner code={inviteCode} />}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Left column */}
@@ -128,6 +136,38 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function InviteBanner({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false)
+  const link = `${window.location.origin}/convite/${code}`
+
+  function copy() {
+    navigator.clipboard.writeText(link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div
+      className="flex items-center gap-4 px-5 py-3.5 rounded-2xl"
+      style={{ background: 'rgba(98,112,245,0.08)', border: '1px solid rgba(98,112,245,0.15)' }}
+    >
+      <UserPlus size={20} style={{ color: '#6270f5' }} className="shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Convida os teus colegas!</p>
+        <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{link}</p>
+      </div>
+      <button
+        onClick={copy}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all"
+        style={{ background: '#6270f5', color: '#fff' }}
+      >
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+        {copied ? 'Copiado!' : 'Copiar link'}
+      </button>
     </div>
   )
 }
