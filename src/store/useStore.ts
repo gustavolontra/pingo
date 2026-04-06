@@ -110,7 +110,7 @@ interface AppState {
   setDisciplinesFromKV: (disciplines: Discipline[]) => void
   resetForStudent: (studentId: string) => void
 
-  addExam: (subject: string, date: string) => void
+  addExam: (subject: string, date: string) => Promise<void> | void
   updateExam: (id: string, subject: string, date: string) => void
   deleteExam: (id: string) => void
   setExamStudyNote: (id: string, note: string) => void
@@ -319,12 +319,21 @@ export const useStore = create<AppState>()(
         })
       },
 
-      addExam: (subject, date) => {
+      addExam: async (subject, date) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().examsByStudent[sid] ?? []
-        const exam = { id: crypto.randomUUID(), subject, date, studyNote: '' }
-        set({ examsByStudent: { ...get().examsByStudent, [sid]: [...prev, exam] } })
-        api.addExam(sid, subject, date)
+        // Use a temp ID for instant UI, then replace with server ID
+        const tempId = crypto.randomUUID()
+        const tempExam = { id: tempId, subject, date, studyNote: '' }
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: [...prev, tempExam] } })
+        try {
+          const serverExam = await api.addExam(sid, subject, date)
+          if (serverExam?.id) {
+            set({ examsByStudent: { ...get().examsByStudent, [sid]: get().examsByStudent[sid].map((e) =>
+              e.id === tempId ? { ...e, id: serverExam.id } : e
+            ) } })
+          }
+        } catch { /* offline — keep temp id */ }
       },
 
       updateExam: (examId, subject, date) => {
