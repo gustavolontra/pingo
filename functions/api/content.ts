@@ -103,11 +103,23 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request }) => {
   const id = url.searchParams.get('id')
   const disciplineId = url.searchParams.get('disciplineId')
 
-  if (!id || !disciplineId) {
-    return Response.json({ error: 'Missing id or disciplineId' }, { status: 400, headers })
+  if (!disciplineId) {
+    return Response.json({ error: 'Missing disciplineId' }, { status: 400, headers })
   }
 
   const key = `content:${disciplineId}`
+
+  // If id is __ALL__, delete all content for this discipline + synthesis
+  if (id === '__ALL__') {
+    await env.PINGO_CONTENT.delete(key)
+    await env.PINGO_CONTENT.delete(`synthesis:${disciplineId}`)
+    return Response.json({ ok: true }, { headers })
+  }
+
+  if (!id) {
+    return Response.json({ error: 'Missing id' }, { status: 400, headers })
+  }
+
   const existing: ContentItem[] = JSON.parse(await env.PINGO_CONTENT.get(key) ?? '[]')
   const updated = existing.filter((c) => c.id !== id)
   await env.PINGO_CONTENT.put(key, JSON.stringify(updated))

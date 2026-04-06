@@ -478,6 +478,8 @@ export const useAdminStore = create<AdminState>()(
         const updated = get().disciplines.filter((d) => d.id !== id)
         set({ disciplines: updated })
         syncDisciplines(updated)
+        // Also delete all content for this discipline from KV
+        api.deleteContent('__ALL__', id).catch(() => {})
       },
 
       hideStaticDiscipline: (id) =>

@@ -80,13 +80,6 @@ function buildDisciplines(kvDisciplines: KVDiscipline[], content: KVContentItem[
     discMap.set(d.id, { ...d, name: opt.name, subject: opt.subject, year: opt.year })
   })
 
-  // Para conteúdos sem entrada no KV, infere pelo getDisciplineOption
-  for (const item of content) {
-    if (discMap.has(item.disciplineId)) continue
-    const opt = getDisciplineOption(item.disciplineId)
-    discMap.set(opt.id, { id: opt.id, name: opt.name, subject: opt.subject, year: opt.year, color: opt.color, icon: opt.icon })
-  }
-
   return Array.from(discMap.values()).map((d) => {
     const items = content.filter((c) => c.disciplineId === d.id)
 
