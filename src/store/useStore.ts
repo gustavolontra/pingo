@@ -30,11 +30,36 @@ interface StudentProgress {
   examDates: Record<string, string>
 }
 
+export interface ExamMaterial {
+  id: string
+  nome: string
+  tipo: 'texto' | 'ficheiro'
+  conteudo: string
+}
+
+export interface DiaPlano {
+  dia: number
+  data: string
+  tema: string
+  resumo: string
+  flashcards: { frente: string; verso: string }[]
+  quiz: { pergunta: string; opcoes: string[]; correta: number; explicacao: string }[]
+}
+
+export interface PlanoEstudo {
+  geradoEm: string
+  resumo: string
+  dias: DiaPlano[]
+  diasEstudados: number[]
+}
+
 export interface Exam {
   id: string
-  subject: string   // display name, e.g. "História"
-  date: string      // ISO date string
+  subject: string
+  date: string
   studyNote: string
+  materiais?: ExamMaterial[]
+  planoEstudo?: PlanoEstudo
 }
 
 export interface Book {
@@ -89,6 +114,10 @@ interface AppState {
   updateExam: (id: string, subject: string, date: string) => void
   deleteExam: (id: string) => void
   setExamStudyNote: (id: string, note: string) => void
+  addExamMaterial: (examId: string, material: Omit<ExamMaterial, 'id'>) => void
+  removeExamMaterial: (examId: string, materialId: string) => void
+  setExamPlano: (examId: string, plano: PlanoEstudo) => void
+  markDiaEstudado: (examId: string, dia: number) => void
 
   addFriend: (friendId: string) => void
   removeFriend: (friendId: string) => void
@@ -317,6 +346,47 @@ export const useStore = create<AppState>()(
         const prev = get().examsByStudent[sid] ?? []
         set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) => e.id === examId ? { ...e, studyNote: note } : e) } })
         api.updateExam(sid, examId, { studyNote: note })
+      },
+
+      addExamMaterial: (examId, material) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        const mat = { ...material, id: crypto.randomUUID() }
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) =>
+          e.id === examId ? { ...e, materiais: [...(e.materiais ?? []), mat] } : e
+        ) } })
+        api.updateExam(sid, examId, { materiais: prev.find((e) => e.id === examId)?.materiais ? [...(prev.find((e) => e.id === examId)!.materiais ?? []), mat] : [mat] })
+      },
+
+      removeExamMaterial: (examId, materialId) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        const exam = prev.find((e) => e.id === examId)
+        const updated = (exam?.materiais ?? []).filter((m) => m.id !== materialId)
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) =>
+          e.id === examId ? { ...e, materiais: updated } : e
+        ) } })
+        api.updateExam(sid, examId, { materiais: updated })
+      },
+
+      setExamPlano: (examId, plano) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) =>
+          e.id === examId ? { ...e, planoEstudo: plano } : e
+        ) } })
+        api.updateExam(sid, examId, { planoEstudo: plano })
+      },
+
+      markDiaEstudado: (examId, dia) => {
+        const sid = get().lastStudentId ?? 'anon'
+        const prev = get().examsByStudent[sid] ?? []
+        const exam = prev.find((e) => e.id === examId)
+        const diasEstudados = [...new Set([...(exam?.planoEstudo?.diasEstudados ?? []), dia])]
+        set({ examsByStudent: { ...get().examsByStudent, [sid]: prev.map((e) =>
+          e.id === examId && e.planoEstudo ? { ...e, planoEstudo: { ...e.planoEstudo, diasEstudados } } : e
+        ) } })
+        if (exam?.planoEstudo) api.updateExam(sid, examId, { planoEstudo: { ...exam.planoEstudo, diasEstudados } })
       },
 
       addFriend: (friendId) => {

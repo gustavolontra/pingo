@@ -296,6 +296,17 @@ export const api = {
     return data.inviter ?? null
   },
 
+  // ── Study Plan ─────────────────────────────────────────────────────────────
+  async generateStudyPlan(data: { subject: string; year: string; examDate: string; studyNote: string; materiais: { nome: string; conteudo: string }[] }) {
+    const res = await fetch(`${BASE}/study-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) throw new Error('Failed to generate plan')
+    return res.json()
+  },
+
   // ── Seed ──────────────────────────────────────────────────────────────────
   async seed() {
     await fetch(`${BASE}/seed`, { method: 'POST' })
