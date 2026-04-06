@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useStore } from '@/store/useStore'
+import { useStore, type DiaPlano } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { formatMinutes } from '@/lib/utils'
-import { Flame, Clock, Zap, BookOpen, Calendar, UserPlus, Copy, Check } from 'lucide-react'
+import { Flame, Clock, Zap, BookOpen, Calendar, UserPlus, Copy, Check, Sparkles } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useNavigate } from 'react-router-dom'
 import StatCard from '@/components/ui/StatCard'
@@ -76,6 +76,9 @@ export default function DashboardPage() {
 
       {/* Invite banner */}
       {inviteCode && <InviteBanner code={inviteCode} />}
+
+      {/* Today's study plan cards */}
+      <TodayStudy exams={exams} onGoToExams={() => navigate('/exames')} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Left column */}
@@ -168,6 +171,70 @@ function InviteBanner({ code }: { code: string }) {
         {copied ? <Check size={13} /> : <Copy size={13} />}
         {copied ? 'Copiado!' : 'Copiar link'}
       </button>
+    </div>
+  )
+}
+
+function TodayStudy({ exams, onGoToExams }: { exams: { id: string; subject: string; date: string; planoEstudo?: { dias: DiaPlano[]; diasEstudados: number[] } }[]; onGoToExams: () => void }) {
+  const { markDiaEstudado } = useStore()
+  const today = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+  // Find all exams with a study plan that has a card for today
+  const todayItems: { examId: string; subject: string; dia: DiaPlano; studied: boolean }[] = []
+  for (const exam of exams) {
+    if (!exam.planoEstudo?.dias) continue
+    const dia = exam.planoEstudo.dias.find((d) => d.data === today)
+    if (dia) {
+      todayItems.push({
+        examId: exam.id,
+        subject: exam.subject,
+        dia,
+        studied: (exam.planoEstudo.diasEstudados ?? []).includes(dia.dia),
+      })
+    }
+  }
+
+  if (todayItems.length === 0) return null
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Sparkles size={16} style={{ color: '#6270f5' }} />
+        <p className="text-sm font-display font-semibold" style={{ color: 'var(--text)' }}>Estudo de hoje</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {todayItems.map(({ examId, subject, dia, studied }) => (
+          <div key={`${examId}-${dia.dia}`}
+            className="card flex items-start gap-3"
+            style={{ borderColor: studied ? 'rgba(16,185,129,0.2)' : 'rgba(98,112,245,0.15)' }}>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-semibold px-1.5 py-0.5 rounded-md"
+                  style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}>
+                  {subject}
+                </span>
+                {studied && <Check size={14} style={{ color: '#10b981' }} />}
+              </div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{dia.tema}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
+              <div className="flex gap-2 mt-2">
+                {!studied && (
+                  <button onClick={() => markDiaEstudado(examId, dia.dia)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                    style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
+                    <Check size={11} /> Feito
+                  </button>
+                )}
+                <button onClick={onGoToExams}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                  style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}>
+                  <BookOpen size={11} /> Ver plano completo
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
