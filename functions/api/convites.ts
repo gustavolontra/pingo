@@ -26,6 +26,8 @@ interface PedidoConvite {
   convidadoPor: string
   estado: 'pendente' | 'aprovado' | 'recusado'
   criadoEm: string
+  termosAceites: boolean
+  dataAceite: string
 }
 
 async function hashPassword(password: string): Promise<string> {
@@ -77,8 +79,9 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
   try {
-    const { nome, escola, ano, email, codigoConvite } = await request.json() as {
+    const { nome, escola, ano, email, codigoConvite, termosAceites, dataAceite } = await request.json() as {
       nome: string; escola: string; ano: string; email: string; codigoConvite: string
+      termosAceites?: boolean; dataAceite?: string
     }
 
     // Validate invite code exists
@@ -104,6 +107,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       convidadoPor: inviter.id,
       estado: 'pendente',
       criadoEm: new Date().toISOString(),
+      termosAceites: termosAceites ?? false,
+      dataAceite: dataAceite ?? new Date().toISOString(),
     }
 
     const rawPedidos = await env.PINGO_CONTENT.get('pedidos_convite')

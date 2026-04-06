@@ -52,6 +52,8 @@ export interface PedidoConvite {
   convidadoPor: string
   estado: 'pendente' | 'aprovado' | 'recusado'
   criadoEm: string
+  termosAceites: boolean
+  dataAceite: string
 }
 
 export interface FeedItem {

@@ -16,6 +16,8 @@ export default function ConvitePage() {
   const [escola, setEscola] = useState('')
   const [ano, setAno] = useState('')
   const [email, setEmail] = useState('')
+  const [termosAceites, setTermosAceites] = useState(false)
+  const [encarregadoAceite, setEncarregadoAceite] = useState(false)
 
   useEffect(() => {
     if (!codigo) { setInvalid(true); setLoading(false); return }
@@ -29,13 +31,17 @@ export default function ConvitePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!codigo) return
+    if (!termosAceites || !encarregadoAceite) {
+      setError('É necessário o teu acordo e o do teu encarregado de educação para continuar.')
+      return
+    }
     setSubmitting(true)
     setError('')
     try {
       const res = await fetch('/api/convites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome, escola, ano, email, codigoConvite: codigo }),
+        body: JSON.stringify({ nome, escola, ano, email, codigoConvite: codigo, termosAceites: true, dataAceite: new Date().toISOString() }),
       })
       if (res.ok) {
         setSubmitted(true)
@@ -153,13 +159,39 @@ export default function ConvitePage() {
             />
           </div>
 
+          {/* Termos de aceite */}
+          <div className="space-y-3 pt-1">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox" checked={termosAceites} onChange={(e) => setTermosAceites(e.target.checked)}
+                className="mt-0.5 shrink-0 accent-[#6270f5]"
+              />
+              <span className="text-xs leading-relaxed" style={{ color: 'var(--text)' }}>
+                Li e aceito os Termos de Utilização do Pingo. Comprometo-me a usar a plataforma com respeito e responsabilidade.
+              </span>
+            </label>
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox" checked={encarregadoAceite} onChange={(e) => setEncarregadoAceite(e.target.checked)}
+                className="mt-0.5 shrink-0 accent-[#6270f5]"
+              />
+              <span className="text-xs leading-relaxed" style={{ color: 'var(--text)' }}>
+                O meu encarregado de educação tem conhecimento e autoriza a minha participação nesta plataforma educativa.
+              </span>
+            </label>
+          </div>
+
+          <p className="text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+            O Pingo é uma plataforma educativa em fase experimental (beta). Os dados pessoais são tratados de forma confidencial e utilizados exclusivamente para fins educativos, em conformidade com o RGPD. Não partilhamos informação com terceiros. Por favor, não introduzas dados pessoais sensíveis na plataforma.
+          </p>
+
           {error && (
             <p className="text-xs font-semibold" style={{ color: '#ef4444' }}>{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={submitting || !nome || !escola || !ano || !email}
+            disabled={submitting || !nome || !escola || !ano || !email || !termosAceites || !encarregadoAceite}
             className="btn-primary w-full py-2.5 flex items-center justify-center gap-2"
           >
             {submitting ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
