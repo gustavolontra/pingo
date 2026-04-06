@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
 import { LayoutDashboard, Users, BookOpen, LogOut, FileText, Activity } from 'lucide-react'
@@ -12,8 +13,11 @@ const navItems = [
 ]
 
 export default function AdminLayout() {
-  const { currentAdmin, logout } = useAdminStore()
+  const { currentAdmin, logout, fetchStudents, fetchFeed, fetchPedidosConvite } = useAdminStore()
   const navigate = useNavigate()
+
+  // Load server data on mount (since localStorage no longer persists it)
+  useEffect(() => { fetchStudents(); fetchFeed(); fetchPedidosConvite() }, [])
 
   function handleLogout() {
     logout()

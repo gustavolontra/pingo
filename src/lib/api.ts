@@ -296,6 +296,20 @@ export const api = {
     return data.inviter ?? null
   },
 
+  // ── User Data (stats, sessions, dailyStats) ───────────────────────────────
+  async getUserData(studentId: string) {
+    const res = await fetch(`${BASE}/userdata?studentId=${studentId}`)
+    if (!res.ok) return null
+    return res.json()
+  },
+  async saveUserData(studentId: string, data: Record<string, unknown>) {
+    fetch(`${BASE}/userdata`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, ...data }),
+    }).catch(() => {})
+  },
+
   // ── Study Plan ─────────────────────────────────────────────────────────────
   async generateStudyPlan(data: { subject: string; year: string; examDate: string; studyNote: string; materiais: { nome: string; conteudo: string }[] }) {
     const res = await fetch(`${BASE}/study-plan`, {

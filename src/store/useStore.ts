@@ -286,9 +286,12 @@ export const useStore = create<AppState>()(
         })
 
         setTimeout(syncCurrentStudentStats, 100)
-        // Save progress to server
+        // Save to server
         const sid = get().lastStudentId
-        if (sid) api.saveProgress(sid, { lessonId, score, completedAt: new Date().toISOString() })
+        if (sid) {
+          api.saveProgress(sid, { lessonId, score, completedAt: new Date().toISOString() })
+          api.saveUserData(sid, { user: get().user, sessions: get().sessions, dailyStats: get().dailyStats })
+        }
       },
 
       setExamDate: (disciplineId, date) => {
@@ -466,38 +469,36 @@ export const useStore = create<AppState>()(
       },
 
       fetchServerData: async (studentId) => {
-        const [friends, ignored, books, exams, progress] = await Promise.all([
+        const [friends, ignored, books, exams, progress, userData] = await Promise.all([
           api.getFriends(studentId),
           api.getIgnoredSuggestions(studentId),
           api.getBooks(studentId),
           api.getExams(studentId),
           api.getProgress(studentId),
+          api.getUserData(studentId),
         ])
-        set({
+        const updates: Partial<AppState> = {
           friendsByStudent: { ...get().friendsByStudent, [studentId]: friends },
           ignoredSuggestionsByStudent: { ...get().ignoredSuggestionsByStudent, [studentId]: ignored },
           booksByStudent: { ...get().booksByStudent, [studentId]: books },
           examsByStudent: { ...get().examsByStudent, [studentId]: exams },
           progress,
-        })
+        }
+        // Load user stats from server if available
+        if (userData?.user) updates.user = { ...get().user, ...userData.user }
+        if (userData?.sessions) updates.sessions = userData.sessions
+        if (userData?.dailyStats) updates.dailyStats = userData.dailyStats
+        set(updates)
       },
 
       markFeedSeen: () => set({ lastSeenFeedAt: new Date().toISOString() }),
     }),
     {
-      name: 'estudar-pt-v6',   // v6: exams per-student, never reset on login
+      name: 'estudar-pt-v7',   // v7: all data on server, localStorage only for session
       partialize: (state) => ({
-        user: state.user,
-        sessions: state.sessions,
-        dailyStats: state.dailyStats,
-        progress: state.progress,
-        examsByStudent: state.examsByStudent,
-        booksByStudent: state.booksByStudent,
-        friendsByStudent: state.friendsByStudent,
-        ignoredSuggestionsByStudent: state.ignoredSuggestionsByStudent,
         lastStudentId: state.lastStudentId,
         lastSeenFeedAt: state.lastSeenFeedAt,
-        // NÃO persiste disciplines — vêm sempre do KV via useKVContent()
+        // Tudo o resto vem do servidor via fetchServerData()
       }),
     }
   )

@@ -1,15 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import { useKVContent } from '@/hooks/useKVContent'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+import { useAdminStore } from '@/store/useAdminStore'
+import { useStore } from '@/store/useStore'
 import { api } from '@/lib/api'
 import { Lock, Loader2, Check } from 'lucide-react'
 
 export default function Layout() {
   useKVContent()
   const { mustChangePassword, studentId, clearMustChangePassword } = useStudentAuthStore()
+
+  // Load all server data on mount (localStorage no longer persists it)
+  useEffect(() => {
+    if (!studentId) return
+    useAdminStore.getState().fetchStudents()
+    useAdminStore.getState().fetchFeed()
+    useStore.getState().fetchServerData(studentId)
+  }, [studentId])
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>

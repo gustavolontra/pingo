@@ -685,39 +685,12 @@ export const useAdminStore = create<AdminState>()(
         }),
     }),
     {
-      name: 'pingo-admin-v1',
-      version: 3,
-      migrate: (state: unknown, version: number) => {
-        const s = state as { students?: Student[]; feedItems?: FeedItem[] } & Record<string, unknown>
-        let students = s.students ?? []
-        let feedItems = s.feedItems ?? []
-
-        if (version < 2) {
-          // v2: zerar stats de alunos que tinham XP do mockUser fictício
-          students = students.map((st) => ({
-            ...st, xp: 0, level: 1, streak: 0, lessonsCompleted: 0, totalStudyMinutes: 0,
-          }))
-        }
-
-        if (version < 3) {
-          // v3: merge seed students & feed into existing data
-          const existingIds = new Set(students.map((st) => st.id))
-          const existingLogins = new Set(students.map((st) => st.login))
-          for (const seed of SEED_STUDENTS) {
-            if (!existingIds.has(seed.id) && !existingLogins.has(seed.login)) {
-              students = [...students, seed]
-            }
-          }
-          const existingFeedIds = new Set(feedItems.map((f) => f.id))
-          for (const seed of SEED_FEED) {
-            if (!existingFeedIds.has(seed.id)) {
-              feedItems = [...feedItems, seed]
-            }
-          }
-        }
-
-        return { ...s, students, feedItems }
-      },
+      name: 'pingo-admin-v2',   // v2: all data on server, localStorage only for auth
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        currentAdmin: state.currentAdmin,
+        // Students, feed, disciplines, etc. come from server via fetchStudents/fetchFeed
+      }),
     }
   )
 )
