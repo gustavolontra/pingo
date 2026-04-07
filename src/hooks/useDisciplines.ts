@@ -1,12 +1,18 @@
 import { useStore } from '@/store/useStore'
+import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+import { useAdminStore } from '@/store/useAdminStore'
 import type { Discipline } from '@/types'
 
 export function useDisciplines(): Discipline[] {
   const kvDisciplines = useStore((s) => s.kvDisciplines)
   const progress = useStore((s) => s.progress)
+  const studentId = useStudentAuthStore((s) => s.studentId)
+  const students = useAdminStore((s) => s.students)
 
-  // Fonte única de verdade para o aluno: KV (carregado via useKVContent no Layout)
-  const merged = kvDisciplines
+  // Filter by student's year
+  const me = students.find((s) => s.id === studentId)
+  const anoNum = parseInt(me?.grade ?? '7', 10)
+  const merged = kvDisciplines.filter((d) => d.year === anoNum)
 
   return merged.map((d) => {
     const examDate = progress.examDates[d.id]

@@ -1,21 +1,11 @@
 import { NavLink, useNavigate } from "react-router-dom"
-import { LayoutDashboard, Calendar, Trophy, User, LogOut, BookMarked, Rss, Users } from 'lucide-react'
+import { LayoutDashboard, Calendar, Trophy, LogOut, BookMarked, Rss, Users } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useStore } from '@/store/useStore'
 import { useDisciplines } from '@/hooks/useDisciplines'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/exames', icon: Calendar, label: 'Exames' },
-  { to: '/amigos', icon: Users, label: 'Amigos' },
-  { to: '/leituras', icon: BookMarked, label: 'Leituras' },
-  { to: '/feed', icon: Rss, label: 'Feed' },
-  { to: '/ranking', icon: Trophy, label: 'Ranking' },
-  { to: '/perfil', icon: User, label: 'Perfil' },
-]
 
 export default function Sidebar() {
   const { user, getFriends, getIgnoredSuggestions, lastSeenFeedAt } = useStore()
@@ -26,7 +16,6 @@ export default function Sidebar() {
   const navigate = useNavigate()
   const xpPct = Math.round((user.xp / user.xpForNextLevel) * 100)
 
-  // Badge: sugestões da mesma escola pendentes
   const me = students.find((s) => s.id === studentId)
   const friendIds = getFriends()
   const ignoredIds = getIgnoredSuggestions()
@@ -34,7 +23,6 @@ export default function Sidebar() {
     (s) => s.id !== studentId && s.school === me?.school && !friendIds.includes(s.id) && !ignoredIds.includes(s.id)
   ).length
 
-  // Feed: unseen items count
   const unseenFeedCount = lastSeenFeedAt
     ? feedItems.filter((f) => f.data > lastSeenFeedAt && f.autorId !== studentId).length
     : feedItems.filter((f) => f.autorId !== studentId).length
@@ -46,7 +34,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-64 flex flex-col py-6 px-4 gap-1 shrink-0 overflow-y-auto"
+      className="w-64 flex flex-col py-6 px-4 shrink-0 overflow-y-auto"
       style={{ background: 'var(--surface)', borderRight: '1px solid var(--border)' }}
     >
       {/* Logo */}
@@ -59,16 +47,16 @@ export default function Sidebar() {
         </p>
       </div>
 
-      {/* Nav */}
-      <nav className="flex flex-col gap-0.5">
-        {navItems.slice(0, 1).map(({ to, icon: Icon, label }) => (
-          <SideNavItem key={to} to={to} icon={Icon} label={label} />
-        ))}
+      <nav className="flex flex-col gap-0.5 flex-1">
+        {/* Dashboard */}
+        <SideNavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
 
-        {/* Disciplines section */}
-        <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-          Disciplinas
-        </p>
+        {/* Agenda */}
+        <SectionLabel>Agenda</SectionLabel>
+        <SideNavItem to="/exames" icon={Calendar} label="Exames" />
+
+        {/* Disciplinas */}
+        <SectionLabel>Disciplinas</SectionLabel>
         {disciplines.map((d) => (
           <NavLink
             key={d.id}
@@ -82,25 +70,26 @@ export default function Sidebar() {
             <SubjectIcon icon={d.icon} size={16} />
             <span className="flex-1 truncate">{d.name}</span>
             <div className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: `${Math.round((d.completedLessons / d.totalLessons) * 100)}%` === '100%' ? '#10b981' : d.color }} />
+              style={{ background: d.completedLessons === d.totalLessons && d.totalLessons > 0 ? '#10b981' : d.color }} />
           </NavLink>
         ))}
+        {disciplines.length === 0 && (
+          <p className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>Sem disciplinas ainda</p>
+        )}
 
-        <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-          Conta
-        </p>
-        {navItems.slice(1).map(({ to, icon: Icon, label }) => {
-          let badge: number | undefined
-          if (to === '/amigos' && suggestionCount > 0) badge = suggestionCount
-          if (to === '/feed' && unseenFeedCount > 0) badge = unseenFeedCount
-          return <SideNavItem key={to} to={to} icon={Icon} label={label} badge={badge} />
-        })}
+        {/* Comunidade */}
+        <SectionLabel>Comunidade</SectionLabel>
+        <SideNavItem to="/leituras" icon={BookMarked} label="Leituras" />
+        <SideNavItem to="/amigos" icon={Users} label="Amigos" badge={suggestionCount > 0 ? suggestionCount : undefined} />
+        <SideNavItem to="/feed" icon={Rss} label="Feed" badge={unseenFeedCount > 0 ? unseenFeedCount : undefined} />
+        <SideNavItem to="/ranking" icon={Trophy} label="Ranking" />
       </nav>
 
-      {/* User card */}
-      <div className="mt-auto pt-4">
-        <div
-          className="p-3 rounded-xl"
+      {/* User card — clickable → profile */}
+      <div className="pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+        <button
+          onClick={() => navigate('/perfil')}
+          className="w-full p-3 rounded-xl text-left transition-all hover:opacity-80"
           style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
         >
           <div className="flex items-center gap-3">
@@ -123,7 +112,7 @@ export default function Sidebar() {
               <div className="xp-fill" style={{ width: `${xpPct}%` }} />
             </div>
           </div>
-        </div>
+        </button>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 w-full mt-2 px-2 py-2 rounded-xl text-sm font-medium transition-all hover:bg-red-50"
@@ -137,7 +126,15 @@ export default function Sidebar() {
   )
 }
 
-function SideNavItem({ to, icon: Icon, label, badge }: { to: string; icon: any; label: string; badge?: number }) {
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+      {children}
+    </p>
+  )
+}
+
+function SideNavItem({ to, icon: Icon, label, badge }: { to: string; icon: React.ComponentType<any>; label: string; badge?: number }) {
   return (
     <NavLink to={to}
       className={({ isActive }) => cn(

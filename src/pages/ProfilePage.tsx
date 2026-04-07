@@ -4,7 +4,7 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import { formatMinutes, formatDate } from '@/lib/utils'
 import { api } from '@/lib/api'
-import { Flame, Zap, Clock, BookMarked, Link2, Copy, Check, Users, Pencil, Lock, Loader2 } from 'lucide-react'
+import { Flame, Zap, Clock, BookMarked, Link2, Copy, Check, Users, Pencil, Lock, Loader2, School, GraduationCap, Mail } from 'lucide-react'
 
 const rarityColors = { common: '#94a3b8', rare: '#60a5fa', epic: '#c084fc', legendary: '#fbbf24' }
 const rarityLabels = { common: 'Comum', rare: 'Raro', epic: 'Épico', legendary: 'Lendário' }
@@ -96,7 +96,24 @@ export default function ProfilePage() {
           {studentHandle && (
             <p className="text-sm font-medium" style={{ color: '#6270f5' }}>@{studentHandle}</p>
           )}
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
+            {me?.school && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <School size={12} /> {me.school}
+              </span>
+            )}
+            {me?.grade && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <GraduationCap size={12} /> {me.grade}
+              </span>
+            )}
+            {me?.email && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <Mail size={12} /> {me.email}
+              </span>
+            )}
+          </div>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
             Membro desde {formatDate(user.joinedAt, "MMMM 'de' yyyy")}
           </p>
           <div className="mt-3">
