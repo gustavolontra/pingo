@@ -72,7 +72,7 @@ Outros materiais: ${materiaisText}`
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8192,
+        max_tokens: 16384,
         system: `És um tutor especializado em criar planos de estudo para alunos do ensino básico português.
 
 Cria um plano de estudo detalhado e equilibrado distribuído pelos dias disponíveis.
@@ -130,10 +130,22 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
       return Response.json({ error: `AI request failed (${res.status})`, detail: errBody.slice(0, 200) }, { status: 502, headers })
     }
 
-    const data = await res.json() as { content: { type: string; text: string }[] }
+    const data = await res.json() as { content: { type: string; text: string }[]; stop_reason?: string }
     const text = data.content?.[0]?.text ?? ''
 
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    // If response was truncated, try to fix the JSON by closing brackets
+    let jsonText = text.trim()
+    if (data.stop_reason === 'max_tokens') {
+      // Try to close any open brackets
+      const openBraces = (jsonText.match(/\{/g) || []).length
+      const closeBraces = (jsonText.match(/\}/g) || []).length
+      const openBrackets = (jsonText.match(/\[/g) || []).length
+      const closeBrackets = (jsonText.match(/\]/g) || []).length
+      jsonText += ']'.repeat(Math.max(0, openBrackets - closeBrackets))
+      jsonText += '}'.repeat(Math.max(0, openBraces - closeBraces))
+    }
+
+    const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return Response.json({ error: 'Invalid AI response', detail: text.slice(0, 200) }, { status: 500, headers })
     }
