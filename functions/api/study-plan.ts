@@ -36,8 +36,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       ? materiais.map((m) => `--- ${m.nome} ---\n${m.conteudo}`).join('\n\n')
       : 'nenhum'
 
+    const todayStr = today.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
     const userPrompt = `Matéria: ${subject}
 Ano: ${year}
+Data de hoje (Dia 1 do plano): ${todayStr}
 Data da prova: ${new Date(examDate).toLocaleDateString('pt-PT')}
 Dias disponíveis: ${daysAvailable}
 Intensidade: ${regras.intensidade}
@@ -62,7 +65,8 @@ Outros materiais: ${materiaisText}`
 Cria um plano de estudo detalhado e equilibrado distribuído pelos dias disponíveis.
 
 REGRAS OBRIGATÓRIAS:
-- O plano começa hoje e termina um dia antes da prova
+- O Dia 1 do plano é HOJE (a data indicada no pedido) — NÃO começar amanhã
+- O plano termina um dia antes da prova
 - Todos os dias têm o MESMO ritmo — não reduzir nem aumentar ao longo do plano
 - Número EXACTO de flashcards por dia: conforme indicado no pedido
 - Número EXACTO de quiz por dia: conforme indicado no pedido
