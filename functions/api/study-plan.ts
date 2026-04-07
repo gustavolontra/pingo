@@ -28,7 +28,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     today.setHours(0, 0, 0, 0)
     const exam = new Date(examDate)
     exam.setHours(0, 0, 0, 0)
-    const daysAvailable = Math.max(1, Math.ceil((exam.getTime() - today.getTime()) / 86400000) - 1)
+    // Days from today (inclusive) to day before exam (inclusive)
+    // e.g. today=07, exam=14 → 14-07=7 days (07,08,09,10,11,12,13)
+    const daysAvailable = Math.max(1, Math.ceil((exam.getTime() - today.getTime()) / 86400000))
 
     const regras = getRegras(daysAvailable)
 
