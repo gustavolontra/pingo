@@ -360,6 +360,17 @@ export const api = {
     }).catch(() => {})
   },
 
+  // ── Evaluate Response ──────────────────────────────────────────────────────
+  async evaluateResponse(pergunta: string, respostaAluno: string, respostaEsperada: string): Promise<{ nivel: 'bom' | 'parcial' | 'insuficiente'; feedback: string }> {
+    const res = await fetch(`${BASE}/evaluate-response`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pergunta, respostaAluno, respostaEsperada }),
+    })
+    if (!res.ok) return { nivel: 'parcial', feedback: 'Não foi possível avaliar.' }
+    return res.json()
+  },
+
   // ── Study Plan ─────────────────────────────────────────────────────────────
   async generateStudyPlan(data: { subject: string; year: string; examDate: string; studyNote: string; materiais: { nome: string; conteudo: string }[] }) {
     const res = await fetch(`${BASE}/study-plan`, {

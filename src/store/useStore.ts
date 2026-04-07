@@ -44,11 +44,16 @@ export interface DiaPlano {
   resumo: string
   flashcards: { frente: string; verso: string }[]
   quiz: { pergunta: string; opcoes: string[]; correta: number; explicacao: string }[]
+  resumoActivo?: {
+    pergunta: string
+    respostaEsperada: string
+  }
 }
 
 export interface PlanoEstudo {
   geradoEm: string
   resumo: string
+  tempoEstimadoPorDia?: number
   dias: DiaPlano[]
   diasEstudados: number[]
 }
@@ -118,6 +123,7 @@ interface AppState {
   removeExamMaterial: (examId: string, materialId: string) => void
   setExamPlano: (examId: string, plano: PlanoEstudo) => void
   markDiaEstudado: (examId: string, dia: number) => void
+  awardStudyPlanXP: (xp: number, minutes?: number) => void
 
   addFriend: (friendId: string) => void
   removeFriend: (friendId: string) => void
@@ -399,6 +405,45 @@ export const useStore = create<AppState>()(
           e.id === examId && e.planoEstudo ? { ...e, planoEstudo: { ...e.planoEstudo, diasEstudados } } : e
         ) } })
         if (exam?.planoEstudo) api.updateExam(sid, examId, { planoEstudo: { ...exam.planoEstudo, diasEstudados } })
+      },
+
+      awardStudyPlanXP: (xp, minutes = 0) => {
+        const user = get().user
+        const today = new Date().toISOString().split('T')[0]
+        const dailyStats = [...get().dailyStats]
+        const idx = dailyStats.findIndex((s) => s.date === today)
+
+        // Update daily stats
+        if (idx >= 0) {
+          dailyStats[idx] = {
+            ...dailyStats[idx],
+            minutesStudied: dailyStats[idx].minutesStudied + minutes,
+            xpEarned: dailyStats[idx].xpEarned + xp,
+          }
+        } else {
+          dailyStats.push({ date: today, minutesStudied: minutes, lessonsCompleted: 0, xpEarned: xp, disciplines: [] })
+        }
+
+        // Update streak
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+        const studiedYesterday = dailyStats.some((s) => s.date === yesterday && s.minutesStudied > 0)
+        const alreadyStudiedToday = get().dailyStats.some((s) => s.date === today && s.minutesStudied > 0)
+        const newStreak = alreadyStudiedToday ? user.streak : studiedYesterday ? user.streak + 1 : 1
+
+        set({
+          user: {
+            ...user,
+            xp: user.xp + xp,
+            totalStudyMinutes: user.totalStudyMinutes + minutes,
+            streak: newStreak,
+            longestStreak: Math.max(user.longestStreak, newStreak),
+          },
+          dailyStats,
+        })
+
+        setTimeout(syncCurrentStudentStats, 100)
+        const sid = get().lastStudentId
+        if (sid) api.saveUserData(sid, { user: get().user, dailyStats: get().dailyStats })
       },
 
       addFriend: (friendId) => {

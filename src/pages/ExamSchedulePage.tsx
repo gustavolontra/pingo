@@ -6,7 +6,7 @@ import { api, getDisciplinasPorAno } from '@/lib/api'
 import {
   Calendar, Pencil, Trash2, Plus, BookOpen, ChevronDown, ChevronUp, X,
   Sparkles, Loader2, FileText, Upload, Check, ChevronLeft, ChevronRight,
-  RotateCcw, Paperclip,
+  RotateCcw, Paperclip, Info, PenLine,
 } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 
@@ -85,10 +85,10 @@ function ExamForm({ initial, onSave, onCancel, subjects }: {
 
 // ── Flashcard interativo ─────────────────────────────────────────────────────
 
-function Flashcard({ frente, verso }: { frente: string; verso: string }) {
+function Flashcard({ frente, verso, onFlip }: { frente: string; verso: string; onFlip?: () => void }) {
   const [flipped, setFlipped] = useState(false)
   return (
-    <button onClick={() => setFlipped(!flipped)}
+    <button onClick={() => { if (!flipped && onFlip) onFlip(); setFlipped(!flipped) }}
       className="w-full p-4 rounded-xl text-sm text-left transition-all min-h-[80px]"
       style={{ background: flipped ? 'rgba(16,185,129,0.08)' : 'var(--surface-2)', border: `1px solid ${flipped ? 'rgba(16,185,129,0.2)' : 'var(--border)'}` }}>
       <p className="text-xs font-semibold mb-1" style={{ color: flipped ? '#10b981' : '#6270f5' }}>
@@ -101,7 +101,7 @@ function Flashcard({ frente, verso }: { frente: string; verso: string }) {
 
 // ── Quiz interativo ──────────────────────────────────────────────────────────
 
-function QuizQuestion({ pergunta, opcoes, correta, explicacao }: DiaPlano['quiz'][number]) {
+function QuizQuestion({ pergunta, opcoes, correta, explicacao, onCorrect }: DiaPlano['quiz'][number] & { onCorrect?: () => void }) {
   const [selected, setSelected] = useState<number | null>(null)
   const answered = selected !== null
   return (
@@ -115,7 +115,7 @@ function QuizQuestion({ pergunta, opcoes, correta, explicacao }: DiaPlano['quiz'
           if (answered && isCorrect) { bg = 'rgba(16,185,129,0.1)'; border = 'rgba(16,185,129,0.3)'; col = '#10b981' }
           else if (answered && isSelected && !isCorrect) { bg = 'rgba(239,68,68,0.1)'; border = 'rgba(239,68,68,0.3)'; col = '#ef4444' }
           return (
-            <button key={i} onClick={() => !answered && setSelected(i)} disabled={answered}
+            <button key={i} onClick={() => { if (!answered) { setSelected(i); if (i === correta && onCorrect) onCorrect() } }} disabled={answered}
               className="px-3 py-2 rounded-xl text-sm text-left transition-all"
               style={{ background: bg, border: `1px solid ${border}`, color: col }}>
               {opt}
@@ -130,12 +130,84 @@ function QuizQuestion({ pergunta, opcoes, correta, explicacao }: DiaPlano['quiz'
   )
 }
 
+// ── Resumo Activo ────────────────────────────────────────────────────────────
+
+function ResumoActivo({ pergunta, respostaEsperada, onResult }: {
+  pergunta: string; respostaEsperada: string
+  onResult: (nivel: 'bom' | 'parcial' | 'insuficiente') => void
+}) {
+  const [resposta, setResposta] = useState('')
+  const [evaluating, setEvaluating] = useState(false)
+  const [result, setResult] = useState<{ nivel: string; feedback: string } | null>(null)
+
+  async function evaluate() {
+    if (!resposta.trim()) return
+    setEvaluating(true)
+    const res = await api.evaluateResponse(pergunta, resposta, respostaEsperada)
+    setResult(res)
+    onResult(res.nivel as 'bom' | 'parcial' | 'insuficiente')
+    setEvaluating(false)
+  }
+
+  const nivelIcon = result?.nivel === 'bom' ? '✅' : result?.nivel === 'parcial' ? '⚠️' : '❌'
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold flex items-center gap-1.5" style={{ color: '#f59e0b' }}>
+        <PenLine size={12} /> Resumo activo
+      </p>
+      <p className="text-sm" style={{ color: 'var(--text)' }}>{pergunta}</p>
+      {!result ? (
+        <>
+          <textarea value={resposta} onChange={(e) => setResposta(e.target.value)}
+            placeholder="Explica por palavras tuas..." rows={3}
+            className="w-full px-3 py-2 rounded-xl text-xs outline-none resize-y"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+          <button onClick={evaluate} disabled={evaluating || !resposta.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+            style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)', opacity: !resposta.trim() ? 0.4 : 1 }}>
+            {evaluating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            Avaliar resposta
+          </button>
+        </>
+      ) : (
+        <div className="px-3 py-2.5 rounded-xl text-xs"
+          style={{
+            background: result.nivel === 'bom' ? 'rgba(16,185,129,0.08)' : result.nivel === 'parcial' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
+            border: `1px solid ${result.nivel === 'bom' ? 'rgba(16,185,129,0.2)' : result.nivel === 'parcial' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)'}`,
+          }}>
+          <p style={{ color: 'var(--text)' }}>{nivelIcon} {result.feedback}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Card de um dia do plano ──────────────────────────────────────────────────
 
-function DayCard({ dia, isToday, studied, onStudied }: {
-  dia: DiaPlano; isToday: boolean; studied: boolean; onStudied: () => void
+function DayCard({ dia, isToday, studied, onStudied, tempoEstimado }: {
+  dia: DiaPlano; isToday: boolean; studied: boolean; onStudied: () => void; tempoEstimado: number
 }) {
+  const { awardStudyPlanXP } = useStore()
   const [open, setOpen] = useState(false)
+
+  function handleFlashcardView() {
+    awardStudyPlanXP(2)
+  }
+
+  function handleQuizCorrect() {
+    awardStudyPlanXP(5)
+  }
+
+  function handleResumoResult(nivel: 'bom' | 'parcial' | 'insuficiente') {
+    awardStudyPlanXP(nivel === 'bom' ? 10 : nivel === 'parcial' ? 5 : 0)
+  }
+
+  function handleComplete() {
+    awardStudyPlanXP(20, tempoEstimado) // +20 XP bonus + study minutes
+    onStudied()
+  }
+
   return (
     <div className="min-w-[280px] max-w-[320px] shrink-0 card space-y-3"
       style={{ borderColor: isToday ? 'rgba(98,112,245,0.3)' : studied ? 'rgba(16,185,129,0.2)' : undefined }}>
@@ -156,18 +228,29 @@ function DayCard({ dia, isToday, studied, onStudied }: {
         </button>
       ) : (
         <div className="space-y-4">
+          {/* 1. Flashcards */}
           <div className="space-y-2">
-            <p className="text-xs font-semibold" style={{ color: '#6270f5' }}>Flashcards</p>
-            {dia.flashcards.map((f, i) => <Flashcard key={i} frente={f.frente} verso={f.verso} />)}
+            <p className="text-xs font-semibold" style={{ color: '#6270f5' }}>Flashcards ({dia.flashcards.length})</p>
+            {dia.flashcards.map((f, i) => <Flashcard key={i} frente={f.frente} verso={f.verso} onFlip={handleFlashcardView} />)}
           </div>
+          {/* 2. Quiz */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold" style={{ color: '#6270f5' }}>Quiz</p>
-            {dia.quiz.map((q, i) => <QuizQuestion key={i} {...q} />)}
+            <p className="text-xs font-semibold" style={{ color: '#6270f5' }}>Quiz ({dia.quiz.length})</p>
+            {dia.quiz.map((q, i) => <QuizQuestion key={i} {...q} onCorrect={handleQuizCorrect} />)}
           </div>
+          {/* 3. Resumo activo */}
+          {dia.resumoActivo && (
+            <ResumoActivo
+              pergunta={dia.resumoActivo.pergunta}
+              respostaEsperada={dia.resumoActivo.respostaEsperada}
+              onResult={handleResumoResult}
+            />
+          )}
+          {/* Complete day */}
           {!studied && (
-            <button onClick={onStudied} className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+            <button onClick={handleComplete} className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
               style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <Check size={13} /> Marcar como estudado
+              <Check size={13} /> Marcar como estudado (+20 XP)
             </button>
           )}
           <button onClick={() => setOpen(false)} className="text-xs w-full text-center" style={{ color: 'var(--text-muted)' }}>
@@ -182,7 +265,7 @@ function DayCard({ dia, isToday, studied, onStudied }: {
 // ── Plano de estudo ──────────────────────────────────────────────────────────
 
 function StudyPlanSection({ exam }: { exam: Exam }) {
-  const { setExamPlano, markDiaEstudado } = useStore()
+  const { setExamPlano, markDiaEstudado, awardStudyPlanXP } = useStore()
   const { studentId } = useStudentAuthStore()
   const students = useAdminStore((s) => s.students)
   const me = students.find((s) => s.id === studentId)
@@ -208,7 +291,7 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
         studyNote: exam.studyNote || '',
         materiais: materiaisForAI,
       })
-      setExamPlano(exam.id, { geradoEm: new Date().toISOString(), resumo: result.resumo, dias: result.dias, diasEstudados: [] })
+      setExamPlano(exam.id, { geradoEm: new Date().toISOString(), resumo: result.resumo, tempoEstimadoPorDia: result.tempoEstimadoPorDia, dias: result.dias, diasEstudados: [] })
     } catch {
       setError('Erro ao gerar o plano. Tenta novamente.')
     }
@@ -256,7 +339,13 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
               {plano.dias.map((dia) => (
                 <DayCard key={dia.dia} dia={dia} isToday={dia.data === today}
                   studied={(plano.diasEstudados ?? []).includes(dia.dia)}
-                  onStudied={() => markDiaEstudado(exam.id, dia.dia)} />
+                  onStudied={() => {
+                    markDiaEstudado(exam.id, dia.dia)
+                    // Check if plan complete
+                    const allDone = plano.dias.every((d) => d.dia === dia.dia || (plano.diasEstudados ?? []).includes(d.dia))
+                    if (allDone) awardStudyPlanXP(50) // +50 XP for completing entire plan
+                  }}
+                  tempoEstimado={plano.tempoEstimadoPorDia ?? 15} />
               ))}
             </div>
             <button onClick={() => scroll(1)} className="absolute right-0 top-1/2 -translate-y-1/2 -mr-3 z-10 p-1.5 rounded-full hidden md:flex"
@@ -477,12 +566,63 @@ function ExamCard({ exam, subjects }: { exam: Exam; subjects: string[] }) {
 
 // ── Página principal ──────────────────────────────────────────────────────────
 
+// ── Info Modal ───────────────────────────────────────────────────────────────
+
+function InfoModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onClose}>
+      <div className="w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-display font-bold text-lg" style={{ color: 'var(--text)' }}>Como funciona o plano de estudo?</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70"><X size={16} style={{ color: 'var(--text-muted)' }} /></button>
+        </div>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          O Pingo distribui o conteúdo de forma inteligente consoante os dias disponíveis até ao exame:
+        </p>
+        {[
+          { label: '11 ou mais dias', sub: 'Ritmo suave', detail: '6 flashcards, 3 quiz e 1 resumo activo por dia', time: '~15 min/dia' },
+          { label: '6 a 10 dias', sub: 'Ritmo gradual', detail: '10 flashcards, 5 quiz e 1 resumo activo por dia', time: '~25 min/dia' },
+          { label: '3 a 5 dias', sub: 'Ritmo de consolidação', detail: '15 flashcards, 8 quiz e 1 resumo activo por dia', time: '~40 min/dia' },
+          { label: '1 a 2 dias', sub: 'Revisão intensiva', detail: '20 flashcards, 10 quiz e 1 resumo activo por dia', time: '~60 min/dia' },
+        ].map(({ label, sub, detail, time }) => (
+          <div key={label} className="px-3 py-2.5 rounded-xl" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{label} <span className="font-normal" style={{ color: 'var(--text-muted)' }}>— {sub}</span></p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{detail}</p>
+            <p className="text-xs" style={{ color: '#6270f5' }}>Tempo estimado: {time}</p>
+          </div>
+        ))}
+        <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
+          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Último dia <span className="font-normal" style={{ color: 'var(--text-muted)' }}>— Revisão geral</span></p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>20 flashcards e 10 quiz dos temas mais importantes de todos os dias</p>
+        </div>
+        <div className="pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+          <p className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text)' }}>Gamificação:</p>
+          <div className="text-xs space-y-0.5" style={{ color: 'var(--text-muted)' }}>
+            <p>+2 XP por flashcard completado</p>
+            <p>+5 XP por quiz correcto</p>
+            <p>+10 XP por resumo activo bem avaliado</p>
+            <p>+5 XP por resumo activo parcialmente correcto</p>
+            <p>+20 XP por completar o dia inteiro</p>
+            <p>+50 XP por completar o plano todo</p>
+          </div>
+        </div>
+        <p className="text-xs" style={{ color: '#6270f5' }}>
+          Dica: quanto mais cedo começares a estudar, mais leve e eficaz será o teu plano!
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Página principal ──────────────────────────────────────────────────────────
+
 export default function ExamSchedulePage() {
   const exams = useStore((s) => s.getExams())
   const { addExam } = useStore()
   const { studentId } = useStudentAuthStore()
   const students = useAdminStore((s) => s.students)
   const [adding, setAdding] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
 
   const me = students.find((s) => s.id === studentId)
   const anoNum = parseInt(me?.grade ?? '7', 10)
@@ -496,6 +636,9 @@ export default function ExamSchedulePage() {
         <div>
           <h2 className="text-2xl font-display font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
             <Calendar size={22} style={{ color: '#6270f5' }} /> Gestão de Exames
+            <button onClick={() => setShowInfo(true)} className="p-1 rounded-lg hover:opacity-70" title="Como funciona">
+              <Info size={16} style={{ color: 'var(--text-muted)' }} />
+            </button>
           </h2>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
             Agenda os teus exames, adiciona fichas de estudo e gera planos com IA.
@@ -507,6 +650,8 @@ export default function ExamSchedulePage() {
           </button>
         )}
       </div>
+
+      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
 
       {adding && (
         <ExamForm onSave={(subject, date) => { addExam(subject, date); setAdding(false) }} onCancel={() => setAdding(false)} subjects={subjects} />
