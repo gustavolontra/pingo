@@ -326,7 +326,7 @@ function GeneratingAnimation() {
 
   useEffect(() => {
     const msgInterval = setInterval(() => {
-      setMsgIndex((i) => (i + 1) % GENERATING_MESSAGES.length)
+      setMsgIndex((i) => Math.min(i + 1, GENERATING_MESSAGES.length - 1))
     }, 4000)
     const dotInterval = setInterval(() => {
       setDots((d) => d.length >= 3 ? '' : d + '.')
