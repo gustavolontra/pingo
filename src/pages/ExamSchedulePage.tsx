@@ -183,80 +183,83 @@ function ResumoActivo({ pergunta, respostaEsperada, onResult }: {
   )
 }
 
-// ── Card de um dia do plano ──────────────────────────────────────────────────
+// ── Mini card de dia (tab style) ─────────────────────────────────────────────
 
-function DayCard({ dia, isToday, studied, onStudied, tempoEstimado }: {
-  dia: DiaPlano; isToday: boolean; studied: boolean; onStudied: () => void; tempoEstimado: number
+function DayTab({ dia, isToday, studied, isSelected, onClick }: {
+  dia: DiaPlano; isToday: boolean; studied: boolean; isSelected: boolean; onClick: () => void
+}) {
+  return (
+    <button onClick={onClick}
+      className="shrink-0 px-4 py-3 rounded-xl text-left transition-all"
+      style={{
+        minWidth: '140px', maxWidth: '180px',
+        background: isSelected ? 'rgba(98,112,245,0.1)' : studied ? 'rgba(16,185,129,0.05)' : 'var(--surface-2)',
+        border: `1.5px solid ${isSelected ? '#6270f5' : studied ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`,
+      }}>
+      <div className="flex items-center justify-between gap-1">
+        <span className="text-[10px] font-semibold" style={{ color: isToday ? '#6270f5' : 'var(--text-muted)' }}>
+          Dia {dia.dia} {isToday && '· hoje'}
+        </span>
+        {studied && <Check size={12} style={{ color: '#10b981' }} />}
+      </div>
+      <p className="text-xs font-semibold mt-0.5 line-clamp-1" style={{ color: 'var(--text)' }}>{dia.tema}</p>
+    </button>
+  )
+}
+
+// ── Conteúdo expandido do dia ────────────────────────────────────────────────
+
+function DayContent({ dia, studied, onStudied, tempoEstimado }: {
+  dia: DiaPlano; studied: boolean; onStudied: () => void; tempoEstimado: number
 }) {
   const { awardStudyPlanXP } = useStore()
-  const [open, setOpen] = useState(false)
 
-  function handleFlashcardView() {
-    awardStudyPlanXP(2)
-  }
-
-  function handleQuizCorrect() {
-    awardStudyPlanXP(5)
-  }
-
+  function handleFlashcardView() { awardStudyPlanXP(2) }
+  function handleQuizCorrect() { awardStudyPlanXP(5) }
   function handleResumoResult(nivel: 'bom' | 'parcial' | 'insuficiente') {
     awardStudyPlanXP(nivel === 'bom' ? 10 : nivel === 'parcial' ? 5 : 0)
   }
-
-  function handleComplete() {
-    awardStudyPlanXP(20, tempoEstimado) // +20 XP bonus + study minutes
-    onStudied()
-  }
+  function handleComplete() { awardStudyPlanXP(20, tempoEstimado); onStudied() }
 
   return (
-    <div className="min-w-[280px] max-w-[320px] shrink-0 card space-y-3"
-      style={{ borderColor: isToday ? 'rgba(98,112,245,0.3)' : studied ? 'rgba(16,185,129,0.2)' : undefined }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold" style={{ color: isToday ? '#6270f5' : 'var(--text-muted)' }}>
-            Dia {dia.dia} · {dia.data} {isToday && '(hoje)'}
-          </p>
-          <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--text)' }}>{dia.tema}</p>
-        </div>
-        {studied && <Check size={16} style={{ color: '#10b981' }} />}
+    <div className="card space-y-5">
+      {/* Day header */}
+      <div>
+        <p className="text-sm font-display font-bold" style={{ color: 'var(--text)' }}>{dia.tema}</p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
       </div>
-      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
-      {!open ? (
-        <button onClick={() => setOpen(true)} className="btn-primary w-full py-2 text-xs flex items-center justify-center gap-1.5">
-          {isToday ? <Sparkles size={13} /> : <BookOpen size={13} />}
-          {isToday ? 'Estudar hoje' : 'Ver conteúdo'}
-        </button>
-      ) : (
-        <div className="space-y-4">
-          {/* 1. Flashcards */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold" style={{ color: '#6270f5' }}>Flashcards ({dia.flashcards.length})</p>
-            {dia.flashcards.map((f, i) => <Flashcard key={i} frente={f.frente} verso={f.verso} onFlip={handleFlashcardView} />)}
-          </div>
-          {/* 2. Quiz */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold" style={{ color: '#6270f5' }}>Quiz ({dia.quiz.length})</p>
-            {dia.quiz.map((q, i) => <QuizQuestion key={i} {...q} onCorrect={handleQuizCorrect} />)}
-          </div>
-          {/* 3. Resumo activo */}
-          {dia.resumoActivo && (
-            <ResumoActivo
-              pergunta={dia.resumoActivo.pergunta}
-              respostaEsperada={dia.resumoActivo.respostaEsperada}
-              onResult={handleResumoResult}
-            />
-          )}
-          {/* Complete day */}
-          {!studied && (
-            <button onClick={handleComplete} className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
-              style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <Check size={13} /> Marcar como estudado (+20 XP)
-            </button>
-          )}
-          <button onClick={() => setOpen(false)} className="text-xs w-full text-center" style={{ color: 'var(--text-muted)' }}>
-            Recolher
-          </button>
+
+      {/* Flashcards — grid 2 cols on tablet+ */}
+      <div>
+        <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>Flashcards ({dia.flashcards.length})</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {dia.flashcards.map((f, i) => <Flashcard key={i} frente={f.frente} verso={f.verso} onFlip={handleFlashcardView} />)}
         </div>
+      </div>
+
+      {/* Quiz — grid 2 cols on tablet+ */}
+      <div>
+        <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>Quiz ({dia.quiz.length})</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {dia.quiz.map((q, i) => <QuizQuestion key={i} {...q} onCorrect={handleQuizCorrect} />)}
+        </div>
+      </div>
+
+      {/* Resumo activo */}
+      {dia.resumoActivo && (
+        <ResumoActivo
+          pergunta={dia.resumoActivo.pergunta}
+          respostaEsperada={dia.resumoActivo.respostaEsperada}
+          onResult={handleResumoResult}
+        />
+      )}
+
+      {/* Complete day */}
+      {!studied && (
+        <button onClick={handleComplete} className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+          style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
+          <Check size={15} /> Marcar como estudado (+20 XP)
+        </button>
       )}
     </div>
   )
@@ -272,11 +275,17 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
 
   const plano = exam.planoEstudo
   const today = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
   const daysStudied = plano?.diasEstudados?.length ?? 0
   const totalDays = plano?.dias?.length ?? 0
+
+  // Auto-select today's day or first unstudied
+  const todayDia = plano?.dias?.find((d) => d.data === today)
+  const effectiveSelected = selectedDay ?? todayDia?.dia ?? plano?.dias?.find((d) => !(plano.diasEstudados ?? []).includes(d.dia))?.dia ?? null
+  const activeDia = plano?.dias?.find((d) => d.dia === effectiveSelected)
 
   async function generate() {
     setGenerating(true)
@@ -329,23 +338,18 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
             <div className="h-full rounded-full transition-all" style={{ width: `${totalDays > 0 ? (daysStudied / totalDays) * 100 : 0}%`, background: '#6270f5' }} />
           </div>
 
-          {/* Horizontal scrollable day cards */}
+          {/* Day tabs — horizontal scroll */}
           <div className="relative">
             <button onClick={() => scroll(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3 z-10 p-1.5 rounded-full hidden md:flex"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               <ChevronLeft size={16} style={{ color: 'var(--text-muted)' }} />
             </button>
-            <div ref={scrollRef} className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
+            <div ref={scrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
               {plano.dias.map((dia) => (
-                <DayCard key={dia.dia} dia={dia} isToday={dia.data === today}
+                <DayTab key={dia.dia} dia={dia} isToday={dia.data === today}
                   studied={(plano.diasEstudados ?? []).includes(dia.dia)}
-                  onStudied={() => {
-                    markDiaEstudado(exam.id, dia.dia)
-                    // Check if plan complete
-                    const allDone = plano.dias.every((d) => d.dia === dia.dia || (plano.diasEstudados ?? []).includes(d.dia))
-                    if (allDone) awardStudyPlanXP(50) // +50 XP for completing entire plan
-                  }}
-                  tempoEstimado={plano.tempoEstimadoPorDia ?? 15} />
+                  isSelected={effectiveSelected === dia.dia}
+                  onClick={() => setSelectedDay(dia.dia)} />
               ))}
             </div>
             <button onClick={() => scroll(1)} className="absolute right-0 top-1/2 -translate-y-1/2 -mr-3 z-10 p-1.5 rounded-full hidden md:flex"
@@ -353,6 +357,18 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
               <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
             </button>
           </div>
+
+          {/* Expanded day content — full width */}
+          {activeDia && (
+            <DayContent dia={activeDia}
+              studied={(plano.diasEstudados ?? []).includes(activeDia.dia)}
+              onStudied={() => {
+                markDiaEstudado(exam.id, activeDia.dia)
+                const allDone = plano.dias.every((d) => d.dia === activeDia.dia || (plano.diasEstudados ?? []).includes(d.dia))
+                if (allDone) awardStudyPlanXP(50)
+              }}
+              tempoEstimado={plano.tempoEstimadoPorDia ?? 15} />
+          )}
         </div>
       )}
     </div>
@@ -631,7 +647,7 @@ export default function ExamSchedulePage() {
   const sorted = [...exams].sort((a, b) => a.date.localeCompare(b.date))
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-display font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
