@@ -85,14 +85,14 @@ function ExamForm({ initial, onSave, onCancel, subjects }: {
 
 // ── Flashcard interativo ─────────────────────────────────────────────────────
 
-function Flashcard({ frente, verso, onFlip }: { frente: string; verso: string; onFlip?: () => void }) {
+function Flashcard({ num, frente, verso, onFlip }: { num: number; frente: string; verso: string; onFlip?: () => void }) {
   const [flipped, setFlipped] = useState(false)
   return (
     <button onClick={() => { if (!flipped && onFlip) onFlip(); setFlipped(!flipped) }}
       className="w-full p-4 rounded-xl text-sm text-left transition-all min-h-[80px]"
       style={{ background: flipped ? 'rgba(16,185,129,0.08)' : 'var(--surface-2)', border: `1px solid ${flipped ? 'rgba(16,185,129,0.2)' : 'var(--border)'}` }}>
       <p className="text-xs font-semibold mb-1" style={{ color: flipped ? '#10b981' : '#6270f5' }}>
-        {flipped ? 'Resposta' : 'Pergunta'}
+        {flipped ? `Resposta ${num}` : `Pergunta ${num}`}
       </p>
       <p style={{ color: 'var(--text)' }}>{flipped ? verso : frente}</p>
     </button>
@@ -101,12 +101,12 @@ function Flashcard({ frente, verso, onFlip }: { frente: string; verso: string; o
 
 // ── Quiz interativo ──────────────────────────────────────────────────────────
 
-function QuizQuestion({ pergunta, opcoes, correta, explicacao, onAnswer }: DiaPlano['quiz'][number] & { onAnswer?: (correct: boolean) => void }) {
+function QuizQuestion({ num, pergunta, opcoes, correta, explicacao, onAnswer }: DiaPlano['quiz'][number] & { num: number; onAnswer?: (correct: boolean) => void }) {
   const [selected, setSelected] = useState<number | null>(null)
   const answered = selected !== null
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{pergunta}</p>
+      <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Q{num}. {pergunta}</p>
       <div className="flex flex-col gap-1.5">
         {opcoes.map((opt, i) => {
           const isCorrect = i === correta
@@ -213,9 +213,11 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
   dia: DiaPlano; studied: boolean; onStudied: () => void; tempoEstimado: number
 }) {
   const { awardStudyPlanXP } = useStore()
+  const [attempt, setAttempt] = useState(0)
   const [flippedCount, setFlippedCount] = useState(0)
   const [answeredQuiz, setAnsweredQuiz] = useState(0)
   const [resumoDone, setResumoDone] = useState(false)
+  const isRedo = studied
 
   const totalFlashcards = dia.flashcards.length
   const totalQuiz = dia.quiz.length
@@ -251,28 +253,28 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
       </div>
 
       {/* Flashcards — grid 2 cols on tablet+ */}
-      <div>
+      <div key={`fc-${attempt}`}>
         <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>
           Flashcards ({flippedCount}/{totalFlashcards})
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {dia.flashcards.map((f, i) => <Flashcard key={i} frente={f.frente} verso={f.verso} onFlip={handleFlashcardView} />)}
+          {dia.flashcards.map((f, i) => <Flashcard key={i} num={i + 1} frente={f.frente} verso={f.verso} onFlip={handleFlashcardView} />)}
         </div>
       </div>
 
       {/* Quiz — grid 2 cols on tablet+ */}
-      <div>
+      <div key={`quiz-${attempt}`}>
         <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>
           Quiz ({answeredQuiz}/{totalQuiz})
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {dia.quiz.map((q, i) => <QuizQuestion key={i} {...q} onAnswer={handleQuizAnswer} />)}
+          {dia.quiz.map((q, i) => <QuizQuestion key={i} num={i + 1} {...q} onAnswer={handleQuizAnswer} />)}
         </div>
       </div>
 
       {/* Resumo activo */}
       {dia.resumoActivo && (
-        <ResumoActivo
+        <ResumoActivo key={`resumo-${attempt}`}
           pergunta={dia.resumoActivo.pergunta}
           respostaEsperada={dia.resumoActivo.respostaEsperada}
           onResult={handleResumoResult}
@@ -280,7 +282,7 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
       )}
 
       {/* Complete day */}
-      {!studied && (
+      {!isRedo && (
         <button onClick={handleComplete} disabled={!allDone}
           className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
           style={{
@@ -291,6 +293,13 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
           }}>
           <Check size={15} />
           {allDone ? 'Marcar como estudado (+20 XP)' : `Completa todas as atividades (${done}/${progress})`}
+        </button>
+      )}
+      {isRedo && (
+        <button onClick={() => { setAttempt((a) => a + 1); setFlippedCount(0); setAnsweredQuiz(0); setResumoDone(false) }}
+          className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+          style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+          <RotateCcw size={13} /> Refazer este dia
         </button>
       )}
     </div>
