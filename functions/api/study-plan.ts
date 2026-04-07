@@ -34,8 +34,19 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
 
     const regras = getRegras(daysAvailable)
 
-    const materiaisText = materiais.length > 0
-      ? materiais.map((m) => `--- ${m.nome} ---\n${m.conteudo}`).join('\n\n')
+    // Truncate materials to avoid exceeding API limits (~50k chars total)
+    const MAX_CHARS = 50000
+    let totalChars = 0
+    const truncatedMateriais = materiais.map((m) => {
+      const remaining = MAX_CHARS - totalChars
+      if (remaining <= 0) return null
+      const content = m.conteudo.slice(0, remaining)
+      totalChars += content.length
+      return `--- ${m.nome} ---\n${content}`
+    }).filter(Boolean)
+
+    const materiaisText = truncatedMateriais.length > 0
+      ? truncatedMateriais.join('\n\n')
       : 'nenhum'
 
     const todayStr = today.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -49,7 +60,7 @@ Intensidade: ${regras.intensidade}
 Flashcards por dia: ${regras.flashcards}
 Quiz por dia: ${regras.quiz}
 Tempo estimado por dia: ${regras.tempoEstimado} minutos
-Ficha de estudo: ${studyNote || 'não fornecida'}
+Ficha de estudo: ${studyNote ? studyNote.slice(0, 20000) : 'não fornecida'}
 Outros materiais: ${materiaisText}`
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -115,7 +126,8 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
     })
 
     if (!res.ok) {
-      return Response.json({ error: 'AI request failed' }, { status: 502, headers })
+      const errBody = await res.text().catch(() => '')
+      return Response.json({ error: `AI request failed (${res.status})`, detail: errBody.slice(0, 200) }, { status: 502, headers })
     }
 
     const data = await res.json() as { content: { type: string; text: string }[] }
@@ -123,15 +135,18 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
 
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
-      return Response.json({ error: 'Invalid AI response' }, { status: 500, headers })
+      return Response.json({ error: 'Invalid AI response', detail: text.slice(0, 200) }, { status: 500, headers })
     }
 
-    const plan = JSON.parse(jsonMatch[0])
-    // Inject tempoEstimado if not present
-    if (!plan.tempoEstimadoPorDia) plan.tempoEstimadoPorDia = regras.tempoEstimado
-    return Response.json(plan, { headers })
-  } catch {
-    return Response.json({ error: 'Internal error' }, { status: 500, headers })
+    try {
+      const plan = JSON.parse(jsonMatch[0])
+      if (!plan.tempoEstimadoPorDia) plan.tempoEstimadoPorDia = regras.tempoEstimado
+      return Response.json(plan, { headers })
+    } catch {
+      return Response.json({ error: 'Failed to parse AI response', detail: jsonMatch[0].slice(0, 200) }, { status: 500, headers })
+    }
+  } catch (e) {
+    return Response.json({ error: 'Internal error', detail: String(e).slice(0, 200) }, { status: 500, headers })
   }
 }
 

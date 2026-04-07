@@ -327,30 +327,23 @@ function GeneratingAnimation() {
   useEffect(() => {
     const msgInterval = setInterval(() => {
       setMsgIndex((i) => Math.min(i + 1, GENERATING_MESSAGES.length - 1))
-    }, 4000)
+    }, 12000)
     const dotInterval = setInterval(() => {
       setDots((d) => d.length >= 3 ? '' : d + '.')
-    }, 500)
+    }, 600)
     return () => { clearInterval(msgInterval); clearInterval(dotInterval) }
   }, [])
 
-  const progress = Math.min(95, ((msgIndex + 1) / GENERATING_MESSAGES.length) * 100)
-
   return (
-    <div className="card space-y-4 text-center py-6">
+    <div className="card text-center py-8 space-y-4">
       <Loader2 size={28} className="animate-spin mx-auto" style={{ color: '#6270f5' }} />
       <div>
         <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
           A gerar o teu plano de estudo{dots}
         </p>
-        <p className="text-xs mt-1.5 transition-all" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-xs mt-2 transition-all" style={{ color: 'var(--text-muted)' }}>
           {GENERATING_MESSAGES[msgIndex]}
         </p>
-      </div>
-      <div className="max-w-xs mx-auto">
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-2)' }}>
-          <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%`, background: '#6270f5' }} />
-        </div>
       </div>
       <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
         A IA está a personalizar o plano — isto pode demorar até 2 minutos.
@@ -395,8 +388,8 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
         materiais: materiaisForAI,
       })
       setExamPlano(exam.id, { geradoEm: new Date().toISOString(), resumo: result.resumo, tempoEstimadoPorDia: result.tempoEstimadoPorDia, dias: result.dias, diasEstudados: [] })
-    } catch {
-      setError('Erro ao gerar o plano. Tenta novamente.')
+    } catch (e) {
+      setError(`Erro ao gerar o plano. Tenta novamente. ${e instanceof Error ? e.message : ''}`)
     }
     setGenerating(false)
   }
