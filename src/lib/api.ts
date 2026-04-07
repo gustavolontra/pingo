@@ -1,5 +1,55 @@
 const BASE = '/api'
 
+// ── Disciplinas oficiais do Pingo ───────────────────────────────────────────
+
+export const DISCIPLINAS_POR_CICLO = {
+  '2ciclo': {
+    anos: [5, 6],
+    disciplinas: [
+      'Português', 'Inglês', 'História e Geografia de Portugal',
+      'Cidadania e Desenvolvimento', 'Matemática', 'Ciências Naturais',
+    ],
+  },
+  '3ciclo': {
+    anos: [7, 8, 9],
+    disciplinas: [
+      'Português', 'Inglês', 'Alemão', 'Francês', 'Espanhol',
+      'História', 'Geografia', 'Cidadania e Desenvolvimento',
+      'Matemática', 'Ciências Naturais', 'Físico-Química',
+    ],
+  },
+}
+
+export function getDisciplinasPorAno(ano: number): string[] {
+  if ([5, 6].includes(ano)) return DISCIPLINAS_POR_CICLO['2ciclo'].disciplinas
+  if ([7, 8, 9].includes(ano)) return DISCIPLINAS_POR_CICLO['3ciclo'].disciplinas
+  return []
+}
+
+export function todasAsDisciplinas(): string[] {
+  return [
+    ...new Set([
+      ...DISCIPLINAS_POR_CICLO['2ciclo'].disciplinas,
+      ...DISCIPLINAS_POR_CICLO['3ciclo'].disciplinas,
+    ]),
+  ]
+}
+
+export const SUGESTOES_GENERICAS: Record<string, string[]> = {
+  'Português': ['O que é um adjetivo?', 'Qual a diferença entre conto e novela?'],
+  'Inglês': ['O que é o Present Simple?', 'Como se usa o verbo "to be"?'],
+  'História e Geografia de Portugal': ['Onde fica Portugal no mapa da Europa?', 'Quem foi D. Afonso Henriques?'],
+  'Cidadania e Desenvolvimento': ['O que são direitos humanos?', 'O que é a democracia?'],
+  'Matemática': ['O que é uma fração?', 'Como se calcula a área de um retângulo?'],
+  'Ciências Naturais': ['O que é a fotossíntese?', 'Como funciona o sistema digestivo?'],
+  'História': ['O que foi a Peste Negra?', 'O que foi a Batalha de Aljubarrota?'],
+  'Geografia': ['O que é a latitude?', 'Qual a diferença entre clima e estado do tempo?'],
+  'Físico-Química': ['O que é um átomo?', 'O que é a velocidade média?'],
+  'Alemão': ['Como se diz "bom dia" em alemão?', 'O que é o artigo definido em alemão?'],
+  'Francês': ['Como se conjuga o verbo "être"?', 'O que é o passé composé?'],
+  'Espanhol': ['O que é o pretérito indefinido?', 'Como se usa "ser" e "estar" em espanhol?'],
+}
+
 export interface KVFlashcard {
   frente: string
   verso: string

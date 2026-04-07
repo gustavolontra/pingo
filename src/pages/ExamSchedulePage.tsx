@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useStore, type Exam, type DiaPlano } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
-import { api } from '@/lib/api'
+import { api, getDisciplinasPorAno } from '@/lib/api'
 import {
   Calendar, Pencil, Trash2, Plus, BookOpen, ChevronDown, ChevronUp, X,
   Sparkles, Loader2, FileText, Upload, Check, ChevronLeft, ChevronRight,
@@ -10,21 +10,16 @@ import {
 } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 
-// ── Matérias ─────────────────────────────────────────────────────────────────
+// ── Ícones de matérias ───────────────────────────────────────────────────────
 
-const SUBJECTS = [
-  { name: 'Português', icon: '📖' }, { name: 'Matemática', icon: '📐' },
-  { name: 'História', icon: '🏛️' }, { name: 'Geografia', icon: '🌍' },
-  { name: 'Inglês', icon: '🇬🇧' }, { name: 'Francês', icon: '🇫🇷' },
-  { name: 'Espanhol', icon: '🇪🇸' }, { name: 'Ciências Naturais', icon: '🔬' },
-  { name: 'Físico-Química', icon: '⚗️' }, { name: 'HGP', icon: '🏛️' },
-  { name: 'Educação Visual', icon: '🎨' }, { name: 'EVT', icon: '🎨' },
-  { name: 'Educação Musical', icon: '🎵' }, { name: 'Educação Física', icon: '⚽' },
-  { name: 'TIC', icon: '💻' }, { name: 'EMRC', icon: '✝️' },
-  { name: 'Cidadania e Desenvolvimento', icon: '🤝' },
-]
+const SUBJECT_ICONS: Record<string, string> = {
+  'Português': '📖', 'Matemática': '📐', 'História': '🏛️', 'Geografia': '🌍',
+  'Inglês': '🇬🇧', 'Francês': '🇫🇷', 'Espanhol': '🇪🇸', 'Alemão': '🇩🇪',
+  'Ciências Naturais': '🔬', 'Físico-Química': '⚗️',
+  'História e Geografia de Portugal': '🏛️', 'Cidadania e Desenvolvimento': '🤝',
+}
 
-function subjectIcon(name: string) { return SUBJECTS.find((s) => s.name === name)?.icon ?? '📚' }
+function subjectIcon(name: string) { return SUBJECT_ICONS[name] ?? '📚' }
 
 function daysUntil(dateStr: string) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -45,12 +40,13 @@ function urgencyColor(days: number) {
 
 // ── Formulário de adicionar / editar ─────────────────────────────────────────
 
-function ExamForm({ initial, onSave, onCancel }: {
+function ExamForm({ initial, onSave, onCancel, subjects }: {
   initial?: { subject: string; date: string }
   onSave: (subject: string, date: string) => void
   onCancel: () => void
+  subjects: string[]
 }) {
-  const [subject, setSubject] = useState(initial?.subject ?? SUBJECTS[0].name)
+  const [subject, setSubject] = useState(initial?.subject ?? subjects[0] ?? '')
   const [date, setDate] = useState(initial?.date ?? '')
   const today = new Date().toISOString().split('T')[0]
 
@@ -64,7 +60,7 @@ function ExamForm({ initial, onSave, onCancel }: {
         <select value={subject} onChange={(e) => setSubject(e.target.value)}
           className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
           style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-          {SUBJECTS.map((s) => <option key={s.name} value={s.name}>{s.icon} {s.name}</option>)}
+          {subjects.map((s) => <option key={s} value={s}>{subjectIcon(s)} {s}</option>)}
         </select>
       </div>
       <div>
@@ -362,7 +358,7 @@ function MaterialsSection({ exam }: { exam: Exam }) {
 
 // ── Card de exame ─────────────────────────────────────────────────────────────
 
-function ExamCard({ exam }: { exam: Exam }) {
+function ExamCard({ exam, subjects }: { exam: Exam; subjects: string[] }) {
   const { updateExam, deleteExam, setExamStudyNote } = useStore()
   const [editing, setEditing] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
@@ -387,6 +383,7 @@ function ExamCard({ exam }: { exam: Exam }) {
         initial={{ subject: exam.subject, date: exam.date }}
         onSave={(subject, date) => { updateExam(exam.id, subject, date); setEditing(false) }}
         onCancel={() => setEditing(false)}
+        subjects={subjects}
       />
     )
   }
@@ -483,7 +480,13 @@ function ExamCard({ exam }: { exam: Exam }) {
 export default function ExamSchedulePage() {
   const exams = useStore((s) => s.getExams())
   const { addExam } = useStore()
+  const { studentId } = useStudentAuthStore()
+  const students = useAdminStore((s) => s.students)
   const [adding, setAdding] = useState(false)
+
+  const me = students.find((s) => s.id === studentId)
+  const anoNum = parseInt(me?.grade ?? '7', 10)
+  const subjects = getDisciplinasPorAno(anoNum)
 
   const sorted = [...exams].sort((a, b) => a.date.localeCompare(b.date))
 
@@ -506,7 +509,7 @@ export default function ExamSchedulePage() {
       </div>
 
       {adding && (
-        <ExamForm onSave={(subject, date) => { addExam(subject, date); setAdding(false) }} onCancel={() => setAdding(false)} />
+        <ExamForm onSave={(subject, date) => { addExam(subject, date); setAdding(false) }} onCancel={() => setAdding(false)} subjects={subjects} />
       )}
 
       {sorted.length === 0 && !adding && (
@@ -517,7 +520,7 @@ export default function ExamSchedulePage() {
         </div>
       )}
 
-      {sorted.map((exam) => <ExamCard key={exam.id} exam={exam} />)}
+      {sorted.map((exam) => <ExamCard key={exam.id} exam={exam} subjects={subjects} />)}
     </div>
   )
 }

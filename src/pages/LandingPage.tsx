@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, LogIn, X, Zap, Lock, Trash2, Search, Trophy } from 'lucide-react'
-import { api, type KVContentItem } from '@/lib/api'
+import { api, type KVContentItem, SUGESTOES_GENERICAS } from '@/lib/api'
 import TextToSpeech from '@/components/ui/TextToSpeech'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
@@ -124,16 +124,21 @@ export default function LandingPage() {
   useEffect(() => {
     api.getAllContent().then((items) => {
       setKvItems(items)
-      // Recolhe todas as perguntas de flashcards de todos os itens
-      const allQuestions: string[] = []
+      // Real questions from KV content
+      const realQuestions: string[] = []
       for (const item of items) {
         for (const fc of item.flashcards ?? []) {
-          if (fc.frente?.trim()) allQuestions.push(fc.frente.trim())
+          if (fc.frente?.trim()) realQuestions.push(fc.frente.trim())
         }
       }
-      // Embaralha e pega as primeiras 6
-      const shuffled = allQuestions.sort(() => Math.random() - 0.5)
-      setSuggestions(shuffled.slice(0, 6))
+      // Generic fallback suggestions
+      const genericAll = Object.values(SUGESTOES_GENERICAS).flat()
+      // Mix: prioritize real content, fill with generic
+      const shuffledReal = realQuestions.sort(() => Math.random() - 0.5).slice(0, 4)
+      const shuffledGeneric = genericAll.sort(() => Math.random() - 0.5)
+        .filter((q) => !shuffledReal.includes(q))
+        .slice(0, 6 - shuffledReal.length)
+      setSuggestions([...shuffledReal, ...shuffledGeneric].sort(() => Math.random() - 0.5).slice(0, 6))
     })
   }, [])
 
