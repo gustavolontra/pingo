@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStore, type Exam, type DiaPlano } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
@@ -299,6 +299,59 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
 
 // ── Plano de estudo ──────────────────────────────────────────────────────────
 
+// ── Animação de geração ──────────────────────────────────────────────────────
+
+const GENERATING_MESSAGES = [
+  'A analisar os teus materiais de estudo...',
+  'A organizar o conteúdo por temas...',
+  'A criar flashcards personalizados...',
+  'A preparar perguntas de quiz...',
+  'A distribuir o estudo pelos dias...',
+  'A gerar o resumo activo de cada dia...',
+  'Quase pronto... a finalizar o teu plano!',
+]
+
+function GeneratingAnimation() {
+  const [msgIndex, setMsgIndex] = useState(0)
+  const [dots, setDots] = useState('')
+
+  useEffect(() => {
+    const msgInterval = setInterval(() => {
+      setMsgIndex((i) => (i + 1) % GENERATING_MESSAGES.length)
+    }, 4000)
+    const dotInterval = setInterval(() => {
+      setDots((d) => d.length >= 3 ? '' : d + '.')
+    }, 500)
+    return () => { clearInterval(msgInterval); clearInterval(dotInterval) }
+  }, [])
+
+  const progress = Math.min(95, ((msgIndex + 1) / GENERATING_MESSAGES.length) * 100)
+
+  return (
+    <div className="card space-y-4 text-center py-6">
+      <Loader2 size={28} className="animate-spin mx-auto" style={{ color: '#6270f5' }} />
+      <div>
+        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+          A gerar o teu plano de estudo{dots}
+        </p>
+        <p className="text-xs mt-1.5 transition-all" style={{ color: 'var(--text-muted)' }}>
+          {GENERATING_MESSAGES[msgIndex]}
+        </p>
+      </div>
+      <div className="max-w-xs mx-auto">
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-2)' }}>
+          <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%`, background: '#6270f5' }} />
+        </div>
+      </div>
+      <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+        A IA está a personalizar o plano — isto pode demorar até 2 minutos.
+      </p>
+    </div>
+  )
+}
+
+// ── Plano de estudo ──────────────────────────────────────────────────────────
+
 function StudyPlanSection({ exam }: { exam: Exam }) {
   const { setExamPlano, markDiaEstudado, awardStudyPlanXP } = useStore()
   const { studentId } = useStudentAuthStore()
@@ -346,12 +399,16 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   return (
     <div className="space-y-3">
       {/* Generate / Regenerate button */}
-      <button onClick={generate} disabled={generating}
-        className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-        style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5', border: '1px solid rgba(98,112,245,0.2)' }}>
-        {generating ? <Loader2 size={14} className="animate-spin" /> : plano ? <RotateCcw size={14} /> : <Sparkles size={14} />}
-        {generating ? 'A gerar plano de estudo...' : plano ? 'Regenerar plano de estudo' : 'Gerar plano de estudo com IA'}
-      </button>
+      {!generating ? (
+        <button onClick={generate}
+          className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+          style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5', border: '1px solid rgba(98,112,245,0.2)' }}>
+          {plano ? <RotateCcw size={14} /> : <Sparkles size={14} />}
+          {plano ? 'Regenerar plano de estudo' : 'Gerar plano de estudo com IA'}
+        </button>
+      ) : (
+        <GeneratingAnimation />
+      )}
       {error && <p className="text-xs" style={{ color: '#ef4444' }}>{error}</p>}
 
       {/* Plan view */}
