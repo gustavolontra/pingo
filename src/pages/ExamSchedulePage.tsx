@@ -101,7 +101,7 @@ function Flashcard({ frente, verso, onFlip }: { frente: string; verso: string; o
 
 // ── Quiz interativo ──────────────────────────────────────────────────────────
 
-function QuizQuestion({ pergunta, opcoes, correta, explicacao, onCorrect }: DiaPlano['quiz'][number] & { onCorrect?: () => void }) {
+function QuizQuestion({ pergunta, opcoes, correta, explicacao, onAnswer }: DiaPlano['quiz'][number] & { onAnswer?: (correct: boolean) => void }) {
   const [selected, setSelected] = useState<number | null>(null)
   const answered = selected !== null
   return (
@@ -115,7 +115,7 @@ function QuizQuestion({ pergunta, opcoes, correta, explicacao, onCorrect }: DiaP
           if (answered && isCorrect) { bg = 'rgba(16,185,129,0.1)'; border = 'rgba(16,185,129,0.3)'; col = '#10b981' }
           else if (answered && isSelected && !isCorrect) { bg = 'rgba(239,68,68,0.1)'; border = 'rgba(239,68,68,0.3)'; col = '#ef4444' }
           return (
-            <button key={i} onClick={() => { if (!answered) { setSelected(i); if (i === correta && onCorrect) onCorrect() } }} disabled={answered}
+            <button key={i} onClick={() => { if (!answered) { setSelected(i); if (onAnswer) onAnswer(i === correta) } }} disabled={answered}
               className="px-3 py-2 rounded-xl text-sm text-left transition-all"
               style={{ background: bg, border: `1px solid ${border}`, color: col }}>
               {opt}
@@ -213,25 +213,48 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
   dia: DiaPlano; studied: boolean; onStudied: () => void; tempoEstimado: number
 }) {
   const { awardStudyPlanXP } = useStore()
+  const [flippedCount, setFlippedCount] = useState(0)
+  const [answeredQuiz, setAnsweredQuiz] = useState(0)
+  const [resumoDone, setResumoDone] = useState(false)
 
-  function handleFlashcardView() { awardStudyPlanXP(2) }
-  function handleQuizCorrect() { awardStudyPlanXP(5) }
+  const totalFlashcards = dia.flashcards.length
+  const totalQuiz = dia.quiz.length
+  const hasResumo = !!dia.resumoActivo
+  const allDone = flippedCount >= totalFlashcards && answeredQuiz >= totalQuiz && (!hasResumo || resumoDone)
+
+  function handleFlashcardView() { setFlippedCount((v) => v + 1); awardStudyPlanXP(2) }
+  function handleQuizAnswer(correct: boolean) { setAnsweredQuiz((v) => v + 1); if (correct) awardStudyPlanXP(5) }
   function handleResumoResult(nivel: 'bom' | 'parcial' | 'insuficiente') {
+    setResumoDone(true)
     awardStudyPlanXP(nivel === 'bom' ? 10 : nivel === 'parcial' ? 5 : 0)
   }
   function handleComplete() { awardStudyPlanXP(20, tempoEstimado); onStudied() }
 
+  const progress = totalFlashcards + totalQuiz + (hasResumo ? 1 : 0)
+  const done = flippedCount + answeredQuiz + (resumoDone ? 1 : 0)
+
   return (
     <div className="card space-y-5">
-      {/* Day header */}
+      {/* Day header + progress */}
       <div>
-        <p className="text-sm font-display font-bold" style={{ color: 'var(--text)' }}>{dia.tema}</p>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-sm font-display font-bold" style={{ color: 'var(--text)' }}>{dia.tema}</p>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: allDone ? 'rgba(16,185,129,0.1)' : 'var(--surface-2)', color: allDone ? '#10b981' : 'var(--text-muted)' }}>
+            {done}/{progress}
+          </span>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
+        <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: 'var(--surface-2)' }}>
+          <div className="h-full rounded-full transition-all" style={{ width: `${progress > 0 ? (done / progress) * 100 : 0}%`, background: allDone ? '#10b981' : '#6270f5' }} />
+        </div>
       </div>
 
       {/* Flashcards — grid 2 cols on tablet+ */}
       <div>
-        <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>Flashcards ({dia.flashcards.length})</p>
+        <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>
+          Flashcards ({flippedCount}/{totalFlashcards})
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {dia.flashcards.map((f, i) => <Flashcard key={i} frente={f.frente} verso={f.verso} onFlip={handleFlashcardView} />)}
         </div>
@@ -239,9 +262,11 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
 
       {/* Quiz — grid 2 cols on tablet+ */}
       <div>
-        <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>Quiz ({dia.quiz.length})</p>
+        <p className="text-xs font-semibold mb-2" style={{ color: '#6270f5' }}>
+          Quiz ({answeredQuiz}/{totalQuiz})
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {dia.quiz.map((q, i) => <QuizQuestion key={i} {...q} onCorrect={handleQuizCorrect} />)}
+          {dia.quiz.map((q, i) => <QuizQuestion key={i} {...q} onAnswer={handleQuizAnswer} />)}
         </div>
       </div>
 
@@ -256,9 +281,16 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
 
       {/* Complete day */}
       {!studied && (
-        <button onClick={handleComplete} className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
-          style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>
-          <Check size={15} /> Marcar como estudado (+20 XP)
+        <button onClick={handleComplete} disabled={!allDone}
+          className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+          style={{
+            background: allDone ? 'rgba(16,185,129,0.1)' : 'var(--surface-2)',
+            color: allDone ? '#10b981' : 'var(--text-muted)',
+            border: `1px solid ${allDone ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`,
+            opacity: allDone ? 1 : 0.5,
+          }}>
+          <Check size={15} />
+          {allDone ? 'Marcar como estudado (+20 XP)' : `Completa todas as atividades (${done}/${progress})`}
         </button>
       )}
     </div>
