@@ -178,38 +178,51 @@ function InviteBanner({ code }: { code: string }) {
 function TodayStudy({ exams, onGoToExams }: { exams: { id: string; subject: string; date: string; planoEstudo?: { dias: DiaPlano[]; diasEstudados: number[] } }[]; onGoToExams: () => void }) {
   const today = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
-  // Collect today's items + overdue (past days not studied)
-  type StudyItem = { examId: string; subject: string; dia: DiaPlano; status: 'feito' | 'hoje' | 'atrasado' }
-  const items: StudyItem[] = []
+  // Build cards: atrasados + hoje + próximo (always show 2 cards)
+  type StudyItem = { examId: string; subject: string; dia: DiaPlano; status: 'feito' | 'hoje' | 'atrasado' | 'proximo' }
+  const allItems: StudyItem[] = []
 
   for (const exam of exams) {
     if (!exam.planoEstudo?.dias) continue
     const studied = exam.planoEstudo.diasEstudados ?? []
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0)
 
     for (const dia of exam.planoEstudo.dias) {
       const isDone = studied.includes(dia.dia)
       const isToday = dia.data === today
-      // Parse DD/MM/YYYY to compare
       const [d, m, y] = dia.data.split('/')
       const diaDate = new Date(+y, +m - 1, +d)
-      const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0)
       const isPast = diaDate < todayDate
+      const isFuture = diaDate > todayDate
 
-      if (isDone && isToday) {
-        items.push({ examId: exam.id, subject: exam.subject, dia, status: 'feito' })
+      if (isToday && isDone) {
+        allItems.push({ examId: exam.id, subject: exam.subject, dia, status: 'feito' })
       } else if (isToday) {
-        items.push({ examId: exam.id, subject: exam.subject, dia, status: 'hoje' })
+        allItems.push({ examId: exam.id, subject: exam.subject, dia, status: 'hoje' })
       } else if (isPast && !isDone) {
-        items.push({ examId: exam.id, subject: exam.subject, dia, status: 'atrasado' })
+        allItems.push({ examId: exam.id, subject: exam.subject, dia, status: 'atrasado' })
+      } else if (isFuture && !isDone) {
+        allItems.push({ examId: exam.id, subject: exam.subject, dia, status: 'proximo' })
       }
     }
   }
 
-  if (items.length === 0) return null
+  if (allItems.length === 0) return null
 
-  // Sort: atrasado first, then hoje, then feito
-  const order = { atrasado: 0, hoje: 1, feito: 2 }
-  items.sort((a, b) => order[a.status] - order[b.status])
+  // Sort: atrasado, hoje, feito, proximo
+  const order = { atrasado: 0, hoje: 1, feito: 2, proximo: 3 }
+  allItems.sort((a, b) => order[a.status] - order[b.status])
+
+  // Always show exactly 2 cards: prioritize atrasado + hoje, fill with próximo
+  const items = allItems.filter((i) => i.status !== 'proximo')
+  if (items.length < 2) {
+    const proximos = allItems.filter((i) => i.status === 'proximo')
+    while (items.length < 2 && proximos.length > 0) {
+      items.push(proximos.shift()!)
+    }
+  }
+  // Max 2 cards
+  const shown = items.slice(0, 2)
 
   return (
     <div className="space-y-3">
@@ -218,22 +231,25 @@ function TodayStudy({ exams, onGoToExams }: { exams: { id: string; subject: stri
         <p className="text-sm font-display font-semibold" style={{ color: 'var(--text)' }}>Plano de estudo</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {items.map(({ examId, subject, dia, status }) => {
-          const borderColor = status === 'feito' ? 'rgba(16,185,129,0.2)' : status === 'atrasado' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'
-          const badgeBg = status === 'feito' ? 'rgba(16,185,129,0.1)' : status === 'atrasado' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.1)'
-          const badgeColor = status === 'feito' ? '#10b981' : status === 'atrasado' ? '#ef4444' : '#f59e0b'
-          const badgeText = status === 'feito' ? 'Concluído' : status === 'atrasado' ? 'Atrasado' : 'A fazer'
+        {shown.map(({ examId, subject, dia, status }) => {
+          const colors = {
+            feito: { border: 'rgba(16,185,129,0.2)', bg: 'rgba(16,185,129,0.1)', color: '#10b981', text: 'Concluído' },
+            atrasado: { border: 'rgba(239,68,68,0.2)', bg: 'rgba(239,68,68,0.1)', color: '#ef4444', text: 'Atrasado' },
+            hoje: { border: 'rgba(245,158,11,0.2)', bg: 'rgba(245,158,11,0.1)', color: '#f59e0b', text: 'A fazer' },
+            proximo: { border: 'var(--border)', bg: 'var(--surface-2)', color: 'var(--text-muted)', text: 'Próximo' },
+          }
+          const c = colors[status]
 
           return (
-            <div key={`${examId}-${dia.dia}`} className="card" style={{ borderColor }}>
+            <div key={`${examId}-${dia.dia}`} className="card" style={{ borderColor: c.border }}>
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-xs font-semibold px-1.5 py-0.5 rounded-md"
                   style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}>
                   {subject}
                 </span>
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
-                  style={{ background: badgeBg, color: badgeColor }}>
-                  {badgeText}
+                  style={{ background: c.bg, color: c.color }}>
+                  {c.text}
                 </span>
                 <span className="text-[10px] ml-auto" style={{ color: 'var(--text-muted)' }}>
                   Dia {dia.dia} · {dia.data}
@@ -241,11 +257,18 @@ function TodayStudy({ exams, onGoToExams }: { exams: { id: string; subject: stri
               </div>
               <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{dia.tema}</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
-              {status !== 'feito' && (
+              {status !== 'feito' && status !== 'proximo' && (
                 <button onClick={onGoToExams}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold mt-2"
                   style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}>
                   <BookOpen size={11} /> {status === 'atrasado' ? 'Recuperar estudo' : 'Estudar agora'}
+                </button>
+              )}
+              {status === 'proximo' && (
+                <button onClick={onGoToExams}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold mt-2"
+                  style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+                  <BookOpen size={11} /> Ver plano
                 </button>
               )}
             </div>
