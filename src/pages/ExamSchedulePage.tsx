@@ -451,7 +451,7 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
 
           {/* Expanded day content — full width */}
           {activeDia && (
-            <DayContent dia={activeDia}
+            <DayContent key={activeDia.dia} dia={activeDia}
               studied={(plano.diasEstudados ?? []).includes(activeDia.dia)}
               onStudied={() => {
                 markDiaEstudado(exam.id, activeDia.dia)
