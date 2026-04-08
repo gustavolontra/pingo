@@ -478,24 +478,36 @@ function MaterialsSection({ exam }: { exam: Exam }) {
 
   function addText() {
     if (!textContent.trim()) return
-    addExamMaterial(exam.id, { nome: textName.trim() || 'Material de texto', tipo: 'texto', conteudo: textContent })
+    addExamMaterial(exam.id, { nome: textName.trim() || 'Material de texto', tipo: 'texto', conteudo: textContent.slice(0, 50000) })
     setTextName(''); setTextContent(''); setAddingText(false)
   }
+
+  const [fileError, setFileError] = useState('')
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setFileError('')
+
+    // Only accept text-readable files
+    const isText = file.type.startsWith('text/') || /\.(txt|md|csv)$/i.test(file.name)
+    if (!isText) {
+      setFileError('Apenas ficheiros de texto (.txt, .md). Para PDFs, copia o texto e usa "Colar texto".')
+      e.target.value = ''
+      return
+    }
+    if (file.size > 500_000) {
+      setFileError('Ficheiro muito grande (máx. 500KB). Cola o conteúdo importante em "Colar texto".')
+      e.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => {
-      const content = reader.result as string
+      const content = (reader.result as string).slice(0, 50000) // Max 50k chars
       addExamMaterial(exam.id, { nome: file.name, tipo: 'ficheiro', conteudo: content })
     }
-    // Read as text for txt/md, or base64 for others
-    if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt')) {
-      reader.readAsText(file)
-    } else {
-      reader.readAsText(file) // Best effort — PDFs won't be readable but at least stored
-    }
+    reader.readAsText(file)
     e.target.value = ''
   }
 
@@ -545,8 +557,11 @@ function MaterialsSection({ exam }: { exam: Exam }) {
             style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
             <Upload size={12} /> Anexar ficheiro
           </button>
-          <input ref={fileRef} type="file" accept=".pdf,.txt,.md,.docx,.jpg,.png" onChange={handleFile} className="hidden" />
+          <input ref={fileRef} type="file" accept=".txt,.md,.csv" onChange={handleFile} className="hidden" />
         </div>
+      )}
+      {fileError && (
+        <p className="text-xs" style={{ color: '#f59e0b' }}>{fileError}</p>
       )}
     </div>
   )
