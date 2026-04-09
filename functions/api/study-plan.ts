@@ -42,8 +42,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     const isAdvanced = avancado === true
     const regras = getRegras(daysAvailable, isAdvanced)
 
-    // Truncate materials to avoid exceeding API limits (~50k chars total)
-    const MAX_CHARS = 50000
+    // Truncate materials to avoid exceeding API limits (~15k chars total for Haiku)
+    const MAX_CHARS = 15000
     let totalChars = 0
     const truncatedMateriais = materiais.map((m) => {
       const remaining = MAX_CHARS - totalChars
@@ -72,7 +72,7 @@ Exercícios de classificação por dia: ${'classificacao' in regras ? regras.cla
 Exercícios de transformação por dia: ${'transformacao' in regras ? regras.transformacao : 0}
 Exercícios de identificação sintática por dia: ${'identificacao' in regras ? regras.identificacao : 0}` : ''}
 Tempo estimado por dia: ${regras.tempoEstimado} minutos
-Ficha de estudo: ${studyNote ? studyNote.slice(0, 20000) : 'não fornecida'}
+Ficha de estudo: ${studyNote ? studyNote.slice(0, 8000) : 'não fornecida'}
 Outros materiais: ${materiaisText}`
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -190,7 +190,8 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
     }
 
     if (!plan) {
-      return Response.json({ error: 'Failed to parse AI response', detail: text.slice(0, 300) }, { status: 500, headers })
+      const reason = data.stop_reason === 'max_tokens' ? 'Resposta da IA demasiado longa — tenta com menos materiais' : 'Resposta da IA num formato inesperado'
+      return Response.json({ error: reason }, { status: 500, headers })
     }
 
     if (!plan.tempoEstimadoPorDia) plan.tempoEstimadoPorDia = regras.tempoEstimado
