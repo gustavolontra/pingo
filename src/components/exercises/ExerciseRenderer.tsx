@@ -50,10 +50,10 @@ function LacunaExercise({ exercicio, num }: { exercicio: ExercicioLacuna; num: n
 // ── Classificacao ────────────────────────────────────────────────────────────
 
 function ClassificacaoExercise({ exercicio, num }: { exercicio: ExercicioClassificacao; num: number }) {
-  const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [answers, setAnswers] = useState<Record<number, string>>({})
   const [checked, setChecked] = useState(false)
 
-  const allAnswered = exercicio.itens.every((it) => answers[it.palavra])
+  const allAnswered = exercicio.itens.every((_, i) => answers[i])
 
   function handleCheck() { setChecked(true) }
 
@@ -63,15 +63,15 @@ function ClassificacaoExercise({ exercicio, num }: { exercicio: ExercicioClassif
         <span className="font-semibold" style={{ color: '#6270f5' }}>{num}.</span> {exercicio.instrucao}
       </p>
       <div className="flex flex-col gap-1.5">
-        {exercicio.itens.map((it) => {
-          const isCorrect = checked && answers[it.palavra] === it.coluna
+        {exercicio.itens.map((it, i) => {
+          const isCorrect = checked && answers[i] === it.coluna
           return (
-            <div key={it.palavra} className="flex items-center gap-3 px-3 py-2 rounded-xl"
+            <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-xl"
               style={{ background: !checked ? 'var(--surface-2)' : isCorrect ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)', border: `1px solid ${!checked ? 'var(--border)' : isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
               <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text)' }}>{it.palavra}</span>
               <select
-                value={answers[it.palavra] ?? ''}
-                onChange={(e) => setAnswers({ ...answers, [it.palavra]: e.target.value })}
+                value={answers[i] ?? ''}
+                onChange={(e) => setAnswers({ ...answers, [i]: e.target.value })}
                 disabled={checked}
                 className="px-2 py-1.5 rounded-lg text-xs outline-none shrink-0"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', minWidth: '120px' }}
