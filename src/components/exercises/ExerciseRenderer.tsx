@@ -65,10 +65,9 @@ function ClassificacaoExercise({ exercicio, num }: { exercicio: ExercicioClassif
       <div className="flex flex-col gap-1.5">
         {exercicio.itens.map((it) => {
           const isCorrect = checked && answers[it.palavra] === it.coluna
-          const isWrong = checked && answers[it.palavra] !== it.coluna
           return (
             <div key={it.palavra} className="flex items-center gap-3 px-3 py-2 rounded-xl"
-              style={{ background: checked ? (isCorrect ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)') : 'var(--surface-2)', border: `1px solid ${checked ? (isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)') : 'var(--border)'}` }}>
+              style={{ background: !checked ? 'var(--surface-2)' : isCorrect ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)', border: `1px solid ${!checked ? 'var(--border)' : isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
               <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text)' }}>{it.palavra}</span>
               <select
                 value={answers[it.palavra] ?? ''}
