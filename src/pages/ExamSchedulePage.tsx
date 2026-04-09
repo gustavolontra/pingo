@@ -551,7 +551,7 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
         </label>
       )}
 
-      {/* No plan yet — generate button or mode choice */}
+      {/* No plan yet — generate button */}
       {!plano && !generating && !modeChoice && (
         <button onClick={() => setModeChoice(true)}
           className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
@@ -577,16 +577,23 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
       {generating && <GeneratingAnimation />}
       {error && <p className="text-xs" style={{ color: '#ef4444' }}>{error}</p>}
 
-      {/* Has plan — compact: progress bar + open button */}
-      {plano && plano.dias?.length > 0 && (
+      {/* Has plan — compact: progress bar + open/regenerate buttons */}
+      {plano && plano.dias?.length > 0 && !modeChoice && (
         <div className="space-y-2">
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-2)' }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${totalDays > 0 ? (daysStudied / totalDays) * 100 : 0}%`, background: daysStudied === totalDays ? '#10b981' : '#6270f5' }} />
           </div>
-          <button onClick={() => setSelectedDay(effectiveSelected ?? plano.dias[0]?.dia ?? 1)}
-            className="btn-primary w-full py-2 flex items-center justify-center gap-2 text-sm">
-            <BookOpen size={14} /> Abrir plano de estudo
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setSelectedDay(effectiveSelected ?? plano.dias[0]?.dia ?? 1)}
+              className="btn-primary flex-1 py-2 flex items-center justify-center gap-2 text-sm">
+              <BookOpen size={14} /> Abrir plano de estudo
+            </button>
+            <button onClick={() => setModeChoice(true)}
+              className="px-3 py-2 rounded-xl text-xs font-semibold shrink-0"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              <RotateCcw size={13} />
+            </button>
+          </div>
         </div>
       )}
 

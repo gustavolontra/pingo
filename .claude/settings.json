@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python3 -c ':*)",
-      "Bash(curl -s \"https://pingo-team.pages.dev/api/content\")"
+      "Bash(curl -s \"https://pingo-team.pages.dev/api/content\")",
+      "Bash(curl -s \"https://pingo-team.pages.dev/api/exams?studentId=74b186f4-7fdf-4335-b95e-f0960d0ab318\")"
     ],
     "additionalDirectories": [
       "/Users/gustavolontra/vs code/pingo-study/src/types"
