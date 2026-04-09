@@ -83,7 +83,7 @@ Outros materiais: ${materiaisText}`
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 16384,
         system: `És um tutor especializado em criar planos de estudo para alunos do ensino básico português.
 
