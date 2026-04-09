@@ -244,6 +244,7 @@ interface AdminState {
   fetchStudents: () => Promise<void>
   fetchFeed: () => Promise<void>
   fetchPedidosConvite: () => Promise<void>
+  fetchDisciplines: () => Promise<void>
 
   // Convites
   aprovarConvite: (id: string) => Promise<{ login: string; password: string } | null>
@@ -366,6 +367,21 @@ export const useAdminStore = create<AdminState>()(
       fetchPedidosConvite: async () => {
         const pedidos = await api.getPedidosConvite()
         set({ pedidosConvite: pedidos })
+      },
+
+      fetchDisciplines: async () => {
+        const kvDiscs = await api.getDisciplines()
+        // Merge KV disciplines into admin disciplines (don't lose local-only ones)
+        const existing = get().disciplines
+        const existingIds = new Set(existing.map((d) => d.id))
+        const fromKV = kvDiscs.filter((d: { id: string }) => !existingIds.has(d.id)).map((d: { id: string; name: string; subject: string; year: number; color: string; icon: string }) => ({
+          ...d,
+          createdAt: new Date().toISOString(),
+          topics: [],
+        }))
+        if (fromKV.length > 0) {
+          set({ disciplines: [...existing, ...fromKV] })
+        }
       },
 
       // ── Convites ───────────────────────────────────────────────────────────

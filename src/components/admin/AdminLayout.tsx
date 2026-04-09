@@ -13,11 +13,10 @@ const navItems = [
 ]
 
 export default function AdminLayout() {
-  const { currentAdmin, logout, fetchStudents, fetchFeed, fetchPedidosConvite } = useAdminStore()
+  const { currentAdmin, logout, fetchStudents, fetchFeed, fetchPedidosConvite, fetchDisciplines } = useAdminStore()
   const navigate = useNavigate()
 
-  // Load server data on mount (since localStorage no longer persists it)
-  useEffect(() => { fetchStudents(); fetchFeed(); fetchPedidosConvite() }, [])
+  useEffect(() => { fetchStudents(); fetchFeed(); fetchPedidosConvite(); fetchDisciplines() }, [])
 
   function handleLogout() {
     logout()
