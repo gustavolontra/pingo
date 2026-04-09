@@ -831,10 +831,10 @@ function InfoModal({ onClose }: { onClose: () => void }) {
           O Pingo distribui o conteúdo de forma inteligente consoante os dias disponíveis até ao exame:
         </p>
         {[
-          { label: '11 ou mais dias', sub: 'Ritmo suave', basic: '6 flashcards, 3 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~15 min', timeAdv: '~35 min' },
-          { label: '6 a 10 dias', sub: 'Ritmo gradual', basic: '10 flashcards, 5 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~25 min', timeAdv: '~45 min' },
-          { label: '3 a 5 dias', sub: 'Consolidação', basic: '15 flashcards, 8 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~40 min', timeAdv: '~60 min' },
-          { label: '1 a 2 dias', sub: 'Revisão intensiva', basic: '20 flashcards, 10 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~60 min', timeAdv: '~80 min' },
+          { label: '11 ou mais dias', sub: 'Ritmo suave', basic: '4 flashcards, 2 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~15 min', timeAdv: '~35 min' },
+          { label: '6 a 10 dias', sub: 'Ritmo gradual', basic: '5 flashcards, 3 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~20 min', timeAdv: '~40 min' },
+          { label: '3 a 5 dias', sub: 'Consolidação', basic: '6 flashcards, 3 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~30 min', timeAdv: '~50 min' },
+          { label: '1 a 2 dias', sub: 'Revisão intensiva', basic: '8 flashcards, 4 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~45 min', timeAdv: '~65 min' },
         ].map(({ label, sub, basic, advanced, time, timeAdv }) => (
           <div key={label} className="px-3 py-2.5 rounded-xl" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
             <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{label} <span className="font-normal" style={{ color: 'var(--text-muted)' }}>— {sub}</span></p>

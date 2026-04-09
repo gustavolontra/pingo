@@ -4,10 +4,10 @@ interface Env {
 
 function getRegras(diasDisponiveis: number, avancado: boolean) {
   const base = (() => {
-    if (diasDisponiveis <= 2) return { flashcards: 20, quiz: 10, intensidade: 'Revisão intensiva', tempoEstimado: 60 }
-    if (diasDisponiveis <= 5) return { flashcards: 15, quiz: 8, intensidade: 'Consolidação', tempoEstimado: 40 }
-    if (diasDisponiveis <= 10) return { flashcards: 10, quiz: 5, intensidade: 'Aprendizagem gradual', tempoEstimado: 25 }
-    return { flashcards: 6, quiz: 3, intensidade: 'Introdução suave', tempoEstimado: 15 }
+    if (diasDisponiveis <= 2) return { flashcards: 8, quiz: 4, intensidade: 'Revisão intensiva', tempoEstimado: 45 }
+    if (diasDisponiveis <= 5) return { flashcards: 6, quiz: 3, intensidade: 'Consolidação', tempoEstimado: 30 }
+    if (diasDisponiveis <= 10) return { flashcards: 5, quiz: 3, intensidade: 'Aprendizagem gradual', tempoEstimado: 20 }
+    return { flashcards: 4, quiz: 2, intensidade: 'Introdução suave', tempoEstimado: 15 }
   })()
   if (avancado) {
     return { ...base, flashcards: Math.ceil(base.flashcards / 2), tempoEstimado: base.tempoEstimado + 20, lacunas: 3, classificacao: 2, transformacao: 2, identificacao: 1 }
@@ -84,7 +84,7 @@ Outros materiais: ${materiaisText}`
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 16384,
+        max_tokens: 8192,
         system: `És um tutor especializado em criar planos de estudo para alunos do ensino básico português.
 
 Cria um plano de estudo detalhado e equilibrado distribuído pelos dias disponíveis.
