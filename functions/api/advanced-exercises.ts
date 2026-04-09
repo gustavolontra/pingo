@@ -86,17 +86,32 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     const data = await response.json() as AnthropicResponse
     const text = data.content[0]?.text ?? ''
 
-    // Extract JSON array
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (!jsonMatch) {
-      return Response.json({ error: 'Invalid AI response', detail: text.slice(0, 200) }, { status: 500, headers })
+    // Try multiple parsing strategies
+    let exercicios: unknown[] | null = null
+
+    // Strategy 1: direct parse
+    try { exercicios = JSON.parse(text) } catch { /* continue */ }
+
+    // Strategy 2: extract JSON array
+    if (!exercicios) {
+      const jsonMatch = text.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        try { exercicios = JSON.parse(jsonMatch[0]) } catch { /* continue */ }
+      }
     }
 
-    let exercicios: unknown[]
-    try {
-      exercicios = JSON.parse(jsonMatch[0])
-    } catch {
-      return Response.json({ error: 'Failed to parse exercises', detail: jsonMatch[0].slice(0, 200) }, { status: 500, headers })
+    // Strategy 3: strip markdown code blocks
+    if (!exercicios) {
+      const stripped = text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()
+      try { exercicios = JSON.parse(stripped) } catch { /* continue */ }
+      if (!exercicios) {
+        const m2 = stripped.match(/\[[\s\S]*\]/)
+        if (m2) try { exercicios = JSON.parse(m2[0]) } catch { /* continue */ }
+      }
+    }
+
+    if (!exercicios || !Array.isArray(exercicios)) {
+      return Response.json({ error: 'Failed to parse AI response', detail: text.slice(0, 300) }, { status: 500, headers })
     }
 
     const result = {

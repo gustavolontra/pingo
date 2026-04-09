@@ -170,18 +170,31 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
       jsonText += '}'.repeat(Math.max(0, openBraces - closeBraces))
     }
 
-    const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return Response.json({ error: 'Invalid AI response', detail: text.slice(0, 200) }, { status: 500, headers })
+    // Try multiple parsing strategies
+    let plan: Record<string, unknown> | null = null
+
+    // Strategy 1: strip markdown and parse directly
+    const stripped = jsonText.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()
+    try { plan = JSON.parse(stripped) } catch { /* continue */ }
+
+    // Strategy 2: extract JSON object
+    if (!plan) {
+      const m = stripped.match(/\{[\s\S]*\}/)
+      if (m) try { plan = JSON.parse(m[0]) } catch { /* continue */ }
     }
 
-    try {
-      const plan = JSON.parse(jsonMatch[0])
-      if (!plan.tempoEstimadoPorDia) plan.tempoEstimadoPorDia = regras.tempoEstimado
-      return Response.json(plan, { headers })
-    } catch {
-      return Response.json({ error: 'Failed to parse AI response', detail: jsonMatch[0].slice(0, 200) }, { status: 500, headers })
+    // Strategy 3: original text
+    if (!plan) {
+      const m = jsonText.match(/\{[\s\S]*\}/)
+      if (m) try { plan = JSON.parse(m[0]) } catch { /* continue */ }
     }
+
+    if (!plan) {
+      return Response.json({ error: 'Failed to parse AI response', detail: text.slice(0, 300) }, { status: 500, headers })
+    }
+
+    if (!plan.tempoEstimadoPorDia) plan.tempoEstimadoPorDia = regras.tempoEstimado
+    return Response.json(plan, { headers })
   } catch (e) {
     return Response.json({ error: 'Internal error', detail: String(e).slice(0, 200) }, { status: 500, headers })
   }

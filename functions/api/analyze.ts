@@ -90,12 +90,21 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   const data = await response.json() as AnthropicResponse
   const text = data.content[0]?.text ?? ''
 
-  try {
-    const parsed = JSON.parse(text)
-    return Response.json(parsed, { headers })
-  } catch {
-    return Response.json({ error: 'Failed to parse AI response', raw: text }, { status: 500, headers })
+  // Try multiple parsing strategies
+  let parsed: unknown = null
+  try { parsed = JSON.parse(text) } catch { /* continue */ }
+  if (!parsed) {
+    const stripped = text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()
+    try { parsed = JSON.parse(stripped) } catch { /* continue */ }
+    if (!parsed) {
+      const m = stripped.match(/\{[\s\S]*\}/)
+      if (m) try { parsed = JSON.parse(m[0]) } catch { /* continue */ }
+    }
   }
+  if (!parsed) {
+    return Response.json({ error: 'Failed to parse AI response', raw: text.slice(0, 300) }, { status: 500, headers })
+  }
+  return Response.json(parsed, { headers })
 }
 
 export const onRequestOptions: PagesFunction = async () => {
