@@ -540,7 +540,18 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
 
   return (
     <div className="space-y-2">
-      {/* No plan yet — generate button */}
+      {/* Platform content toggle — always visible when available and no plan */}
+      {!plano && kvLoaded && kvContent.length > 0 && !generating && (
+        <label className="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer"
+          style={{ background: useKV ? 'rgba(16,185,129,0.06)' : 'var(--surface-2)', border: `1px solid ${useKV ? 'rgba(16,185,129,0.15)' : 'var(--border)'}` }}>
+          <input type="checkbox" checked={useKV} onChange={(e) => setUseKV(e.target.checked)} className="accent-[#10b981]" />
+          <span className="text-xs" style={{ color: useKV ? '#10b981' : 'var(--text-muted)' }}>
+            Usar conteudo de {exam.subject} da plataforma ({kvContent.length})
+          </span>
+        </label>
+      )}
+
+      {/* No plan yet — generate button or mode choice */}
       {!plano && !generating && !modeChoice && (
         <button onClick={() => setModeChoice(true)}
           className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
@@ -549,26 +560,17 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
         </button>
       )}
 
-      {/* Mode choice */}
+      {/* Mode choice — basic vs advanced */}
       {modeChoice && !generating && (
-        <div className="space-y-2 p-3 rounded-xl" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-          {kvLoaded && kvContent.length > 0 && (
-            <label className="flex items-center gap-2 cursor-pointer text-xs" style={{ color: 'var(--text-muted)' }}>
-              <input type="checkbox" checked={useKV} onChange={(e) => setUseKV(e.target.checked)} className="accent-[#10b981]" />
-              Usar conteudo de {exam.subject} da plataforma ({kvContent.length})
-            </label>
-          )}
-          <div className="flex gap-2">
-            <button onClick={() => generate(false)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-              Basico
-            </button>
-            <button onClick={() => generate(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
-              style={{ background: 'rgba(98,112,245,0.1)', border: '1px solid rgba(98,112,245,0.2)', color: '#6270f5' }}>
-              Avancado
-            </button>
-          </div>
-          <button onClick={() => setModeChoice(false)} className="text-[10px] w-full text-center" style={{ color: 'var(--text-muted)' }}>Cancelar</button>
+        <div className="flex gap-2">
+          <button onClick={() => generate(false)} className="flex-1 py-2.5 rounded-xl text-xs font-semibold"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+            Basico
+          </button>
+          <button onClick={() => generate(true)} className="flex-1 py-2.5 rounded-xl text-xs font-semibold"
+            style={{ background: 'rgba(98,112,245,0.1)', border: '1px solid rgba(98,112,245,0.2)', color: '#6270f5' }}>
+            Avancado
+          </button>
         </div>
       )}
 
