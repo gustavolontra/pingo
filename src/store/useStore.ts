@@ -59,6 +59,7 @@ export interface PlanoEstudo {
   resumo: string
   tempoEstimadoPorDia?: number
   avancado?: boolean
+  regras?: Record<string, number>
   dias: DiaPlano[]
   diasEstudados: number[]
 }

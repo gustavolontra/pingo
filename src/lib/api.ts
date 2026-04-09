@@ -392,6 +392,18 @@ export const api = {
   },
 
   // ── Study Plan ─────────────────────────────────────────────────────────────
+  async generateStudyDay(data: { subject: string; year: string; tema: string; resumo: string; regras: Record<string, number>; materiais: string; avancado: boolean }) {
+    const res = await fetch(`${BASE}/study-day`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new Error(err.detail || err.error || `HTTP ${res.status}`)
+    }
+    return res.json()
+  },
   async generateStudyPlan(data: { subject: string; year: string; examDate: string; studyNote: string; materiais: { nome: string; conteudo: string }[]; avancado?: boolean }) {
     const res = await fetch(`${BASE}/study-plan`, {
       method: 'POST',

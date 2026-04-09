@@ -210,8 +210,9 @@ function DayTab({ dia, isToday, studied, isSelected, onClick }: {
 
 // ── Conteúdo expandido do dia ────────────────────────────────────────────────
 
-function DayContent({ dia, studied, onStudied, tempoEstimado }: {
+function DayContent({ dia, studied, onStudied, tempoEstimado, onGenerateDay, generatingDay }: {
   dia: DiaPlano; studied: boolean; onStudied: () => void; tempoEstimado: number
+  onGenerateDay: () => void; generatingDay: boolean
 }) {
   const { awardStudyPlanXP } = useStore()
   const [attempt, setAttempt] = useState(0)
@@ -219,6 +220,33 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
   const [answeredQuiz, setAnsweredQuiz] = useState(0)
   const [resumoDone, setResumoDone] = useState(false)
   const isRedo = studied
+
+  const needsContent = !dia.flashcards || dia.flashcards.length === 0
+
+  // If no content yet, show generate button
+  if (needsContent) {
+    return (
+      <div className="card text-center py-8 space-y-4">
+        {generatingDay ? (
+          <>
+            <Loader2 size={24} className="animate-spin mx-auto" style={{ color: '#6270f5' }} />
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>A preparar o dia {dia.dia}...</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>A gerar flashcards, quiz e exercícios para "{dia.tema}"</p>
+          </>
+        ) : (
+          <>
+            <Sparkles size={24} className="mx-auto" style={{ color: '#6270f5' }} />
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{dia.tema}</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
+            <button onClick={onGenerateDay}
+              className="btn-primary mx-auto px-6 py-2.5 flex items-center gap-2 text-sm">
+              <Sparkles size={14} /> Preparar conteúdo deste dia
+            </button>
+          </>
+        )}
+      </div>
+    )
+  }
 
   const totalFlashcards = dia.flashcards.length
   const totalQuiz = dia.quiz.length
@@ -455,13 +483,51 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
         materiais: materiaisForAI,
         avancado,
       })
-      setExamPlano(exam.id, { geradoEm: new Date().toISOString(), resumo: result.resumo, tempoEstimadoPorDia: result.tempoEstimadoPorDia, avancado, dias: result.dias, diasEstudados: [] })
+      setExamPlano(exam.id, { geradoEm: new Date().toISOString(), resumo: result.resumo, tempoEstimadoPorDia: result.tempoEstimadoPorDia, avancado, regras: result.regras, dias: result.dias, diasEstudados: [] })
     } catch (e) {
       setError(`Erro ao gerar o plano. Tenta novamente. ${e instanceof Error ? e.message : ''}`)
     }
     setGenerating(false)
   }
 
+  const [generatingDay, setGeneratingDay] = useState(false)
+
+  async function generateDayContent(dia: DiaPlano) {
+    setGeneratingDay(true)
+    try {
+      const year = me?.grade ?? '7.º ano'
+      const isAdv = plano?.avancado ?? false
+
+      // Build materials string from KV + manual
+      let materiaisStr = ''
+      if (useKV && kvContent.length > 0) {
+        materiaisStr = kvContent.map((item) => `${item.titulo}: ${item.resumo}`).join('\n')
+      }
+      for (const m of exam.materiais ?? []) {
+        materiaisStr += `\n${m.nome}: ${m.conteudo.slice(0, 2000)}`
+      }
+      if (exam.studyNote) materiaisStr += `\nFicha: ${exam.studyNote.slice(0, 2000)}`
+
+      const result = await api.generateStudyDay({
+        subject: exam.subject,
+        year,
+        tema: dia.tema,
+        resumo: dia.resumo,
+        regras: plano?.regras ?? { flashcards: 5, quiz: 3 },
+        materiais: materiaisStr,
+        avancado: isAdv,
+      })
+
+      // Merge generated content into the day
+      const updatedDias = (plano?.dias ?? []).map((d) =>
+        d.dia === dia.dia ? { ...d, ...result } : d
+      )
+      setExamPlano(exam.id, { ...plano!, dias: updatedDias })
+    } catch (e) {
+      setError(`Erro ao gerar dia ${dia.dia}. ${e instanceof Error ? e.message : ''}`)
+    }
+    setGeneratingDay(false)
+  }
 
 
   return (
@@ -586,7 +652,9 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
                   const allDone = plano.dias.every((d) => d.dia === activeDia.dia || (plano.diasEstudados ?? []).includes(d.dia))
                   if (allDone) awardStudyPlanXP(50)
                 }}
-                tempoEstimado={plano.tempoEstimadoPorDia ?? 15} />
+                tempoEstimado={plano.tempoEstimadoPorDia ?? 15}
+                onGenerateDay={() => generateDayContent(activeDia)}
+                generatingDay={generatingDay} />
             </div>
           </div>
         </div>

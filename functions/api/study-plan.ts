@@ -15,6 +15,7 @@ function getRegras(diasDisponiveis: number, avancado: boolean) {
   return base
 }
 
+// POST: generate plan STRUCTURE only (themes + summaries, no exercises)
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
   try {
@@ -35,14 +36,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     today.setHours(0, 0, 0, 0)
     const exam = new Date(examDate)
     exam.setHours(0, 0, 0, 0)
-    // Days from today (inclusive) to day before exam (inclusive)
-    // e.g. today=07, exam=14 → 14-07=7 days (07,08,09,10,11,12,13)
     const daysAvailable = Math.max(1, Math.ceil((exam.getTime() - today.getTime()) / 86400000))
 
     const isAdvanced = avancado === true
     const regras = getRegras(daysAvailable, isAdvanced)
 
-    // Truncate materials — keep short to avoid timeout (Cloudflare 30s limit)
+    // Truncate materials
     const MAX_CHARS = 8000
     let totalChars = 0
     const truncatedMateriais = materiais.map((m) => {
@@ -53,27 +52,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       return `--- ${m.nome} ---\n${content}`
     }).filter(Boolean)
 
-    const materiaisText = truncatedMateriais.length > 0
-      ? truncatedMateriais.join('\n\n')
-      : 'nenhum'
-
+    const materiaisText = truncatedMateriais.length > 0 ? truncatedMateriais.join('\n\n') : 'nenhum'
     const todayStr = today.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
     const userPrompt = `Matéria: ${subject}
 Ano: ${year}
-Data de hoje (Dia 1 do plano): ${todayStr}
+Data de hoje (Dia 1): ${todayStr}
 Data da prova: ${new Date(examDate).toLocaleDateString('pt-PT')}
 Dias disponíveis: ${daysAvailable}
-Intensidade: ${regras.intensidade}
-Flashcards por dia: ${regras.flashcards}
-Quiz por dia: ${regras.quiz}${isAdvanced ? `
-Exercícios de lacunas por dia: ${'lacunas' in regras ? regras.lacunas : 0}
-Exercícios de classificação por dia: ${'classificacao' in regras ? regras.classificacao : 0}
-Exercícios de transformação por dia: ${'transformacao' in regras ? regras.transformacao : 0}
-Exercícios de identificação sintática por dia: ${'identificacao' in regras ? regras.identificacao : 0}` : ''}
-Tempo estimado por dia: ${regras.tempoEstimado} minutos
 Ficha de estudo: ${studyNote ? studyNote.slice(0, 4000) : 'não fornecida'}
-Outros materiais: ${materiaisText}`
+Materiais: ${materiaisText}`
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -84,66 +72,28 @@ Outros materiais: ${materiaisText}`
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8192,
+        max_tokens: 2048,
         system: `És um tutor especializado em criar planos de estudo para alunos do ensino básico português.
 
-Cria um plano de estudo detalhado e equilibrado distribuído pelos dias disponíveis.
+Cria APENAS a estrutura do plano — temas e resumos para cada dia. NÃO geres flashcards, quiz nem exercícios.
 
-REGRAS OBRIGATÓRIAS:
-- O Dia 1 do plano é HOJE (a data indicada no pedido) — NÃO começar amanhã
+REGRAS:
+- Dia 1 é HOJE (${todayStr})
 - O plano termina um dia antes da prova
-- Todos os dias têm o MESMO ritmo — não reduzir nem aumentar ao longo do plano
-- Número EXACTO de flashcards por dia: conforme indicado no pedido
-- Número EXACTO de quiz por dia: conforme indicado no pedido
-- Cada dia inclui também 1 "resumoActivo" — uma pergunta aberta para o aluno explicar por palavras próprias
-- O ÚLTIMO DIA é SEMPRE uma revisão geral: 20 flashcards dos conceitos mais importantes de TODOS os dias anteriores + 10 quizzes mistos + 1 resumo activo de revisão global
-- Se houver ficha de estudo ou materiais, foca-te nesse conteúdo específico
-- Se NÃO houver materiais, gera conteúdo genérico baseado na matéria e ano
-- Os flashcards devem ter frente (pergunta) e verso (resposta)
-- As perguntas de quiz devem ter 4 opções, índice da correta (0-3), e explicação
-- O resumoActivo deve ter uma pergunta aberta e uma respostaEsperada com os pontos-chave
-- Escreve sempre em português de Portugal
-- Usa datas no formato DD/MM/AAAA
+- Distribui o conteúdo de forma equilibrada
+- O último dia é SEMPRE revisão geral
+- Se houver materiais, baseia-te neles
+- Escreve em português de Portugal
+- Datas no formato DD/MM/AAAA
 
-Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
+Devolve APENAS JSON válido:
 {
-  "resumo": "Plano de X dias para [matéria] — ritmo [intensidade]",
+  "resumo": "Plano de ${daysAvailable} dias para ${subject} — ritmo ${regras.intensidade}",
   "tempoEstimadoPorDia": ${regras.tempoEstimado},
   "avancado": ${isAdvanced},
+  "regras": { "flashcards": ${regras.flashcards}, "quiz": ${regras.quiz}${isAdvanced ? `, "lacunas": ${regras.lacunas}, "classificacao": ${regras.classificacao}, "transformacao": ${regras.transformacao}, "identificacao": ${regras.identificacao}` : ''} },
   "dias": [
-    {
-      "dia": 1,
-      "data": "DD/MM/AAAA",
-      "tema": "...",
-      "resumo": "Hoje vais estudar...",
-      "flashcards": [
-        { "frente": "...", "verso": "..." }
-      ],
-      "quiz": [
-        {
-          "pergunta": "...",
-          "opcoes": ["A", "B", "C", "D"],
-          "correta": 0,
-          "explicacao": "..."
-        }
-      ],
-      "resumoActivo": {
-        "pergunta": "Explica por palavras tuas...",
-        "respostaEsperada": "Pontos-chave que devem ser mencionados: ..."
-      }${isAdvanced ? `,
-      "lacunas": [
-        { "frase": "frase com ___ no lugar da palavra", "resposta": "palavra", "opcoes": ["op1","op2","op3","op4"], "explicacao": "regra" }
-      ],
-      "classificacao": [
-        { "instrucao": "...", "colunas": ["A","B"], "itens": [{"palavra":"x","coluna":"A"}], "explicacao": "..." }
-      ],
-      "transformacao": [
-        { "instrucao": "...", "frase_original": "...", "resposta": "...", "dica": "...", "explicacao": "..." }
-      ],
-      "identificacao": [
-        { "instrucao": "...", "frase": "...", "constituintes": [{"texto":"...","funcao":"..."}], "explicacao": "..." }
-      ]` : ''}
-    }
+    { "dia": 1, "data": "DD/MM/AAAA", "tema": "tema do dia", "resumo": "2-3 frases sobre o que estudar" }
   ]
 }`,
         messages: [{ role: 'user', content: userPrompt }],
@@ -158,40 +108,16 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
     const data = await res.json() as { content: { type: string; text: string }[]; stop_reason?: string }
     const text = data.content?.[0]?.text ?? ''
 
-    // If response was truncated, try to fix the JSON by closing brackets
-    let jsonText = text.trim()
-    if (data.stop_reason === 'max_tokens') {
-      // Try to close any open brackets
-      const openBraces = (jsonText.match(/\{/g) || []).length
-      const closeBraces = (jsonText.match(/\}/g) || []).length
-      const openBrackets = (jsonText.match(/\[/g) || []).length
-      const closeBrackets = (jsonText.match(/\]/g) || []).length
-      jsonText += ']'.repeat(Math.max(0, openBrackets - closeBrackets))
-      jsonText += '}'.repeat(Math.max(0, openBraces - closeBraces))
-    }
-
-    // Try multiple parsing strategies
     let plan: Record<string, unknown> | null = null
-
-    // Strategy 1: strip markdown and parse directly
-    const stripped = jsonText.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()
+    const stripped = text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()
     try { plan = JSON.parse(stripped) } catch { /* continue */ }
-
-    // Strategy 2: extract JSON object
     if (!plan) {
       const m = stripped.match(/\{[\s\S]*\}/)
       if (m) try { plan = JSON.parse(m[0]) } catch { /* continue */ }
     }
 
-    // Strategy 3: original text
     if (!plan) {
-      const m = jsonText.match(/\{[\s\S]*\}/)
-      if (m) try { plan = JSON.parse(m[0]) } catch { /* continue */ }
-    }
-
-    if (!plan) {
-      const reason = data.stop_reason === 'max_tokens' ? 'Resposta da IA demasiado longa — tenta com menos materiais' : 'Resposta da IA num formato inesperado'
-      return Response.json({ error: reason }, { status: 500, headers })
+      return Response.json({ error: 'Formato inesperado da IA — tenta novamente' }, { status: 500, headers })
     }
 
     if (!plan.tempoEstimadoPorDia) plan.tempoEstimadoPorDia = regras.tempoEstimado
