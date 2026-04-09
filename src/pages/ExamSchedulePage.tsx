@@ -5,7 +5,7 @@ import { useAdminStore } from '@/store/useAdminStore'
 import { api, getDisciplinasPorAno } from '@/lib/api'
 import {
   Calendar, Pencil, Trash2, Plus, BookOpen, ChevronDown, ChevronUp, X,
-  Sparkles, Loader2, FileText, Upload, Check, ChevronLeft, ChevronRight,
+  Sparkles, Loader2, FileText, Upload, Check,
   RotateCcw, Paperclip, Info, PenLine,
 } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
@@ -462,9 +462,7 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
     setGenerating(false)
   }
 
-  function scroll(dir: number) {
-    scrollRef.current?.scrollBy({ left: dir * 310, behavior: 'smooth' })
-  }
+
 
   return (
     <div className="space-y-3">
@@ -524,7 +522,7 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
       {generating && <GeneratingAnimation />}
       {error && <p className="text-xs" style={{ color: '#ef4444' }}>{error}</p>}
 
-      {/* Plan view */}
+      {/* Plan compact view */}
       {plano && plano.dias?.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -540,37 +538,57 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
             <div className="h-full rounded-full transition-all" style={{ width: `${totalDays > 0 ? (daysStudied / totalDays) * 100 : 0}%`, background: '#6270f5' }} />
           </div>
 
-          {/* Day tabs — horizontal scroll */}
-          <div className="relative">
-            <button onClick={() => scroll(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3 z-10 p-1.5 rounded-full hidden md:flex"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-              <ChevronLeft size={16} style={{ color: 'var(--text-muted)' }} />
+          {/* Open plan button */}
+          <button onClick={() => setSelectedDay(effectiveSelected ?? plano.dias[0]?.dia ?? 1)}
+            className="btn-primary w-full py-2.5 flex items-center justify-center gap-2 text-sm">
+            <BookOpen size={15} /> Abrir plano de estudo
+          </button>
+        </div>
+      )}
+
+      {/* Full-screen study overlay */}
+      {selectedDay !== null && plano && activeDia && (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--bg)' }}>
+          {/* Header */}
+          <div className="shrink-0 px-6 py-4 flex items-center gap-4" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+            <button onClick={() => setSelectedDay(null)} className="p-2 rounded-xl hover:opacity-70"
+              style={{ color: 'var(--text-muted)' }}>
+              <X size={18} />
             </button>
-            <div ref={scrollRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-display font-bold" style={{ color: 'var(--text)' }}>{exam.subject} — Plano de estudo</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{daysStudied}/{totalDays} dias concluidos</p>
+            </div>
+            <div className="w-32 h-1.5 rounded-full overflow-hidden shrink-0" style={{ background: 'var(--surface-2)' }}>
+              <div className="h-full rounded-full" style={{ width: `${totalDays > 0 ? (daysStudied / totalDays) * 100 : 0}%`, background: '#6270f5' }} />
+            </div>
+          </div>
+
+          {/* Day tabs — horizontal */}
+          <div className="shrink-0 px-6 py-3" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+            <div ref={scrollRef} className="flex gap-2 overflow-x-auto scrollbar-hide">
               {plano.dias.map((dia) => (
                 <DayTab key={dia.dia} dia={dia} isToday={dia.data === today}
                   studied={(plano.diasEstudados ?? []).includes(dia.dia)}
-                  isSelected={effectiveSelected === dia.dia}
+                  isSelected={selectedDay === dia.dia}
                   onClick={() => setSelectedDay(dia.dia)} />
               ))}
             </div>
-            <button onClick={() => scroll(1)} className="absolute right-0 top-1/2 -translate-y-1/2 -mr-3 z-10 p-1.5 rounded-full hidden md:flex"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-              <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-            </button>
           </div>
 
-          {/* Expanded day content — full width */}
-          {activeDia && (
-            <DayContent key={activeDia.dia} dia={activeDia}
-              studied={(plano.diasEstudados ?? []).includes(activeDia.dia)}
-              onStudied={() => {
-                markDiaEstudado(exam.id, activeDia.dia)
-                const allDone = plano.dias.every((d) => d.dia === activeDia.dia || (plano.diasEstudados ?? []).includes(d.dia))
-                if (allDone) awardStudyPlanXP(50)
-              }}
-              tempoEstimado={plano.tempoEstimadoPorDia ?? 15} />
-          )}
+          {/* Day content — scrollable */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-4xl mx-auto">
+              <DayContent key={activeDia.dia} dia={activeDia}
+                studied={(plano.diasEstudados ?? []).includes(activeDia.dia)}
+                onStudied={() => {
+                  markDiaEstudado(exam.id, activeDia.dia)
+                  const allDone = plano.dias.every((d) => d.dia === activeDia.dia || (plano.diasEstudados ?? []).includes(d.dia))
+                  if (allDone) awardStudyPlanXP(50)
+                }}
+                tempoEstimado={plano.tempoEstimadoPorDia ?? 15} />
+            </div>
+          </div>
         </div>
       )}
     </div>
