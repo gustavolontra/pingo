@@ -777,6 +777,7 @@ function MaterialsSection({ exam }: { exam: Exam }) {
 function ExamCard({ exam, subjects, autoOpenDay, onAutoOpenHandled }: { exam: Exam; subjects: string[]; autoOpenDay?: number | null; onAutoOpenHandled?: () => void }) {
   const { updateExam, deleteExam, setExamStudyNote } = useStore()
   const [editing, setEditing] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [materialsOpen, setMaterialsOpen] = useState(false)
   const [noteValue, setNoteValue] = useState(exam.studyNote)
@@ -786,6 +787,8 @@ function ExamCard({ exam, subjects, autoOpenDay, onAutoOpenHandled }: { exam: Ex
   const days = daysUntil(exam.date)
   const color = urgencyColor(days)
   const icon = subjectIcon(exam.subject)
+  const hasPlano = !!exam.planoEstudo?.dias?.length
+  const planoProgress = hasPlano ? `${exam.planoEstudo!.diasEstudados?.length ?? 0}/${exam.planoEstudo!.dias.length}` : null
 
   function saveNote() {
     setExamStudyNote(exam.id, noteValue)
@@ -805,88 +808,103 @@ function ExamCard({ exam, subjects, autoOpenDay, onAutoOpenHandled }: { exam: Ex
   }
 
   return (
-    <div className="card space-y-4" style={{ borderColor: `${color}25` }}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <SubjectIcon icon={icon} size={22} color={color} />
-          <div>
+    <div className="card space-y-3" style={{ borderColor: `${color}25` }}>
+      {/* Header — always visible */}
+      <div className="flex items-center gap-3">
+        <SubjectIcon icon={icon} size={20} color={color} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
             <p className="font-display font-semibold" style={{ color: 'var(--text)' }}>{exam.subject}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{formatDate(exam.date)}</p>
+            {planoProgress && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}>
+                {planoProgress} dias
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatDate(exam.date)}</span>
+            <span className="text-xs font-semibold" style={{ color }}>
+              {days < 0 ? 'Passou' : days === 0 ? 'Hoje!' : `${days}d`}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => setEditing(true)} className="p-2 rounded-lg transition-all hover:bg-slate-100/10" title="Editar">
-            <Pencil size={14} style={{ color: 'var(--text-muted)' }} />
+          <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:opacity-70" title="Editar">
+            <Pencil size={13} style={{ color: 'var(--text-muted)' }} />
           </button>
           {confirmDelete ? (
             <div className="flex items-center gap-1">
               <button onClick={() => deleteExam(exam.id)} className="px-2 py-1 rounded-lg text-xs font-semibold"
-                style={{ background: '#ef444420', color: '#ef4444' }}>Confirmar</button>
-              <button onClick={() => setConfirmDelete(false)}><X size={13} style={{ color: 'var(--text-muted)' }} /></button>
+                style={{ background: '#ef444420', color: '#ef4444' }}>Sim</button>
+              <button onClick={() => setConfirmDelete(false)}><X size={12} style={{ color: 'var(--text-muted)' }} /></button>
             </div>
           ) : (
-            <button onClick={() => setConfirmDelete(true)} className="p-2 rounded-lg transition-all hover:bg-slate-100/10" title="Eliminar">
-              <Trash2 size={14} style={{ color: 'var(--text-muted)' }} />
+            <button onClick={() => setConfirmDelete(true)} className="p-1.5 rounded-lg hover:opacity-70" title="Eliminar">
+              <Trash2 size={13} style={{ color: 'var(--text-muted)' }} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Countdown */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: `${color}12`, border: `1px solid ${color}25` }}>
-        <Calendar size={14} style={{ color }} />
-        <span className="text-sm font-semibold" style={{ color }}>
-          {days < 0 ? 'Exame já passou' : days === 0 ? 'Exame hoje!' : `${days} dia${days !== 1 ? 's' : ''} para o exame`}
-        </span>
-      </div>
-
-      {/* Study note */}
-      <div>
-        <button onClick={() => setNoteOpen((o) => !o)} className="flex items-center gap-2 w-full text-sm font-medium py-1"
-          style={{ color: 'var(--text-muted)' }}>
-          <BookOpen size={14} />
-          Ficha de estudo
-          {noteOpen ? <ChevronUp size={13} className="ml-auto" /> : <ChevronDown size={13} className="ml-auto" />}
-          {exam.studyNote && !noteOpen && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full ml-1" style={{ background: '#6270f520', color: '#6270f5' }}>✓ guardada</span>
-          )}
-        </button>
-        {noteOpen && (
-          <div className="mt-2 space-y-2">
-            <textarea value={noteValue} onChange={(e) => setNoteValue(e.target.value)}
-              placeholder="Escreve ou cola aqui o conteúdo da ficha de estudo..." rows={6}
-              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-y"
-              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-            <button onClick={saveNote} className="btn-primary text-sm">
-              {noteSaved ? '✓ Guardado' : 'Guardar ficha'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Materials */}
-      <div>
-        <button onClick={() => setMaterialsOpen((o) => !o)} className="flex items-center gap-2 w-full text-sm font-medium py-1"
-          style={{ color: 'var(--text-muted)' }}>
-          <Paperclip size={14} />
-          Outros materiais
-          {materialsOpen ? <ChevronUp size={13} className="ml-auto" /> : <ChevronDown size={13} className="ml-auto" />}
-          {(exam.materiais?.length ?? 0) > 0 && !materialsOpen && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full ml-1" style={{ background: '#f59e0b20', color: '#f59e0b' }}>
-              {exam.materiais!.length}
-            </span>
-          )}
-        </button>
-        {materialsOpen && (
-          <div className="mt-2">
-            <MaterialsSection exam={exam} />
-          </div>
-        )}
-      </div>
-
-      {/* Study plan */}
+      {/* Study plan — compact */}
       {days > 0 && <StudyPlanSection exam={exam} autoOpenDay={autoOpenDay} onAutoOpenHandled={onAutoOpenHandled} />}
+
+      {/* Expand for details */}
+      {!expanded ? (
+        <button onClick={() => setExpanded(true)} className="text-xs w-full text-center py-1" style={{ color: 'var(--text-muted)' }}>
+          Ficha de estudo, materiais e mais opcoes
+        </button>
+      ) : (
+        <div className="space-y-3 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
+          {/* Study note */}
+          <div>
+            <button onClick={() => setNoteOpen((o) => !o)} className="flex items-center gap-2 w-full text-sm font-medium py-1"
+              style={{ color: 'var(--text-muted)' }}>
+              <BookOpen size={14} />
+              Ficha de estudo
+              {noteOpen ? <ChevronUp size={13} className="ml-auto" /> : <ChevronDown size={13} className="ml-auto" />}
+              {exam.studyNote && !noteOpen && (
+                <span className="text-xs px-1.5 py-0.5 rounded-full ml-1" style={{ background: '#6270f520', color: '#6270f5' }}>guardada</span>
+              )}
+            </button>
+            {noteOpen && (
+              <div className="mt-2 space-y-2">
+                <textarea value={noteValue} onChange={(e) => setNoteValue(e.target.value)}
+                  placeholder="Escreve ou cola aqui o conteúdo da ficha de estudo..." rows={6}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-y"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+                <button onClick={saveNote} className="btn-primary text-sm">
+                  {noteSaved ? 'Guardado' : 'Guardar ficha'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Materials */}
+          <div>
+            <button onClick={() => setMaterialsOpen((o) => !o)} className="flex items-center gap-2 w-full text-sm font-medium py-1"
+              style={{ color: 'var(--text-muted)' }}>
+              <Paperclip size={14} />
+              Outros materiais
+              {materialsOpen ? <ChevronUp size={13} className="ml-auto" /> : <ChevronDown size={13} className="ml-auto" />}
+              {(exam.materiais?.length ?? 0) > 0 && !materialsOpen && (
+                <span className="text-xs px-1.5 py-0.5 rounded-full ml-1" style={{ background: '#f59e0b20', color: '#f59e0b' }}>
+                  {exam.materiais!.length}
+                </span>
+              )}
+            </button>
+            {materialsOpen && (
+              <div className="mt-2">
+                <MaterialsSection exam={exam} />
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => setExpanded(false)} className="text-xs w-full text-center py-1" style={{ color: 'var(--text-muted)' }}>
+            Recolher
+          </button>
+        </div>
+      )}
     </div>
   )
 }
