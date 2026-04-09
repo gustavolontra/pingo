@@ -539,83 +539,51 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
 
 
   return (
-    <div className="space-y-3">
-      {/* Platform content toggle — visible when KV has content */}
-      {kvLoaded && kvContent.length > 0 && !generating && (
-        <label className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer"
-          style={{ background: useKV ? 'rgba(16,185,129,0.06)' : 'var(--surface-2)', border: `1px solid ${useKV ? 'rgba(16,185,129,0.2)' : 'var(--border)'}` }}>
-          <input type="checkbox" checked={useKV} onChange={(e) => setUseKV(e.target.checked)}
-            className="shrink-0 accent-[#10b981]" />
-          <div className="flex-1">
-            <p className="text-xs font-semibold" style={{ color: useKV ? '#10b981' : 'var(--text)' }}>
-              Usar conteudo de {exam.subject} da plataforma
-            </p>
-            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-              {kvContent.length} conteudo{kvContent.length !== 1 ? 's' : ''} publicado{kvContent.length !== 1 ? 's' : ''} — o plano sera baseado neste material
-            </p>
-          </div>
-        </label>
-      )}
-
-      {/* Generate / Regenerate button */}
-      {!generating && !modeChoice && (
+    <div className="space-y-2">
+      {/* No plan yet — generate button */}
+      {!plano && !generating && !modeChoice && (
         <button onClick={() => setModeChoice(true)}
           className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
           style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5', border: '1px solid rgba(98,112,245,0.2)' }}>
-          {plano ? <RotateCcw size={14} /> : <Sparkles size={14} />}
-          {plano ? 'Regenerar plano de estudo' : 'Gerar plano de estudo com IA'}
+          <Sparkles size={14} /> Gerar plano de estudo com IA
         </button>
       )}
 
       {/* Mode choice */}
       {modeChoice && !generating && (
-        <div className="card space-y-3">
-          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Tipo de plano:</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <button onClick={() => generate(false)}
-              className="p-4 rounded-xl text-left transition-all"
-              style={{ background: 'var(--surface-2)', border: '1.5px solid var(--border)' }}>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Basico</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                Flashcards, quiz e resumo activo por dia
-              </p>
+        <div className="space-y-2 p-3 rounded-xl" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+          {kvLoaded && kvContent.length > 0 && (
+            <label className="flex items-center gap-2 cursor-pointer text-xs" style={{ color: 'var(--text-muted)' }}>
+              <input type="checkbox" checked={useKV} onChange={(e) => setUseKV(e.target.checked)} className="accent-[#10b981]" />
+              Usar conteudo de {exam.subject} da plataforma ({kvContent.length})
+            </label>
+          )}
+          <div className="flex gap-2">
+            <button onClick={() => generate(false)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+              Basico
             </button>
-            <button onClick={() => generate(true)}
-              className="p-4 rounded-xl text-left transition-all"
-              style={{ background: 'rgba(98,112,245,0.06)', border: '1.5px solid rgba(98,112,245,0.2)' }}>
-              <p className="text-sm font-semibold" style={{ color: '#6270f5' }}>Avancado</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                Tudo do basico + lacunas, classificacao, transformacao e identificacao sintatica
-              </p>
+            <button onClick={() => generate(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold"
+              style={{ background: 'rgba(98,112,245,0.1)', border: '1px solid rgba(98,112,245,0.2)', color: '#6270f5' }}>
+              Avancado
             </button>
           </div>
-          <button onClick={() => setModeChoice(false)} className="text-xs w-full text-center" style={{ color: 'var(--text-muted)' }}>Cancelar</button>
+          <button onClick={() => setModeChoice(false)} className="text-[10px] w-full text-center" style={{ color: 'var(--text-muted)' }}>Cancelar</button>
         </div>
       )}
 
       {generating && <GeneratingAnimation />}
       {error && <p className="text-xs" style={{ color: '#ef4444' }}>{error}</p>}
 
-      {/* Plan compact view */}
+      {/* Has plan — compact: progress bar + open button */}
       {plano && plano.dias?.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{plano.resumo}</p>
-            <span className="text-xs px-2 py-1 rounded-lg font-semibold shrink-0"
-              style={{ background: daysStudied === totalDays ? 'rgba(16,185,129,0.1)' : 'rgba(98,112,245,0.1)', color: daysStudied === totalDays ? '#10b981' : '#6270f5' }}>
-              {daysStudied}/{totalDays} dias
-            </span>
+        <div className="space-y-2">
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-2)' }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${totalDays > 0 ? (daysStudied / totalDays) * 100 : 0}%`, background: daysStudied === totalDays ? '#10b981' : '#6270f5' }} />
           </div>
-
-          {/* Progress bar */}
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-2)' }}>
-            <div className="h-full rounded-full transition-all" style={{ width: `${totalDays > 0 ? (daysStudied / totalDays) * 100 : 0}%`, background: '#6270f5' }} />
-          </div>
-
-          {/* Open plan button */}
           <button onClick={() => setSelectedDay(effectiveSelected ?? plano.dias[0]?.dia ?? 1)}
-            className="btn-primary w-full py-2.5 flex items-center justify-center gap-2 text-sm">
-            <BookOpen size={15} /> Abrir plano de estudo
+            className="btn-primary w-full py-2 flex items-center justify-center gap-2 text-sm">
+            <BookOpen size={14} /> Abrir plano de estudo
           </button>
         </div>
       )}
@@ -908,6 +876,8 @@ function ExamCard({ exam, subjects, autoOpenDay, onAutoOpenHandled }: { exam: Ex
     </div>
   )
 }
+
+// Expose regenerate trigger from ExamCard — not needed, StudyPlanSection handles it
 
 // ── Página principal ──────────────────────────────────────────────────────────
 
