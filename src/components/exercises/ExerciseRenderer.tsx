@@ -67,23 +67,26 @@ function ClassificacaoExercise({ exercicio, num }: { exercicio: ExercicioClassif
           const isCorrect = checked && answers[it.palavra] === it.coluna
           const isWrong = checked && answers[it.palavra] !== it.coluna
           return (
-            <div key={it.palavra} className="flex items-center gap-2">
-              <span className="text-xs font-medium w-24 truncate" style={{ color: 'var(--text)' }}>{it.palavra}</span>
+            <div key={it.palavra} className="flex items-center gap-3 px-3 py-2 rounded-xl"
+              style={{ background: checked ? (isCorrect ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)') : 'var(--surface-2)', border: `1px solid ${checked ? (isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)') : 'var(--border)'}` }}>
+              <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text)' }}>{it.palavra}</span>
               <select
                 value={answers[it.palavra] ?? ''}
                 onChange={(e) => setAnswers({ ...answers, [it.palavra]: e.target.value })}
                 disabled={checked}
-                className="flex-1 px-2 py-1.5 rounded-lg text-xs outline-none"
-                style={{
-                  background: isCorrect ? 'rgba(16,185,129,0.08)' : isWrong ? 'rgba(239,68,68,0.08)' : 'var(--surface-2)',
-                  border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.3)' : isWrong ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
-                  color: 'var(--text)',
-                }}
+                className="px-2 py-1.5 rounded-lg text-xs outline-none shrink-0"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', minWidth: '120px' }}
               >
                 <option value="">Seleciona...</option>
                 {exercicio.colunas.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              {checked && (isCorrect ? <Check size={13} style={{ color: '#10b981' }} /> : <XIcon size={13} style={{ color: '#ef4444' }} />)}
+              {checked && (
+                <span className="shrink-0">
+                  {isCorrect ? <Check size={14} style={{ color: '#10b981' }} /> : (
+                    <span className="text-[10px] font-semibold" style={{ color: '#ef4444' }}>{it.coluna}</span>
+                  )}
+                </span>
+              )}
             </div>
           )
         })}
@@ -108,6 +111,9 @@ function TransformacaoExercise({ exercicio, num }: { exercicio: ExercicioTransfo
   const [answer, setAnswer] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
+  // Simple comparison: normalize and check similarity
+  const isCorrect = submitted && answer.trim().toLowerCase().replace(/[.,!?;:]/g, '') === exercicio.resposta.trim().toLowerCase().replace(/[.,!?;:]/g, '')
+
   return (
     <div className="space-y-2">
       <p className="text-sm" style={{ color: 'var(--text)' }}>
@@ -116,7 +122,7 @@ function TransformacaoExercise({ exercicio, num }: { exercicio: ExercicioTransfo
       <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)' }}>
         {exercicio.frase_original}
       </p>
-      {exercicio.dica && (
+      {exercicio.dica && !submitted && (
         <p className="text-[10px] px-1" style={{ color: '#f59e0b' }}>Dica: {exercicio.dica}</p>
       )}
       {!submitted ? (
@@ -134,10 +140,21 @@ function TransformacaoExercise({ exercicio, num }: { exercicio: ExercicioTransfo
         </>
       ) : (
         <div className="space-y-1.5">
-          <div className="px-3 py-2 rounded-xl text-xs" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-            <p className="font-semibold" style={{ color: '#10b981' }}>Resposta correta:</p>
-            <p style={{ color: 'var(--text)' }}>{exercicio.resposta}</p>
+          {/* Student's answer */}
+          <div className="px-3 py-2 rounded-xl text-xs"
+            style={{ background: isCorrect ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)', border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}` }}>
+            <p className="font-semibold" style={{ color: isCorrect ? '#10b981' : '#ef4444' }}>
+              {isCorrect ? 'Correto!' : 'A tua resposta:'}
+            </p>
+            <p style={{ color: 'var(--text)' }}>{answer}</p>
           </div>
+          {/* Correct answer (only if wrong) */}
+          {!isCorrect && (
+            <div className="px-3 py-2 rounded-xl text-xs" style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
+              <p className="font-semibold" style={{ color: '#10b981' }}>Resposta esperada:</p>
+              <p style={{ color: 'var(--text)' }}>{exercicio.resposta}</p>
+            </div>
+          )}
           <p className="text-xs px-1" style={{ color: 'var(--text-muted)' }}>{exercicio.explicacao}</p>
         </div>
       )}
