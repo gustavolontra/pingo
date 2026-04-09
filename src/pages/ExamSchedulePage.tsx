@@ -393,9 +393,10 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   const me = students.find((s) => s.id === studentId)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
-  const [step, setStep] = useState<'idle' | 'source' | 'mode'>('idle')
+  const [modeChoice, setModeChoice] = useState(false)
   const [kvContent, setKvContent] = useState<{ titulo: string; resumo: string; palavrasChave: string[]; flashcards: { frente: string; verso: string }[] }[]>([])
-  const [useKV, setUseKV] = useState(false)
+  const [useKV, setUseKV] = useState(true)
+  const [kvLoaded, setKvLoaded] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
 
@@ -408,48 +409,30 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   const effectiveSelected = selectedDay ?? todayDia?.dia ?? plano?.dias?.find((d) => !(plano.diasEstudados ?? []).includes(d.dia))?.dia ?? null
   const activeDia = plano?.dias?.find((d) => d.dia === effectiveSelected)
 
-  // Find matching discipline IDs for this exam subject
-  function getMatchingDisciplineIds(): string[] {
-    const subject = exam.subject.toLowerCase()
+  // Load KV content for this subject on mount
+  useEffect(() => {
     const anoNum = parseInt(me?.grade ?? '7', 10)
-    // Try exact match: "portugues-6", "ingles-6", etc.
-    const slug = subject.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-    return [`${slug}-${anoNum}`]
-  }
-
-  async function handleStartGenerate() {
-    // Fetch KV content for this subject
-    const ids = getMatchingDisciplineIds()
-    const allContent: typeof kvContent = []
-    for (const id of ids) {
-      try {
-        const items = await api.getContentByDiscipline(id)
-        for (const item of items) {
-          allContent.push({ titulo: item.titulo, resumo: item.resumo, palavrasChave: item.palavrasChave, flashcards: item.flashcards })
-        }
-      } catch { /* no content */ }
-    }
-    setKvContent(allContent)
-
-    if (allContent.length > 0) {
-      setStep('source')
-    } else {
-      setStep('mode')
-    }
-  }
+    const slug = exam.subject.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    const discId = `${slug}-${anoNum}`
+    api.getContentByDiscipline(discId).then((items) => {
+      const content = items.map((item: { titulo: string; resumo: string; palavrasChave: string[]; flashcards: { frente: string; verso: string }[] }) => ({
+        titulo: item.titulo, resumo: item.resumo, palavrasChave: item.palavrasChave, flashcards: item.flashcards,
+      }))
+      setKvContent(content)
+      setUseKV(content.length > 0)
+      setKvLoaded(true)
+    }).catch(() => setKvLoaded(true))
+  }, [exam.subject, me?.grade])
 
   async function generate(avancado: boolean) {
-    setStep('idle')
+    setModeChoice(false)
     setGenerating(true)
     setError('')
     try {
       const year = me?.grade ?? '7.º ano'
-
-      // Build materials: KV content + manual materials
       const materiaisForAI: { nome: string; conteudo: string }[] = []
 
       if (useKV && kvContent.length > 0) {
-        // Use platform content as study material
         for (const item of kvContent) {
           const content = [
             item.resumo,
@@ -460,7 +443,6 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
         }
       }
 
-      // Also add manual materials
       for (const m of exam.materiais ?? []) {
         materiaisForAI.push({ nome: m.nome, conteudo: m.conteudo })
       }
@@ -486,9 +468,26 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
 
   return (
     <div className="space-y-3">
+      {/* Platform content toggle — visible when KV has content */}
+      {kvLoaded && kvContent.length > 0 && !generating && (
+        <label className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer"
+          style={{ background: useKV ? 'rgba(16,185,129,0.06)' : 'var(--surface-2)', border: `1px solid ${useKV ? 'rgba(16,185,129,0.2)' : 'var(--border)'}` }}>
+          <input type="checkbox" checked={useKV} onChange={(e) => setUseKV(e.target.checked)}
+            className="shrink-0 accent-[#10b981]" />
+          <div className="flex-1">
+            <p className="text-xs font-semibold" style={{ color: useKV ? '#10b981' : 'var(--text)' }}>
+              Usar conteudo de {exam.subject} da plataforma
+            </p>
+            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              {kvContent.length} conteudo{kvContent.length !== 1 ? 's' : ''} publicado{kvContent.length !== 1 ? 's' : ''} — o plano sera baseado neste material
+            </p>
+          </div>
+        </label>
+      )}
+
       {/* Generate / Regenerate button */}
-      {!generating && step === 'idle' && (
-        <button onClick={handleStartGenerate}
+      {!generating && !modeChoice && (
+        <button onClick={() => setModeChoice(true)}
           className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
           style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5', border: '1px solid rgba(98,112,245,0.2)' }}>
           {plano ? <RotateCcw size={14} /> : <Sparkles size={14} />}
@@ -496,34 +495,8 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
         </button>
       )}
 
-      {/* Step 1: Source choice (only if platform content exists) */}
-      {step === 'source' && !generating && (
-        <div className="card space-y-3">
-          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Base do conteudo para o plano:</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <button onClick={() => { setUseKV(true); setStep('mode') }}
-              className="p-4 rounded-xl text-left transition-all"
-              style={{ background: 'rgba(16,185,129,0.06)', border: '1.5px solid rgba(16,185,129,0.2)' }}>
-              <p className="text-sm font-semibold" style={{ color: '#10b981' }}>Conteudo da plataforma</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                Usar os {kvContent.length} conteudo{kvContent.length !== 1 ? 's' : ''} de {exam.subject} ja publicados
-              </p>
-            </button>
-            <button onClick={() => { setUseKV(false); setStep('mode') }}
-              className="p-4 rounded-xl text-left transition-all"
-              style={{ background: 'var(--surface-2)', border: '1.5px solid var(--border)' }}>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Apenas materiais manuais</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                Usar so a ficha de estudo e materiais que anexaste
-              </p>
-            </button>
-          </div>
-          <button onClick={() => setStep('idle')} className="text-xs w-full text-center" style={{ color: 'var(--text-muted)' }}>Cancelar</button>
-        </div>
-      )}
-
-      {/* Step 2: Mode choice */}
-      {step === 'mode' && !generating && (
+      {/* Mode choice */}
+      {modeChoice && !generating && (
         <div className="card space-y-3">
           <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Tipo de plano:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -544,7 +517,7 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
               </p>
             </button>
           </div>
-          <button onClick={() => setStep('idle')} className="text-xs w-full text-center" style={{ color: 'var(--text-muted)' }}>Cancelar</button>
+          <button onClick={() => setModeChoice(false)} className="text-xs w-full text-center" style={{ color: 'var(--text-muted)' }}>Cancelar</button>
         </div>
       )}
 
