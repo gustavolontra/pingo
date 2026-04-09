@@ -414,7 +414,7 @@ function GeneratingAnimation() {
 
 // ── Plano de estudo ──────────────────────────────────────────────────────────
 
-function StudyPlanSection({ exam }: { exam: Exam }) {
+function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam; autoOpenDay?: number | null; onAutoOpenHandled?: () => void }) {
   const { setExamPlano, markDiaEstudado, awardStudyPlanXP } = useStore()
   const { studentId } = useStudentAuthStore()
   const students = useAdminStore((s) => s.students)
@@ -426,9 +426,17 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   const [useKV, setUseKV] = useState(true)
   const [kvLoaded, setKvLoaded] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [selectedDay, setSelectedDay] = useState<number | null>(autoOpenDay ?? null)
 
   const plano = exam.planoEstudo
+
+  // Auto-open from Dashboard link
+  useEffect(() => {
+    if (autoOpenDay && plano?.dias?.length) {
+      setSelectedDay(autoOpenDay)
+      onAutoOpenHandled?.()
+    }
+  }, [autoOpenDay, plano?.dias?.length])
   const today = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
   const daysStudied = plano?.diasEstudados?.length ?? 0
   const totalDays = plano?.dias?.length ?? 0
@@ -766,7 +774,7 @@ function MaterialsSection({ exam }: { exam: Exam }) {
 
 // ── Card de exame ─────────────────────────────────────────────────────────────
 
-function ExamCard({ exam, subjects }: { exam: Exam; subjects: string[] }) {
+function ExamCard({ exam, subjects, autoOpenDay, onAutoOpenHandled }: { exam: Exam; subjects: string[]; autoOpenDay?: number | null; onAutoOpenHandled?: () => void }) {
   const { updateExam, deleteExam, setExamStudyNote } = useStore()
   const [editing, setEditing] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
@@ -878,7 +886,7 @@ function ExamCard({ exam, subjects }: { exam: Exam; subjects: string[] }) {
       </div>
 
       {/* Study plan */}
-      {days > 0 && <StudyPlanSection exam={exam} />}
+      {days > 0 && <StudyPlanSection exam={exam} autoOpenDay={autoOpenDay} onAutoOpenHandled={onAutoOpenHandled} />}
     </div>
   )
 }
@@ -943,6 +951,11 @@ export default function ExamSchedulePage() {
   const [adding, setAdding] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
 
+  // Auto-open plan from URL params (from Dashboard "Estudar agora")
+  const [autoOpenDone, setAutoOpenDone] = useState(false)
+  const autoOpenPlanId = new URLSearchParams(window.location.search).get('plan')
+  const autoOpenDay = Number(new URLSearchParams(window.location.search).get('day')) || null
+
   const me = students.find((s) => s.id === studentId)
   const anoNum = parseInt(me?.grade ?? '7', 10)
   const subjects = getDisciplinasPorAno(anoNum)
@@ -984,7 +997,9 @@ export default function ExamSchedulePage() {
         </div>
       )}
 
-      {sorted.map((exam) => <ExamCard key={exam.id} exam={exam} subjects={subjects} />)}
+      {sorted.map((exam) => <ExamCard key={exam.id} exam={exam} subjects={subjects}
+        autoOpenDay={!autoOpenDone && exam.id === autoOpenPlanId ? autoOpenDay : null}
+        onAutoOpenHandled={() => setAutoOpenDone(true)} />)}
     </div>
   )
 }

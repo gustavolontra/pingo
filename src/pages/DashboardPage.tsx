@@ -78,7 +78,7 @@ export default function DashboardPage() {
       {inviteCode && <InviteBanner code={inviteCode} />}
 
       {/* Today's study plan cards */}
-      <TodayStudy exams={exams} onGoToExams={() => navigate('/exames')} />
+      <TodayStudy exams={exams} onGoToExams={(examId, dia) => navigate(`/exames?plan=${examId}&day=${dia}`)} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Left column */}
@@ -175,7 +175,7 @@ function InviteBanner({ code }: { code: string }) {
   )
 }
 
-function TodayStudy({ exams, onGoToExams }: { exams: { id: string; subject: string; date: string; planoEstudo?: { dias: DiaPlano[]; diasEstudados: number[] } }[]; onGoToExams: () => void }) {
+function TodayStudy({ exams, onGoToExams }: { exams: { id: string; subject: string; date: string; planoEstudo?: { dias: DiaPlano[]; diasEstudados: number[] } }[]; onGoToExams: (examId: string, dia: number) => void }) {
   const today = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
   // Build cards: atrasados + hoje + próximo (always show 2 cards)
@@ -258,14 +258,14 @@ function TodayStudy({ exams, onGoToExams }: { exams: { id: string; subject: stri
               <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{dia.tema}</p>
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
               {status !== 'feito' && status !== 'proximo' && (
-                <button onClick={onGoToExams}
+                <button onClick={() => onGoToExams(examId, dia.dia)}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold mt-2"
                   style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}>
                   <BookOpen size={11} /> {status === 'atrasado' ? 'Recuperar estudo' : 'Estudar agora'}
                 </button>
               )}
               {status === 'proximo' && (
-                <button onClick={onGoToExams}
+                <button onClick={() => onGoToExams(examId, dia.dia)}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold mt-2"
                   style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
                   <BookOpen size={11} /> Ver plano
