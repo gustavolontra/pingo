@@ -360,6 +360,26 @@ export const api = {
     }).catch(() => {})
   },
 
+  // ── Advanced Exercises ─────────────────────────────────────────────────────
+  async getAdvancedExercises(learningId: string, tipo: string) {
+    const res = await fetch(`${BASE}/advanced-exercises?learningId=${encodeURIComponent(learningId)}&tipo=${encodeURIComponent(tipo)}`)
+    if (res.status === 404) return null
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return res.json()
+  },
+  async generateAdvancedExercises(learningId: string, tipo: string, conteudo: string, topico: string) {
+    const res = await fetch(`${BASE}/advanced-exercises`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ learningId, tipo, conteudo, topico }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new Error(err.detail || err.error || `HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+
   // ── Evaluate Response ──────────────────────────────────────────────────────
   async evaluateResponse(pergunta: string, respostaAluno: string, respostaEsperada: string): Promise<{ nivel: 'bom' | 'parcial' | 'insuficiente'; feedback: string }> {
     const res = await fetch(`${BASE}/evaluate-response`, {

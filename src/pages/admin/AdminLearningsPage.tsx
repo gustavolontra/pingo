@@ -14,6 +14,7 @@
 import { useState, useRef } from 'react'
 import { useAdminStore, type ContentDraft, type DraftFlashcard, type DraftQuestion } from '@/store/useAdminStore'
 import { DISCIPLINE_OPTIONS, getDisciplineOption } from '@/lib/contentBridge'
+import AdvancedExercisesPanel from '@/components/exercises/AdvancedExercisesPanel'
 import { api, type KVContentItem } from '@/lib/api'
 import {
   Plus, ArrowLeft, Sparkles, Save, Trash2,
@@ -772,6 +773,15 @@ function Editor({
             </div>
           </div>
         </Collapsible>
+
+        {/* Exercícios avançados — visível apenas após análise (flashcards + quiz existem) */}
+        {flashcards.length > 0 && quiz.length > 0 && (
+          <AdvancedExercisesPanel
+            learningId={initial?.id ?? `${disciplineId}-${topico}`}
+            topico={topico}
+            conteudo={rawContent || resumo}
+          />
+        )}
 
         {/* Ações */}
         <div className="flex gap-3 pt-2">

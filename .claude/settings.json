@@ -2,6 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(python3 -c ':*)"
+    ],
+    "additionalDirectories": [
+      "/Users/gustavolontra/vs code/pingo-study/src/types"
     ]
   }
 }
