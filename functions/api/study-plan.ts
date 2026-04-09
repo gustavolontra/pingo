@@ -42,8 +42,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     const isAdvanced = avancado === true
     const regras = getRegras(daysAvailable, isAdvanced)
 
-    // Truncate materials to avoid exceeding API limits (~15k chars total for Haiku)
-    const MAX_CHARS = 15000
+    // Truncate materials — keep short to avoid timeout (Cloudflare 30s limit)
+    const MAX_CHARS = 8000
     let totalChars = 0
     const truncatedMateriais = materiais.map((m) => {
       const remaining = MAX_CHARS - totalChars
@@ -72,7 +72,7 @@ Exercícios de classificação por dia: ${'classificacao' in regras ? regras.cla
 Exercícios de transformação por dia: ${'transformacao' in regras ? regras.transformacao : 0}
 Exercícios de identificação sintática por dia: ${'identificacao' in regras ? regras.identificacao : 0}` : ''}
 Tempo estimado por dia: ${regras.tempoEstimado} minutos
-Ficha de estudo: ${studyNote ? studyNote.slice(0, 8000) : 'não fornecida'}
+Ficha de estudo: ${studyNote ? studyNote.slice(0, 4000) : 'não fornecida'}
 Outros materiais: ${materiaisText}`
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
