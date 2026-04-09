@@ -392,7 +392,7 @@ export const api = {
   },
 
   // ── Study Plan ─────────────────────────────────────────────────────────────
-  async generateStudyPlan(data: { subject: string; year: string; examDate: string; studyNote: string; materiais: { nome: string; conteudo: string }[] }) {
+  async generateStudyPlan(data: { subject: string; year: string; examDate: string; studyNote: string; materiais: { nome: string; conteudo: string }[]; avancado?: boolean }) {
     const res = await fetch(`${BASE}/study-plan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

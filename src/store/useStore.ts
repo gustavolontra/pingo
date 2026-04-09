@@ -48,12 +48,17 @@ export interface DiaPlano {
     pergunta: string
     respostaEsperada: string
   }
+  lacunas?: { frase: string; resposta: string; opcoes: string[]; explicacao: string }[]
+  classificacao?: { instrucao: string; colunas: string[]; itens: { palavra: string; coluna: string }[]; explicacao: string }[]
+  transformacao?: { instrucao: string; frase_original: string; resposta: string; dica: string; explicacao: string }[]
+  identificacao?: { instrucao: string; frase: string; constituintes: { texto: string; funcao: string }[]; explicacao: string }[]
 }
 
 export interface PlanoEstudo {
   geradoEm: string
   resumo: string
   tempoEstimadoPorDia?: number
+  avancado?: boolean
   dias: DiaPlano[]
   diasEstudados: number[]
 }

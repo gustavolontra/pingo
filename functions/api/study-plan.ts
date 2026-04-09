@@ -2,20 +2,27 @@ interface Env {
   ANTHROPIC_API_KEY: string
 }
 
-function getRegras(diasDisponiveis: number) {
-  if (diasDisponiveis <= 2) return { flashcards: 20, quiz: 10, intensidade: 'Revisão intensiva', tempoEstimado: 60 }
-  if (diasDisponiveis <= 5) return { flashcards: 15, quiz: 8, intensidade: 'Consolidação', tempoEstimado: 40 }
-  if (diasDisponiveis <= 10) return { flashcards: 10, quiz: 5, intensidade: 'Aprendizagem gradual', tempoEstimado: 25 }
-  return { flashcards: 6, quiz: 3, intensidade: 'Introdução suave', tempoEstimado: 15 }
+function getRegras(diasDisponiveis: number, avancado: boolean) {
+  const base = (() => {
+    if (diasDisponiveis <= 2) return { flashcards: 20, quiz: 10, intensidade: 'Revisão intensiva', tempoEstimado: 60 }
+    if (diasDisponiveis <= 5) return { flashcards: 15, quiz: 8, intensidade: 'Consolidação', tempoEstimado: 40 }
+    if (diasDisponiveis <= 10) return { flashcards: 10, quiz: 5, intensidade: 'Aprendizagem gradual', tempoEstimado: 25 }
+    return { flashcards: 6, quiz: 3, intensidade: 'Introdução suave', tempoEstimado: 15 }
+  })()
+  if (avancado) {
+    return { ...base, tempoEstimado: base.tempoEstimado + 20, lacunas: 3, classificacao: 2, transformacao: 2, identificacao: 1 }
+  }
+  return base
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
   try {
-    const { subject, year, examDate, studyNote, materiais } = await request.json() as {
+    const { subject, year, examDate, studyNote, materiais, avancado } = await request.json() as {
       subject: string
       year: string
       examDate: string
+      avancado?: boolean
       studyNote: string
       materiais: { nome: string; conteudo: string }[]
     }
@@ -32,7 +39,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     // e.g. today=07, exam=14 → 14-07=7 days (07,08,09,10,11,12,13)
     const daysAvailable = Math.max(1, Math.ceil((exam.getTime() - today.getTime()) / 86400000))
 
-    const regras = getRegras(daysAvailable)
+    const isAdvanced = avancado === true
+    const regras = getRegras(daysAvailable, isAdvanced)
 
     // Truncate materials to avoid exceeding API limits (~50k chars total)
     const MAX_CHARS = 50000
@@ -58,7 +66,11 @@ Data da prova: ${new Date(examDate).toLocaleDateString('pt-PT')}
 Dias disponíveis: ${daysAvailable}
 Intensidade: ${regras.intensidade}
 Flashcards por dia: ${regras.flashcards}
-Quiz por dia: ${regras.quiz}
+Quiz por dia: ${regras.quiz}${isAdvanced ? `
+Exercícios de lacunas por dia: ${'lacunas' in regras ? regras.lacunas : 0}
+Exercícios de classificação por dia: ${'classificacao' in regras ? regras.classificacao : 0}
+Exercícios de transformação por dia: ${'transformacao' in regras ? regras.transformacao : 0}
+Exercícios de identificação sintática por dia: ${'identificacao' in regras ? regras.identificacao : 0}` : ''}
 Tempo estimado por dia: ${regras.tempoEstimado} minutos
 Ficha de estudo: ${studyNote ? studyNote.slice(0, 20000) : 'não fornecida'}
 Outros materiais: ${materiaisText}`
@@ -97,6 +109,7 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
 {
   "resumo": "Plano de X dias para [matéria] — ritmo [intensidade]",
   "tempoEstimadoPorDia": ${regras.tempoEstimado},
+  "avancado": ${isAdvanced},
   "dias": [
     {
       "dia": 1,
@@ -117,7 +130,19 @@ Devolve APENAS JSON válido, sem markdown, sem texto antes ou depois. Formato:
       "resumoActivo": {
         "pergunta": "Explica por palavras tuas...",
         "respostaEsperada": "Pontos-chave que devem ser mencionados: ..."
-      }
+      }${isAdvanced ? `,
+      "lacunas": [
+        { "frase": "frase com ___ no lugar da palavra", "resposta": "palavra", "opcoes": ["op1","op2","op3","op4"], "explicacao": "regra" }
+      ],
+      "classificacao": [
+        { "instrucao": "...", "colunas": ["A","B"], "itens": [{"palavra":"x","coluna":"A"}], "explicacao": "..." }
+      ],
+      "transformacao": [
+        { "instrucao": "...", "frase_original": "...", "resposta": "...", "dica": "...", "explicacao": "..." }
+      ],
+      "identificacao": [
+        { "instrucao": "...", "frase": "...", "constituintes": [{"texto":"...","funcao":"..."}], "explicacao": "..." }
+      ]` : ''}
     }
   ]
 }`,

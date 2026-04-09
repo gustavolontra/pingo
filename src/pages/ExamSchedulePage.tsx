@@ -9,6 +9,7 @@ import {
   RotateCcw, Paperclip, Info, PenLine,
 } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
+import ExerciseRenderer from '@/components/exercises/ExerciseRenderer'
 
 // ── Ícones de matérias ───────────────────────────────────────────────────────
 
@@ -222,6 +223,7 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
   const totalFlashcards = dia.flashcards.length
   const totalQuiz = dia.quiz.length
   const hasResumo = !!dia.resumoActivo
+  const hasAdvanced = !!(dia.lacunas?.length || dia.classificacao?.length || dia.transformacao?.length || dia.identificacao?.length)
   const allDone = flippedCount >= totalFlashcards && answeredQuiz >= totalQuiz && (!hasResumo || resumoDone)
 
   function handleFlashcardView() { setFlippedCount((v) => v + 1); awardStudyPlanXP(2) }
@@ -279,6 +281,36 @@ function DayContent({ dia, studied, onStudied, tempoEstimado }: {
           respostaEsperada={dia.resumoActivo.respostaEsperada}
           onResult={handleResumoResult}
         />
+      )}
+
+      {/* Advanced exercises */}
+      {hasAdvanced && (
+        <div key={`adv-${attempt}`} className="space-y-4">
+          {dia.lacunas && dia.lacunas.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2" style={{ color: '#f59e0b' }}>Preenchimento de lacunas ({dia.lacunas.length})</p>
+              <ExerciseRenderer exercicios={dia.lacunas.map((l) => ({ ...l, tipo: 'lacuna' as const, topico: dia.tema, opcoes: l.opcoes as [string, string, string, string] }))} />
+            </div>
+          )}
+          {dia.classificacao && dia.classificacao.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2" style={{ color: '#f59e0b' }}>Classificação em colunas ({dia.classificacao.length})</p>
+              <ExerciseRenderer exercicios={dia.classificacao.map((c) => ({ ...c, tipo: 'classificacao' as const, topico: dia.tema }))} />
+            </div>
+          )}
+          {dia.transformacao && dia.transformacao.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2" style={{ color: '#f59e0b' }}>Transformação de frases ({dia.transformacao.length})</p>
+              <ExerciseRenderer exercicios={dia.transformacao.map((t) => ({ ...t, tipo: 'transformacao' as const, topico: dia.tema }))} />
+            </div>
+          )}
+          {dia.identificacao && dia.identificacao.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2" style={{ color: '#f59e0b' }}>Identificação sintática ({dia.identificacao.length})</p>
+              <ExerciseRenderer exercicios={dia.identificacao.map((id) => ({ ...id, tipo: 'identificacao' as const, topico: dia.tema }))} />
+            </div>
+          )}
+        </div>
       )}
 
       {/* Complete day */}
@@ -361,6 +393,7 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   const me = students.find((s) => s.id === studentId)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
+  const [modeChoice, setModeChoice] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
 
@@ -369,12 +402,12 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   const daysStudied = plano?.diasEstudados?.length ?? 0
   const totalDays = plano?.dias?.length ?? 0
 
-  // Auto-select today's day or first unstudied
   const todayDia = plano?.dias?.find((d) => d.data === today)
   const effectiveSelected = selectedDay ?? todayDia?.dia ?? plano?.dias?.find((d) => !(plano.diasEstudados ?? []).includes(d.dia))?.dia ?? null
   const activeDia = plano?.dias?.find((d) => d.dia === effectiveSelected)
 
-  async function generate() {
+  async function generate(avancado: boolean) {
+    setModeChoice(false)
     setGenerating(true)
     setError('')
     try {
@@ -386,8 +419,9 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
         examDate: exam.date,
         studyNote: exam.studyNote || '',
         materiais: materiaisForAI,
+        avancado,
       })
-      setExamPlano(exam.id, { geradoEm: new Date().toISOString(), resumo: result.resumo, tempoEstimadoPorDia: result.tempoEstimadoPorDia, dias: result.dias, diasEstudados: [] })
+      setExamPlano(exam.id, { geradoEm: new Date().toISOString(), resumo: result.resumo, tempoEstimadoPorDia: result.tempoEstimadoPorDia, avancado, dias: result.dias, diasEstudados: [] })
     } catch (e) {
       setError(`Erro ao gerar o plano. Tenta novamente. ${e instanceof Error ? e.message : ''}`)
     }
@@ -401,16 +435,39 @@ function StudyPlanSection({ exam }: { exam: Exam }) {
   return (
     <div className="space-y-3">
       {/* Generate / Regenerate button */}
-      {!generating ? (
-        <button onClick={generate}
+      {!generating && !modeChoice && (
+        <button onClick={() => setModeChoice(true)}
           className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
           style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5', border: '1px solid rgba(98,112,245,0.2)' }}>
           {plano ? <RotateCcw size={14} /> : <Sparkles size={14} />}
           {plano ? 'Regenerar plano de estudo' : 'Gerar plano de estudo com IA'}
         </button>
-      ) : (
-        <GeneratingAnimation />
       )}
+      {modeChoice && !generating && (
+        <div className="card space-y-3">
+          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Que tipo de plano queres?</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <button onClick={() => generate(false)}
+              className="p-4 rounded-xl text-left transition-all"
+              style={{ background: 'var(--surface-2)', border: '1.5px solid var(--border)' }}>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Basico</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                Flashcards, quiz e resumo activo por dia
+              </p>
+            </button>
+            <button onClick={() => generate(true)}
+              className="p-4 rounded-xl text-left transition-all"
+              style={{ background: 'rgba(98,112,245,0.06)', border: '1.5px solid rgba(98,112,245,0.2)' }}>
+              <p className="text-sm font-semibold" style={{ color: '#6270f5' }}>Avancado</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                Tudo do basico + lacunas, classificacao, transformacao e identificacao sintatica
+              </p>
+            </button>
+          </div>
+          <button onClick={() => setModeChoice(false)} className="text-xs w-full text-center" style={{ color: 'var(--text-muted)' }}>Cancelar</button>
+        </div>
+      )}
+      {generating && <GeneratingAnimation />}
       {error && <p className="text-xs" style={{ color: '#ef4444' }}>{error}</p>}
 
       {/* Plan view */}
@@ -702,15 +759,15 @@ function InfoModal({ onClose }: { onClose: () => void }) {
           O Pingo distribui o conteúdo de forma inteligente consoante os dias disponíveis até ao exame:
         </p>
         {[
-          { label: '11 ou mais dias', sub: 'Ritmo suave', detail: '6 flashcards, 3 quiz e 1 resumo activo por dia', time: '~15 min/dia' },
-          { label: '6 a 10 dias', sub: 'Ritmo gradual', detail: '10 flashcards, 5 quiz e 1 resumo activo por dia', time: '~25 min/dia' },
-          { label: '3 a 5 dias', sub: 'Ritmo de consolidação', detail: '15 flashcards, 8 quiz e 1 resumo activo por dia', time: '~40 min/dia' },
-          { label: '1 a 2 dias', sub: 'Revisão intensiva', detail: '20 flashcards, 10 quiz e 1 resumo activo por dia', time: '~60 min/dia' },
-        ].map(({ label, sub, detail, time }) => (
+          { label: '11 ou mais dias', sub: 'Ritmo suave', basic: '6 flashcards, 3 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~15 min', timeAdv: '~35 min' },
+          { label: '6 a 10 dias', sub: 'Ritmo gradual', basic: '10 flashcards, 5 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~25 min', timeAdv: '~45 min' },
+          { label: '3 a 5 dias', sub: 'Consolidação', basic: '15 flashcards, 8 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~40 min', timeAdv: '~60 min' },
+          { label: '1 a 2 dias', sub: 'Revisão intensiva', basic: '20 flashcards, 10 quiz, 1 resumo activo', advanced: '+ 3 lacunas, 2 classificacao, 2 transformacao, 1 identificacao', time: '~60 min', timeAdv: '~80 min' },
+        ].map(({ label, sub, basic, advanced, time, timeAdv }) => (
           <div key={label} className="px-3 py-2.5 rounded-xl" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
             <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{label} <span className="font-normal" style={{ color: 'var(--text-muted)' }}>— {sub}</span></p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{detail}</p>
-            <p className="text-xs" style={{ color: '#6270f5' }}>Tempo estimado: {time}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Basico: {basic} ({time}/dia)</p>
+            <p className="text-xs" style={{ color: '#6270f5' }}>Avancado: {advanced} ({timeAdv}/dia)</p>
           </div>
         ))}
         <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
