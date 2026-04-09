@@ -10,7 +10,7 @@ function getRegras(diasDisponiveis: number, avancado: boolean) {
     return { flashcards: 6, quiz: 3, intensidade: 'Introdução suave', tempoEstimado: 15 }
   })()
   if (avancado) {
-    return { ...base, tempoEstimado: base.tempoEstimado + 20, lacunas: 3, classificacao: 2, transformacao: 2, identificacao: 1 }
+    return { ...base, flashcards: Math.ceil(base.flashcards / 2), tempoEstimado: base.tempoEstimado + 20, lacunas: 3, classificacao: 2, transformacao: 2, identificacao: 1 }
   }
   return base
 }
@@ -83,7 +83,7 @@ Outros materiais: ${materiaisText}`
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 16384,
         system: `És um tutor especializado em criar planos de estudo para alunos do ensino básico português.
 
