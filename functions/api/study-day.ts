@@ -22,13 +22,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     const advancedBlock = avancado ? `
 Também gera:
 - ${regras.lacunas ?? 3} exercícios de lacunas: { "frase": "frase com ___", "resposta": "palavra", "opcoes": ["a","b","c","d"], "explicacao": "regra" }
-- ${regras.classificacao ?? 2} exercícios de classificação: { "instrucao": "...", "colunas": ["A","B"], "itens": [{"palavra":"x","coluna":"A"}], "explicacao": "..." }
+- ${regras.classificacao ?? 2} exercícios de classificação: { "instrucao": "...", "colunas": ["Coluna A","Coluna B"], "itens": [{"palavra":"frase ou palavra OBRIGATÓRIO - NUNCA deixar vazio","coluna":"Coluna A"}], "explicacao": "..." } ATENÇÃO: o campo "palavra" de cada item DEVE conter o texto/frase a classificar
 - ${regras.transformacao ?? 2} exercícios de transformação: { "instrucao": "...", "frase_original": "...", "resposta": "...", "dica": "...", "explicacao": "..." }
 - ${regras.identificacao ?? 1} exercícios de identificação: { "instrucao": "...", "frase": "...", "constituintes": [{"texto":"...","funcao":"..."}], "explicacao": "..." }` : ''
 
     const advancedFormat = avancado ? `,
   "lacunas": [...],
-  "classificacao": [...],
+  "classificacao": [{"instrucao":"...","colunas":["A","B"],"itens":[{"palavra":"texto da frase/palavra","coluna":"A"}],"explicacao":"..."}],
   "transformacao": [...],
   "identificacao": [...]` : ''
 
