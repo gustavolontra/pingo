@@ -84,7 +84,8 @@ REGRAS:
 - O último dia é SEMPRE revisão geral
 - Se houver materiais, baseia-te neles
 - Escreve SEMPRE em Português de Portugal (PT-PT), NUNCA em Português do Brasil
-- Usa terminologia portuguesa (ex: "grave/aguda/esdrúxula" e não "paroxítona/oxítona/proparoxítona")
+- Usa terminologia PT-PT: "verbo principal" (não "verbo de ação"), "grave/aguda/esdrúxula" (não "paroxítona/oxítona/proparoxítona"), "complemento direto/indireto" (não "objeto direto/indireto"), "conjuntivo" (não "subjuntivo")
+- Tratamento "tu/vós" (não "você"), vocabulário de Portugal (autocarro, telemóvel, etc.)
 - Datas no formato DD/MM/AAAA
 
 Devolve APENAS JSON válido:
