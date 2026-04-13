@@ -3,7 +3,12 @@ interface Env {
 }
 
 const SYSTEM_PROMPT = `És um assistente pedagógico especializado em criar materiais de estudo para alunos do ensino básico português.
-Analisa o conteúdo fornecido e devolve APENAS um JSON válido, sem texto adicional antes ou depois.`
+Analisa o conteúdo fornecido e devolve APENAS um JSON válido, sem texto adicional antes ou depois.
+
+IMPORTANTE:
+- Escreve SEMPRE em Português de Portugal (PT-PT), NUNCA em Português do Brasil
+- Usa terminologia portuguesa (ex: classificação de sílaba tónica é "grave/aguda/esdrúxula", não "paroxítona/oxítona/proparoxítona")
+- Nas opções de quiz, NUNCA adiciones prefixos "A)", "B)", "C)", "D)" ao texto`
 
 const USER_PROMPT = (content: string) => `Analisa o seguinte conteúdo educativo e devolve um JSON com esta estrutura exacta:
 

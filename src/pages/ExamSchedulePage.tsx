@@ -343,17 +343,26 @@ function DayContent({ dia, studied, onStudied, tempoEstimado, onGenerateDay, gen
 
       {/* Complete day */}
       {!isRedo && (
-        <button onClick={handleComplete} disabled={!allDone}
-          className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
-          style={{
-            background: allDone ? 'rgba(16,185,129,0.1)' : 'var(--surface-2)',
-            color: allDone ? '#10b981' : 'var(--text-muted)',
-            border: `1px solid ${allDone ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`,
-            opacity: allDone ? 1 : 0.5,
-          }}>
-          <Check size={15} />
-          {allDone ? 'Marcar como estudado (+20 XP)' : `Completa todas as atividades (${done}/${progress})`}
-        </button>
+        <div className="space-y-2">
+          <button onClick={handleComplete} disabled={!allDone}
+            className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+            style={{
+              background: allDone ? 'rgba(16,185,129,0.1)' : 'var(--surface-2)',
+              color: allDone ? '#10b981' : 'var(--text-muted)',
+              border: `1px solid ${allDone ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`,
+              opacity: allDone ? 1 : 0.5,
+            }}>
+            <Check size={15} />
+            {allDone ? 'Marcar como estudado (+20 XP)' : `Completa todas as atividades (${done}/${progress})`}
+          </button>
+          {!allDone && (
+            <button onClick={onStudied}
+              className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+              Saltar este dia (ainda não aprendi este tema)
+            </button>
+          )}
+        </div>
       )}
       {isRedo && (
         <button onClick={() => { setAttempt((a) => a + 1); setFlippedCount(0); setAnsweredQuiz(0); setResumoDone(false) }}

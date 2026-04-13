@@ -47,15 +47,27 @@ Também gera:
 Tema do dia: ${tema}
 Contexto: ${resumo}
 
+IMPORTANTE: Escreve SEMPRE em Português de Portugal (PT-PT), NUNCA em Português do Brasil.
+- Usa "tu" ou "vós", nunca "você" como forma de tratamento geral
+- Usa vocabulário e ortografia de Portugal (ex: "autocarro" e não "ônibus", "casa de banho" e não "banheiro", "telemóvel" e não "celular")
+- NÃO confundas com regras gramaticais brasileiras (ex: classificação de sílaba tónica é "grave/aguda/esdrúxula", não "paroxítona/oxítona/proparoxítona")
+- Usa acentuação portuguesa (ex: "económico" e não "econômico")
+
 Gera EXACTAMENTE:
 - ${regras.flashcards} flashcards (frente/verso)
 - ${regras.quiz} perguntas de quiz (4 opções, índice correta 0-3, explicação)
 - 1 resumoActivo (pergunta aberta + pontos-chave esperados)${advancedBlock}
 
-Português de Portugal. Devolve APENAS JSON válido:
+REGRAS OBRIGATÓRIAS para as opções do quiz:
+- NUNCA adiciones prefixos como "A)", "B)", "C)", "D)" ao texto das opções
+- Escreve apenas o texto puro da opção, sem letras nem números
+- Exemplo CORRECTO: ["Duvido que tu venhas", "Espero que viesses", ...]
+- Exemplo INCORRECTO: ["A) Duvido que tu venhas", "B) Espero que viesses", ...]
+
+Devolve APENAS JSON válido:
 {
   "flashcards": [{ "frente": "...", "verso": "..." }],
-  "quiz": [{ "pergunta": "...", "opcoes": ["A","B","C","D"], "correta": 0, "explicacao": "..." }],
+  "quiz": [{ "pergunta": "...", "opcoes": ["opcao1","opcao2","opcao3","opcao4"], "correta": 0, "explicacao": "..." }],
   "resumoActivo": { "pergunta": "...", "respostaEsperada": "..." }${advancedFormat}
 }`,
         messages: [{ role: 'user', content: materiais ? `Material de referência:\n${materiais.slice(0, 6000)}` : `Gera conteúdo genérico para o tema "${tema}" de ${subject} ${year}.` }],

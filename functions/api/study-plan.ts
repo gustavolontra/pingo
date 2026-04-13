@@ -83,7 +83,8 @@ REGRAS:
 - Distribui o conteúdo de forma equilibrada
 - O último dia é SEMPRE revisão geral
 - Se houver materiais, baseia-te neles
-- Escreve em português de Portugal
+- Escreve SEMPRE em Português de Portugal (PT-PT), NUNCA em Português do Brasil
+- Usa terminologia portuguesa (ex: "grave/aguda/esdrúxula" e não "paroxítona/oxítona/proparoxítona")
 - Datas no formato DD/MM/AAAA
 
 Devolve APENAS JSON válido:
