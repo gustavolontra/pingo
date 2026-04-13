@@ -392,6 +392,16 @@ export const api = {
   },
 
   // ── Study Plan ─────────────────────────────────────────────────────────────
+  async shareStudyPlan(fromStudentId: string, examId: string, friendIds: string[]) {
+    const res = await fetch(`${BASE}/share-plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromStudentId, examId, friendIds }),
+    })
+    if (!res.ok) throw new Error('Failed to share plan')
+    return res.json()
+  },
+
   async generateStudyDay(data: { subject: string; year: string; tema: string; resumo: string; regras: Record<string, number>; materiais: string; avancado: boolean }) {
     const res = await fetch(`${BASE}/study-day`, {
       method: 'POST',

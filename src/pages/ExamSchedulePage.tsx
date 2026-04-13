@@ -6,7 +6,7 @@ import { api, getDisciplinasPorAno } from '@/lib/api'
 import {
   Calendar, Pencil, Trash2, Plus, BookOpen, ChevronDown, ChevronUp, X,
   Sparkles, Loader2, FileText, Upload, Check,
-  RotateCcw, Paperclip, Info, PenLine,
+  RotateCcw, Paperclip, Info, PenLine, Share2,
 } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 import ExerciseRenderer from '@/components/exercises/ExerciseRenderer'
@@ -427,6 +427,7 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
   const [kvLoaded, setKvLoaded] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(autoOpenDay ?? null)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   const plano = exam.planoEstudo
 
@@ -597,6 +598,11 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
         </div>
       )}
 
+      {/* Share modal */}
+      {showShareModal && (
+        <ShareModal exam={exam} onClose={() => setShowShareModal(false)} />
+      )}
+
       {/* Full-screen study overlay */}
       {selectedDay !== null && plano && activeDia && (
         <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'var(--bg)' }}>
@@ -613,6 +619,11 @@ function StudyPlanSection({ exam, autoOpenDay, onAutoOpenHandled }: { exam: Exam
             <div className="w-32 h-1.5 rounded-full overflow-hidden shrink-0" style={{ background: 'var(--surface-2)' }}>
               <div className="h-full rounded-full" style={{ width: `${totalDays > 0 ? (daysStudied / totalDays) * 100 : 0}%`, background: '#6270f5' }} />
             </div>
+            <button onClick={() => setShowShareModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold shrink-0"
+              style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5' }}>
+              <Share2 size={13} /> Partilhar
+            </button>
           </div>
 
           {/* Day tabs — horizontal */}
@@ -891,6 +902,113 @@ function ExamCard({ exam, subjects, autoOpenDay, onAutoOpenHandled }: { exam: Ex
 // ── Página principal ──────────────────────────────────────────────────────────
 
 // ── Info Modal ───────────────────────────────────────────────────────────────
+
+function ShareModal({ exam, onClose }: { exam: Exam; onClose: () => void }) {
+  const { studentId } = useStudentAuthStore()
+  const { getFriends } = useStore()
+  const students = useAdminStore((s) => s.students)
+  const friendIds = getFriends()
+  const friends = students.filter((s) => friendIds.includes(s.id))
+
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [sharing, setSharing] = useState(false)
+  const [done, setDone] = useState<{ shared: number; total: number } | null>(null)
+  const [error, setError] = useState('')
+
+  function toggleFriend(id: string) {
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    setSelected(next)
+  }
+
+  async function handleShare() {
+    if (!studentId || selected.size === 0) return
+    setSharing(true)
+    setError('')
+    try {
+      const result = await api.shareStudyPlan(studentId, exam.id, Array.from(selected))
+      setDone({ shared: result.shared, total: result.total })
+    } catch {
+      setError('Erro ao partilhar o plano. Tenta novamente.')
+    }
+    setSharing(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-display font-bold text-lg" style={{ color: 'var(--text)' }}>Partilhar plano de estudo</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70"><X size={16} style={{ color: 'var(--text-muted)' }} /></button>
+        </div>
+
+        {done ? (
+          <div className="text-center py-4 space-y-3">
+            <Check size={28} className="mx-auto" style={{ color: '#10b981' }} />
+            <p className="font-semibold" style={{ color: 'var(--text)' }}>
+              Plano partilhado com {done.shared} colega{done.shared !== 1 ? 's' : ''}!
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              O plano aparece nos exames deles, sem atividades respondidas.
+            </p>
+            <button onClick={onClose} className="btn-primary mx-auto px-6 py-2">Fechar</button>
+          </div>
+        ) : (
+          <>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Escolhe os colegas com quem queres partilhar o plano de {exam.subject}.
+            </p>
+            {friends.length === 0 ? (
+              <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>
+                Ainda não tens amigos. Adiciona colegas em Amigos primeiro.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1.5 max-h-60 overflow-y-auto">
+                {friends.map((f) => {
+                  const isSelected = selected.has(f.id)
+                  return (
+                    <button key={f.id} onClick={() => toggleFriend(f.id)}
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all"
+                      style={{
+                        background: isSelected ? 'rgba(98,112,245,0.08)' : 'var(--surface-2)',
+                        border: `1.5px solid ${isSelected ? '#6270f5' : 'var(--border)'}`,
+                      }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                        style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}>
+                        {f.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{f.name}</p>
+                        <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{f.grade}</p>
+                      </div>
+                      {isSelected && <Check size={14} style={{ color: '#6270f5' }} />}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {error && <p className="text-xs" style={{ color: '#ef4444' }}>{error}</p>}
+
+            <div className="flex gap-2">
+              <button onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
+                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                Cancelar
+              </button>
+              <button onClick={handleShare} disabled={selected.size === 0 || sharing}
+                className="btn-primary flex-1 py-2.5 flex items-center justify-center gap-2"
+                style={{ opacity: selected.size === 0 || sharing ? 0.5 : 1 }}>
+                {sharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                Partilhar ({selected.size})
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function InfoModal({ onClose }: { onClose: () => void }) {
   return (
