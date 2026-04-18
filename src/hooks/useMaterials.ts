@@ -85,7 +85,7 @@ export function useMaterials() {
 
   const incrementUsage = useCallback(async (id: string): Promise<number | null> => {
     try {
-      const res = await fetch(`${BASE}/${encodeURIComponent(id)}/use`, { method: 'PATCH' })
+      const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, { method: 'PATCH' })
       if (!res.ok) return null
       const data = (await res.json()) as { usageCount: number }
       return data.usageCount
