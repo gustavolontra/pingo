@@ -130,7 +130,7 @@ ${subject ? `MATÉRIA: ${subject}\n` : ''}${year ? `NÍVEL: ${year}\n` : ''}${!h
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2048,
+        max_tokens: 8192,
         system: `És um tutor especializado em criar planos de estudo personalizados.
 
 Cria APENAS a estrutura do plano — temas e resumos para cada dia. NÃO geres flashcards, quiz nem exercícios.
@@ -178,7 +178,8 @@ Devolve APENAS JSON válido:
     }
 
     if (!plan || !Array.isArray(plan.dias)) {
-      return Response.json({ error: 'Formato inesperado da IA — tenta novamente' }, { status: 500, headers })
+      const detail = data.stop_reason === 'max_tokens' ? 'Resposta truncada (max_tokens)' : 'JSON inválido'
+      return Response.json({ error: 'Formato inesperado da IA — tenta novamente', detail }, { status: 500, headers })
     }
 
     const errors = validatePlano(plan.dias, daysAvailable)
