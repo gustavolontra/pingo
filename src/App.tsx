@@ -4,6 +4,8 @@ import Layout from '@/components/layout/Layout'
 import DashboardPage from '@/pages/DashboardPage'
 import StudyPage from '@/pages/StudyPage'
 import ExamSchedulePage from '@/pages/ExamSchedulePage'
+import CreatePlanPage from '@/pages/CreatePlanPage'
+import PlanViewPage from '@/pages/PlanViewPage'
 import LeaderboardPage from '@/pages/LeaderboardPage'
 import ProfilePage from '@/pages/ProfilePage'
 import BooksPage from '@/pages/BooksPage'
@@ -54,6 +56,8 @@ export default function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="study/:disciplineId" element={<StudyPage />} />
         <Route path="exames" element={<ExamSchedulePage />} />
+        <Route path="criar-plano" element={<CreatePlanPage />} />
+        <Route path="plano/:id" element={<PlanViewPage />} />
         <Route path="amigos" element={<FriendsPage />} />
         <Route path="leituras" element={<BooksPage />} />
         <Route path="feed" element={<FeedPage />} />

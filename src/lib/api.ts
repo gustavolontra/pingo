@@ -414,7 +414,19 @@ export const api = {
     }
     return res.json()
   },
-  async generateStudyPlan(data: { subject: string; year: string; examDate: string; studyNote: string; materiais: { nome: string; conteudo: string }[]; avancado?: boolean }) {
+  async generateStudyPlan(data: {
+    subject?: string
+    year?: string
+    examDate?: string
+    studyNote?: string
+    materiais?: { nome: string; conteudo: string }[]
+    avancado?: boolean
+    title?: string
+    goal?: 'estudo' | 'exame'
+    topics?: string
+    targetDate?: string
+    materials?: { title: string; content: string; type: string }[]
+  }) {
     const res = await fetch(`${BASE}/study-plan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

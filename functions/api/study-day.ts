@@ -2,22 +2,57 @@ interface Env {
   ANTHROPIC_API_KEY: string
 }
 
+interface MaterialForDay {
+  title?: string
+  nome?: string
+  content?: string
+  conteudo?: string
+  type?: string
+}
+
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
   try {
-    const { subject, year, tema, resumo, regras, materiais, avancado } = await request.json() as {
+    const body = await request.json() as {
       subject: string
       year: string
       tema: string
       resumo: string
       regras: { flashcards: number; quiz: number; lacunas?: number; classificacao?: number; transformacao?: number; identificacao?: number }
-      materiais: string
+      materiais?: string
+      allMaterials?: MaterialForDay[]
+      fontes?: number[]
       avancado: boolean
     }
+    const { subject, year, tema, resumo, regras, avancado } = body
 
     if (!env.ANTHROPIC_API_KEY) {
       return Response.json({ error: 'API key not configured' }, { status: 500, headers })
     }
+
+    const MAX_PER_MATERIAL = 2000
+    let materiaisText = ''
+    if (Array.isArray(body.allMaterials) && body.allMaterials.length > 0) {
+      const fontes = Array.isArray(body.fontes) && body.fontes.length > 0
+        ? body.fontes
+        : body.allMaterials.map((_, i) => i)
+      const selected = fontes
+        .map((i) => body.allMaterials?.[i])
+        .filter((m): m is MaterialForDay => Boolean(m))
+        .map((m) => ({
+          title: m.title ?? m.nome ?? 'Material',
+          content: (m.content ?? m.conteudo ?? '').slice(0, MAX_PER_MATERIAL),
+          type: m.type ?? 'text',
+        }))
+        .filter((m) => m.content.trim().length > 0)
+      materiaisText = selected
+        .map((m, i) => `[M${i}|${m.title}|${m.type}]\n${m.content}`)
+        .join('\n---\n')
+    } else if (typeof body.materiais === 'string') {
+      materiaisText = body.materiais
+    }
+
+    const hasMaterials = materiaisText.trim().length > 0
 
     const advancedBlock = avancado ? `
 Também gera:
@@ -98,7 +133,7 @@ Devolve APENAS JSON válido:
   "quiz": [{ "pergunta": "...", "opcoes": ["opcao1","opcao2","opcao3","opcao4"], "correta": "texto exacto da opção correcta", "explicacao": "..." }],
   "resumoActivo": { "pergunta": "...", "respostaEsperada": "..." }${advancedFormat}
 }`,
-        messages: [{ role: 'user', content: materiais ? `Material de referência:\n${materiais.slice(0, 6000)}` : `Gera conteúdo genérico para o tema "${tema}" de ${subject} ${year}.` }],
+        messages: [{ role: 'user', content: hasMaterials ? `Material de referência:\n${materiaisText.slice(0, 6000)}` : `Gera conteúdo genérico para o tema "${tema}" de ${subject} ${year}.` }],
       }),
     })
 

@@ -149,3 +149,37 @@ export interface LeaderboardEntry {
   weeklyXp: number
   rank: number
 }
+
+export type MaterialType = 'note' | 'text' | 'ai-generated'
+
+export interface Material {
+  id: string
+  title: string
+  content: string
+  type: MaterialType
+  tags: string[]
+  subject: string
+  level?: string
+  uploadedBy: string
+  uploadedAt: string
+  shared: boolean
+  usageCount: number
+}
+
+export interface MaterialRef {
+  id: string
+  title: string
+  type: MaterialType
+}
+
+export type PlanGoal = 'estudo' | 'exame'
+
+export interface Plan {
+  id: string
+  title: string
+  goal: PlanGoal
+  targetDate?: string
+  topics: string
+  materials: MaterialRef[]
+  plano?: import('@/store/useStore').PlanoEstudo
+}
