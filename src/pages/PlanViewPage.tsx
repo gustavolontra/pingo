@@ -148,23 +148,32 @@ export default function PlanViewPage() {
       </div>
 
       <div className="space-y-2">
-        {plano.dias.map((dia) => (
-          <div key={dia.dia} className="card">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded text-xs font-semibold"
-                    style={{ background: 'rgba(99,143,255,0.1)', color: '#6270f5' }}>
-                    Dia {dia.dia}
-                  </span>
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{dia.data}</span>
+        {plano.dias.map((dia) => {
+          const done = plan.diasEstudados.includes(dia.dia)
+          return (
+            <button key={dia.dia} onClick={() => navigate(`/plano/${plan.id}/dia/${dia.dia}`)}
+              className="w-full card text-left hover:opacity-90 transition-opacity">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold"
+                      style={{ background: done ? 'rgba(16,185,129,0.1)' : 'rgba(99,143,255,0.1)',
+                               color: done ? '#10b981' : '#6270f5' }}>
+                      Dia {dia.dia}{done && ' ✓'}
+                    </span>
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{dia.data}</span>
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--text)' }}>{dia.tema}</h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
                 </div>
-                <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--text)' }}>{dia.tema}</h3>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
+                <span className="text-xs px-2 py-1 rounded shrink-0"
+                  style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+                  Estudar →
+                </span>
               </div>
-            </div>
-          </div>
-        ))}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

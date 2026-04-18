@@ -6,6 +6,7 @@ import StudyPage from '@/pages/StudyPage'
 import ExamSchedulePage from '@/pages/ExamSchedulePage'
 import CreatePlanPage from '@/pages/CreatePlanPage'
 import PlanViewPage from '@/pages/PlanViewPage'
+import StudyDayPage from '@/pages/StudyDayPage'
 import LibraryPage from '@/pages/LibraryPage'
 import LeaderboardPage from '@/pages/LeaderboardPage'
 import ProfilePage from '@/pages/ProfilePage'
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="exames" element={<ExamSchedulePage />} />
         <Route path="criar-plano" element={<CreatePlanPage />} />
         <Route path="plano/:id" element={<PlanViewPage />} />
+        <Route path="plano/:id/dia/:dia" element={<StudyDayPage />} />
         <Route path="biblioteca" element={<LibraryPage />} />
         <Route path="amigos" element={<FriendsPage />} />
         <Route path="leituras" element={<BooksPage />} />
