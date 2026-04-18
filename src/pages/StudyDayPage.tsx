@@ -87,11 +87,15 @@ export default function StudyDayPage() {
         avancado: false,
       })
 
-      const updatedDias = plan.plano.dias.map((d) =>
-        d.dia === dia.dia ? { ...d, ...result } : d,
-      )
-      const updated = await api.updatePlan(plan.id, { plano: { ...plan.plano, dias: updatedDias } })
-      if (updated) setPlan(updated as StoredPlan)
+      // Merge atómico no servidor — evita que duas sessões a gerar dias
+      // diferentes em paralelo se sobrescrevam.
+      const savedDay = await api.savePlanDayContent(plan.id, dia.dia, result)
+      if (savedDay) {
+        const updatedDias = plan.plano.dias.map((d) =>
+          d.dia === dia.dia ? { ...d, ...(savedDay as Partial<DiaPlano>) } : d,
+        )
+        setPlan({ ...plan, plano: { ...plan.plano, dias: updatedDias } })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro a gerar conteúdo')
     } finally {

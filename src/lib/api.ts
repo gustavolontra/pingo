@@ -446,6 +446,19 @@ export const api = {
     if (!res.ok) return { diasEstudados: [], updatedAt: null }
     return res.json()
   },
+  async savePlanDayContent(planId: string, dia: number, content: Record<string, unknown>) {
+    const res = await fetch(`${BASE}/plan-days`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ planId, dia, content }),
+    })
+    if (res.status === 409) {
+      const body = await res.json().catch(() => null) as { dia?: Record<string, unknown> } | null
+      return body?.dia ?? null
+    }
+    if (!res.ok) return null
+    return res.json()
+  },
   async setPlanProgress(studentId: string, planId: string, diasEstudados: number[]) {
     const res = await fetch(`${BASE}/plans/progress`, {
       method: 'POST',
