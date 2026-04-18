@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, BookOpen, Calendar, Library, Search, Sparkles, Trash2, Loader2, Check, X } from 'lucide-react'
+import { ArrowLeft, BookOpen, Calendar, GraduationCap, Library, Search, Sparkles, Trash2, Loader2, Check, X } from 'lucide-react'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useMaterials, type MaterialSearchResult } from '@/hooks/useMaterials'
 import type { MaterialRef, PlanGoal } from '@/types'
@@ -18,6 +18,17 @@ function firstWordsTitle(text: string, n = 6): string {
   return base.length < text.trim().length ? `${base}...` : base
 }
 
+const LEVEL_OPTIONS = [
+  { value: '', label: 'Não especificar' },
+  { value: '1.º ciclo', label: '1.º ciclo (1º–4º)' },
+  { value: '2.º ciclo', label: '2.º ciclo (5º–6º)' },
+  { value: '3.º ciclo', label: '3.º ciclo (7º–9º)' },
+  { value: 'Secundário', label: 'Secundário (10º–12º)' },
+  { value: 'Universidade', label: 'Universidade' },
+  { value: 'Profissional', label: 'Ensino profissional' },
+  { value: 'Outro', label: 'Outro / adulto' },
+]
+
 export default function CreatePlanPage() {
   const navigate = useNavigate()
   const studentId = useStudentAuthStore((s) => s.studentId)
@@ -26,6 +37,7 @@ export default function CreatePlanPage() {
   const [step, setStep] = useState<Step>(1)
   const [goal, setGoal] = useState<PlanGoal | null>(null)
   const [whatToStudy, setWhatToStudy] = useState('')
+  const [level, setLevel] = useState('')
   const [topics, setTopics] = useState('')
   const [targetDate, setTargetDate] = useState('')
 
@@ -51,7 +63,7 @@ export default function CreatePlanPage() {
 
   async function handleSearch() {
     setSearched(true)
-    await searchMaterials(searchQuery.trim(), undefined, whatToStudy.trim() || undefined)
+    await searchMaterials(searchQuery.trim(), undefined, whatToStudy.trim() || undefined, level || undefined)
   }
 
   async function handleUseFromLibrary(entry: MaterialSearchResult) {
@@ -82,12 +94,20 @@ export default function CreatePlanPage() {
       if (pastedContent.trim()) {
         const title = firstWordsTitle(pastedContent)
         if (pastedShared) {
+          const tagRes = await fetch('/api/generate-tags', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: pastedContent, subject: whatToStudy, level }),
+          }).catch(() => null)
+          const tags: string[] = tagRes && tagRes.ok ? ((await tagRes.json()) as { tags?: string[] }).tags ?? [] : []
+
           const created = await uploadMaterial({
             title,
             content: pastedContent,
             type: 'note',
-            tags: [],
+            tags,
             subject: whatToStudy,
+            level: level || undefined,
             shared: true,
             uploadedBy: studentId ?? 'anon',
           })
@@ -111,6 +131,7 @@ export default function CreatePlanPage() {
         goal: goal as PlanGoal,
         topics,
         subject: whatToStudy,
+        year: level || undefined,
         targetDate: goal === 'exame' ? targetDate : undefined,
         materials: materialsForApi,
       })
@@ -192,6 +213,23 @@ export default function CreatePlanPage() {
               placeholder="ex: revisão de inglês, matemática frações, história de portugal..."
               className="w-full px-4 py-3 rounded-xl text-sm"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 flex items-center gap-2" style={{ color: 'var(--text)' }}>
+              <GraduationCap size={14} style={{ color: 'var(--text-muted)' }} />
+              Nível de ensino
+            </label>
+            <select value={level} onChange={(e) => setLevel(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl text-sm"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+              {LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+              Ajuda a adaptar o conteúdo e a filtrar materiais da comunidade.
+            </p>
           </div>
 
           <div>
@@ -314,9 +352,22 @@ export default function CreatePlanPage() {
                       style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate" style={{ color: 'var(--text)' }}>{r.title}</p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                          {r.subject} · {r.usageCount}× usado
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.subject}</span>
+                          {r.level && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded"
+                              style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
+                              {r.level}
+                            </span>
+                          )}
+                          {r.tags?.slice(0, 3).map((t) => (
+                            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded"
+                              style={{ background: 'rgba(99,143,255,0.1)', color: '#6270f5' }}>
+                              {t}
+                            </span>
+                          ))}
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>· {r.usageCount}× usado</span>
+                        </div>
                       </div>
                       <button onClick={() => handleUseFromLibrary(r)} disabled={added}
                         className="px-3 py-1 rounded text-xs"

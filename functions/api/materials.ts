@@ -22,6 +22,7 @@ interface IndexEntry {
   id: string
   title: string
   subject: string
+  level?: string
   tags: string[]
   usageCount: number
   uploadedBy: string
@@ -70,6 +71,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       id: material.id,
       title: material.title,
       subject: material.subject,
+      level: material.level,
       tags: material.tags,
       usageCount: material.usageCount,
       uploadedBy: material.uploadedBy,
@@ -88,12 +90,14 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
   const q = url.searchParams.get('q')?.trim().toLowerCase() ?? ''
   const tagsParam = url.searchParams.get('tags')?.trim() ?? ''
   const subject = url.searchParams.get('subject')?.trim().toLowerCase() ?? ''
+  const level = url.searchParams.get('level')?.trim().toLowerCase() ?? ''
   const wantedTags = tagsParam ? tagsParam.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean) : []
 
   const index = await readIndex(env)
   const filtered = index.filter((entry) => {
     if (q && !entry.title.toLowerCase().includes(q)) return false
     if (subject && entry.subject.toLowerCase() !== subject) return false
+    if (level && (entry.level ?? '').toLowerCase() !== level) return false
     if (wantedTags.length > 0) {
       const entryTags = entry.tags.map((t) => t.toLowerCase())
       if (!wantedTags.every((t) => entryTags.includes(t))) return false

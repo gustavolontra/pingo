@@ -5,6 +5,7 @@ export interface MaterialSearchResult {
   id: string
   title: string
   subject: string
+  level?: string
   tags: string[]
   usageCount: number
   uploadedBy: string
@@ -30,7 +31,7 @@ export function useMaterials() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const searchMaterials = useCallback(async (q?: string, tags?: string[], subject?: string) => {
+  const searchMaterials = useCallback(async (q?: string, tags?: string[], subject?: string, level?: string) => {
     setLoading(true)
     setError(null)
     try {
@@ -38,6 +39,7 @@ export function useMaterials() {
       if (q) params.set('q', q)
       if (tags && tags.length) params.set('tags', tags.join(','))
       if (subject) params.set('subject', subject)
+      if (level) params.set('level', level)
       const res = await fetch(`${BASE}?${params.toString()}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = (await res.json()) as MaterialSearchResult[]
