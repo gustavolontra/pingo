@@ -18,15 +18,59 @@ function firstWordsTitle(text: string, n = 6): string {
   return base.length < text.trim().length ? `${base}...` : base
 }
 
-const LEVEL_OPTIONS = [
-  { value: '', label: 'Não especificar' },
-  { value: '1.º ciclo', label: '1.º ciclo (1º–4º)' },
-  { value: '2.º ciclo', label: '2.º ciclo (5º–6º)' },
-  { value: '3.º ciclo', label: '3.º ciclo (7º–9º)' },
-  { value: 'Secundário', label: 'Secundário (10º–12º)' },
-  { value: 'Universidade', label: 'Universidade' },
-  { value: 'Profissional', label: 'Ensino profissional' },
-  { value: 'Outro', label: 'Outro / adulto' },
+interface LevelGroup {
+  label: string
+  options: { value: string; label: string }[]
+}
+
+const LEVEL_GROUPS: LevelGroup[] = [
+  {
+    label: '1.º ciclo',
+    options: [
+      { value: '1.º ano', label: '1.º ano' },
+      { value: '2.º ano', label: '2.º ano' },
+      { value: '3.º ano', label: '3.º ano' },
+      { value: '4.º ano', label: '4.º ano' },
+    ],
+  },
+  {
+    label: '2.º ciclo',
+    options: [
+      { value: '5.º ano', label: '5.º ano' },
+      { value: '6.º ano', label: '6.º ano' },
+    ],
+  },
+  {
+    label: '3.º ciclo',
+    options: [
+      { value: '7.º ano', label: '7.º ano' },
+      { value: '8.º ano', label: '8.º ano' },
+      { value: '9.º ano', label: '9.º ano' },
+    ],
+  },
+  {
+    label: 'Secundário',
+    options: [
+      { value: '10.º ano', label: '10.º ano' },
+      { value: '11.º ano', label: '11.º ano' },
+      { value: '12.º ano', label: '12.º ano' },
+    ],
+  },
+  {
+    label: 'Superior',
+    options: [
+      { value: 'Universidade', label: 'Universidade' },
+      { value: 'Pós-graduação', label: 'Pós-graduação' },
+    ],
+  },
+  {
+    label: 'Outros',
+    options: [
+      { value: 'Profissional', label: 'Ensino profissional' },
+      { value: 'Adulto', label: 'Adulto / autodidata' },
+      { value: 'Outro', label: 'Outro' },
+    ],
+  },
 ]
 
 export default function CreatePlanPage() {
@@ -223,8 +267,13 @@ export default function CreatePlanPage() {
             <select value={level} onChange={(e) => setLevel(e.target.value)}
               className="w-full px-4 py-3 rounded-xl text-sm"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-              {LEVEL_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option value="">Não especificar</option>
+              {LEVEL_GROUPS.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
