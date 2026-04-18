@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { useStore, type DiaPlano } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
-import { useDisciplines } from '@/hooks/useDisciplines'
 import { formatMinutes } from '@/lib/utils'
 import { Flame, Clock, Zap, BookOpen, Calendar, UserPlus, Copy, Check, Sparkles } from 'lucide-react'
 import SubjectIcon from '@/components/ui/SubjectIcon'
 import { useNavigate } from 'react-router-dom'
 import StatCard from '@/components/ui/StatCard'
 import WeeklyChart from '@/components/dashboard/WeeklyChart'
-import DisciplineCard from '@/components/dashboard/DisciplineCard'
 import TodayGoal from '@/components/dashboard/TodayGoal'
 import StreakCalendar from '@/components/gamification/StreakCalendar'
 
@@ -45,7 +43,6 @@ export default function DashboardPage() {
   const displayName = studentName || user.name
   const me = students.find((s) => s.id === studentId)
   const inviteCode = me?.codigoConvite ?? ''
-  const disciplines = useDisciplines()
   const thisWeekXP = dailyStats.slice(-7).reduce((sum, s) => sum + s.xpEarned, 0)
   const thisWeekMin = dailyStats.slice(-7).reduce((sum, s) => sum + s.minutesStudied, 0)
 
@@ -84,7 +81,6 @@ export default function DashboardPage() {
         {/* Left column */}
         <div className="md:col-span-2 space-y-5">
           <WeeklyChart stats={dailyStats} />
-          {disciplines.map((d) => <DisciplineCard key={d.id} discipline={d} />)}
         </div>
 
         {/* Right column */}

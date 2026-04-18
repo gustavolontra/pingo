@@ -391,6 +391,52 @@ export const api = {
     return res.json()
   },
 
+  // ── Plans (v2: persistidos globalmente) ───────────────────────────────────
+  async createPlan(data: Record<string, unknown>) {
+    const res = await fetch(`${BASE}/plans`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new Error(err.error ?? `HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+  async getPlansByOwner(ownerId: string) {
+    const res = await fetch(`${BASE}/plans?ownerId=${encodeURIComponent(ownerId)}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async searchSharedPlans(opts: { q?: string; subject?: string; level?: string; goal?: string } = {}) {
+    const params = new URLSearchParams({ shared: '1' })
+    if (opts.q) params.set('q', opts.q)
+    if (opts.subject) params.set('subject', opts.subject)
+    if (opts.level) params.set('level', opts.level)
+    if (opts.goal) params.set('goal', opts.goal)
+    const res = await fetch(`${BASE}/plans?${params.toString()}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async getPlan(id: string) {
+    const res = await fetch(`${BASE}/plans/${encodeURIComponent(id)}`)
+    if (!res.ok) return null
+    return res.json()
+  },
+  async updatePlan(id: string, patch: Record<string, unknown>) {
+    const res = await fetch(`${BASE}/plans?id=${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    })
+    if (!res.ok) return null
+    return res.json()
+  },
+  async deletePlan(id: string) {
+    await fetch(`${BASE}/plans?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+  },
+
   // ── Study Plan ─────────────────────────────────────────────────────────────
   async shareStudyPlan(fromStudentId: string, examId: string, friendIds: string[]) {
     const res = await fetch(`${BASE}/share-plan`, {

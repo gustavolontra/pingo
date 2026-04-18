@@ -18,40 +18,21 @@ interface PlanoDia {
   fontes?: number[]
 }
 
-function getRegras(days: number, totalChars: number, avancado: boolean) {
-  const density = totalChars / Math.max(days, 1)
-  const dense = density > 3000
-  const base = (() => {
-    if (days <= 2) return { flashcards: 8, quiz: 4, intensidade: 'Revisão intensiva', tempoEstimado: 45 }
-    if (days <= 5) return { flashcards: dense ? 8 : 6, quiz: dense ? 4 : 3, intensidade: 'Consolidação', tempoEstimado: dense ? 40 : 30 }
-    if (days <= 10) return { flashcards: dense ? 6 : 5, quiz: 3, intensidade: 'Aprendizagem gradual', tempoEstimado: dense ? 25 : 20 }
-    return { flashcards: dense ? 5 : 4, quiz: 2, intensidade: 'Introdução suave', tempoEstimado: dense ? 20 : 15 }
-  })()
+function getRegras(avancado: boolean) {
+  const base = { flashcards: 5, quiz: 3, intensidade: 'Ritmo linear', tempoEstimado: 20 }
   if (avancado) {
-    return { ...base, flashcards: Math.ceil(base.flashcards / 2), tempoEstimado: base.tempoEstimado + 20, lacunas: 3, classificacao: 2, transformacao: 2, identificacao: 1 }
+    return { ...base, flashcards: 3, tempoEstimado: 35, lacunas: 3, classificacao: 2, transformacao: 2, identificacao: 1 }
   }
   return base
 }
 
-function validatePlano(dias: PlanoDia[], daysAvailable: number): string[] {
+function validatePlano(dias: PlanoDia[], expectedDays: number): string[] {
   const errors: string[] = []
   if (!Array.isArray(dias) || dias.length < 1) errors.push('Plano vazio')
-  if (dias.length > daysAvailable) errors.push(`${dias.length} dias gerados para ${daysAvailable} disponíveis`)
+  if (dias.length > expectedDays) errors.push(`${dias.length} dias gerados para ${expectedDays} esperados`)
   const lastTema = dias.at(-1)?.tema?.toLowerCase() ?? ''
   if (dias.length > 1 && !lastTema.includes('revis')) errors.push('Último dia não é revisão')
   return errors
-}
-
-function applyRevisaoEspacada(dias: PlanoDia[]): PlanoDia[] {
-  return dias.map((dia, i) => {
-    if (i > 0 && i % 3 === 0 && i < dias.length - 1) {
-      const anterior = dias[i - 1]?.tema
-      if (anterior) {
-        return { ...dia, resumo: `[Revisão rápida: ${anterior}] — ${dia.resumo}` }
-      }
-    }
-    return dia
-  })
 }
 
 // POST: generate plan STRUCTURE only (themes + summaries, no exercises)
@@ -103,12 +84,28 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     }
 
     const isAdvanced = body.avancado === true
-    const totalChars = normalizedMaterials.reduce((sum, m) => sum + m.content.length, 0)
-    const regras = getRegras(daysAvailable, totalChars, isAdvanced)
+    const regras = getRegras(isAdvanced)
 
+    // Número de dias: exame usa daysAvailable; estudo contínuo usa heurística simples por tópicos.
+    // Reservamos sempre o último dia para revisão geral.
+    const topicCount = Math.max(1, (topics ?? '').split(/[,\n]/).map((t) => t.trim()).filter(Boolean).length)
+    const plannedDays = goal === 'exame'
+      ? daysAvailable
+      : Math.min(14, Math.max(5, topicCount + 1))
+
+    // Divide cada material em plannedDays-1 fatias lineares (último dia = revisão) e constrói o bloco de contexto.
+    const contentDays = Math.max(1, plannedDays - 1)
     const MAX_PER_MATERIAL = 1500
     const materialsBlock = normalizedMaterials
-      .map((m, i) => `[M${i}|${m.title}|${m.type}]\n${m.content.slice(0, MAX_PER_MATERIAL)}`)
+      .map((m, i) => {
+        const sliceSize = Math.ceil(m.content.length / contentDays)
+        const slices = Array.from({ length: contentDays }, (_, d) =>
+          m.content.slice(d * sliceSize, (d + 1) * sliceSize).slice(0, MAX_PER_MATERIAL),
+        ).filter((s) => s.trim().length > 0)
+        const header = `[M${i}|${m.title}|${m.type}] (dividido em ${slices.length} partes)`
+        const body = slices.map((s, d) => `— Parte ${d + 1}/${slices.length}:\n${s}`).join('\n')
+        return `${header}\n${body}`
+      })
       .join('\n---\n')
 
     const hasOwnMaterial = normalizedMaterials.length > 0
@@ -137,11 +134,11 @@ Cria APENAS a estrutura do plano — temas e resumos para cada dia. NÃO geres f
 
 REGRAS:
 - Dia 1 é HOJE (${todayStr})
-- ${goal === 'exame' ? `O plano termina um dia antes do exame (total: ${daysAvailable} dias)` : `Plano contínuo — usa entre 5 e 10 dias consoante a quantidade de tópicos`}
-- Distribui o conteúdo de forma equilibrada
-- O último dia é SEMPRE revisão geral (tema deve incluir a palavra "revisão")
-- Cada dia deve indicar em "fontes" os ÍNDICES dos materiais usados (0-based, array vazio se não usou nenhum)
-- Se houver materiais, baseia-te neles antes de improvisar
+- Total de dias: EXACTAMENTE ${plannedDays} (último = revisão)
+- **DIVISÃO LINEAR**: distribui os tópicos pela ordem que aparecem — dia 1 cobre o início, dia 2 o seguinte, e assim sucessivamente. Não saltes nem reordenes.
+- Se houver materiais e estiverem pré-divididos em "Parte 1/N", "Parte 2/N"..., alinha cada dia com a parte correspondente.
+- O último dia é SEMPRE revisão geral (tema deve incluir a palavra "revisão") e resume/consolida os anteriores.
+- Cada dia deve indicar em "fontes" os ÍNDICES dos materiais usados (0-based, array vazio se não usou nenhum).
 - Escreve SEMPRE em Português de Portugal (PT-PT), NUNCA em Português do Brasil
 - Usa terminologia PT-PT: "verbo principal" (não "verbo de ação"), "grave/aguda/esdrúxula" (não "paroxítona/oxítona/proparoxítona"), "complemento direto/indireto" (não "objeto direto/indireto"), "conjuntivo" (não "subjuntivo")
 - Tratamento "tu/vós" (não "você"), vocabulário de Portugal (autocarro, telemóvel, etc.)
@@ -182,12 +179,10 @@ Devolve APENAS JSON válido:
       return Response.json({ error: 'Formato inesperado da IA — tenta novamente', detail }, { status: 500, headers })
     }
 
-    const errors = validatePlano(plan.dias, daysAvailable)
+    const errors = validatePlano(plan.dias, plannedDays)
     if (errors.length > 0) {
       return Response.json({ error: 'Plano inválido', detail: errors.join('; ') }, { status: 502, headers })
     }
-
-    plan.dias = applyRevisaoEspacada(plan.dias)
 
     if (!plan.tempoEstimadoPorDia) plan.tempoEstimadoPorDia = regras.tempoEstimado
     if (!plan.regras) plan.regras = regras as unknown as Record<string, number>

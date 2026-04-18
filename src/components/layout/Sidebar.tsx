@@ -1,15 +1,12 @@
 import { NavLink, useNavigate } from "react-router-dom"
-import { LayoutDashboard, Calendar, Trophy, LogOut, BookMarked, Rss, Users } from 'lucide-react'
-import SubjectIcon from '@/components/ui/SubjectIcon'
+import { LayoutDashboard, Trophy, LogOut, BookMarked, Rss, Users, Library, Plus } from 'lucide-react'
 import { useStore } from '@/store/useStore'
-import { useDisciplines } from '@/hooks/useDisciplines'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import { cn } from '@/lib/utils'
 
 export default function Sidebar() {
   const { user, getFriends, getIgnoredSuggestions, lastSeenFeedAt } = useStore()
-  const disciplines = useDisciplines()
   const { studentName, studentId, logout } = useStudentAuthStore()
   const students = useAdminStore((s) => s.students)
   const feedItems = useAdminStore((s) => s.feedItems)
@@ -42,42 +39,16 @@ export default function Sidebar() {
         <h1 className="text-xl font-display font-extrabold tracking-tight" style={{ color: 'var(--text)' }}>
           pingo<span style={{ color: '#6270f5' }}>.team</span><span style={{ fontSize: '10px', fontWeight: 500, color: '#9ca3af', letterSpacing: '0.05em', marginLeft: '4px', verticalAlign: 'middle' }}>beta</span>
         </h1>
-        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-          {me?.grade?.startsWith('5') || me?.grade?.startsWith('6') ? '2.º Ciclo' : '3.º Ciclo'} · Ensino Básico
-        </p>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Estuda o que quiseres, à tua maneira</p>
       </div>
 
       <nav className="flex flex-col gap-0.5 flex-1">
-        {/* Dashboard */}
         <SideNavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
 
-        {/* Agenda */}
-        <SectionLabel>Agenda</SectionLabel>
-        <SideNavItem to="/exames" icon={Calendar} label="Exames" />
+        <SectionLabel>Estudo</SectionLabel>
+        <SideNavItem to="/criar-plano" icon={Plus} label="Criar plano" />
+        <SideNavItem to="/biblioteca" icon={Library} label="Biblioteca" />
 
-        {/* Disciplinas */}
-        <SectionLabel>Disciplinas</SectionLabel>
-        {disciplines.map((d) => (
-          <NavLink
-            key={d.id}
-            to={`/study/${d.id}`}
-            className={({ isActive }) => cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-              isActive ? '' : 'hover:bg-slate-100'
-            )}
-            style={({ isActive }) => isActive ? { background: `${d.color}15`, color: d.color } : { color: 'var(--text-muted)' }}
-          >
-            <SubjectIcon icon={d.icon} size={16} />
-            <span className="flex-1 truncate">{d.name}</span>
-            <div className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: d.completedLessons === d.totalLessons && d.totalLessons > 0 ? '#10b981' : d.color }} />
-          </NavLink>
-        ))}
-        {disciplines.length === 0 && (
-          <p className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>Sem disciplinas ainda</p>
-        )}
-
-        {/* Comunidade */}
         <SectionLabel>Comunidade</SectionLabel>
         <SideNavItem to="/leituras" icon={BookMarked} label="Leituras" />
         <SideNavItem to="/amigos" icon={Users} label="Amigos" badge={suggestionCount > 0 ? suggestionCount : undefined} />

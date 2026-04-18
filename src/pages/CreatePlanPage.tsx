@@ -180,16 +180,26 @@ export default function CreatePlanPage() {
         materials: materialsForApi,
       })
 
-      const planId = `plan-${Date.now()}`
       const storedMaterials = [
         ...(pastedContent.trim() ? [{ id: `pasted-${Date.now()}`, title: firstWordsTitle(pastedContent), type: 'note' as const }] : []),
         ...libraryMaterials.map((m) => ({ id: m.id, title: m.title, type: m.type })),
       ]
-      sessionStorage.setItem(
-        `plan:${planId}`,
-        JSON.stringify({ id: planId, title: whatToStudy, goal, topics, targetDate, materials: storedMaterials, plano: result }),
-      )
-      navigate(`/plano/${planId}`)
+
+      // Persiste o plano no servidor (substitui o antigo sessionStorage).
+      const created = await api.createPlan({
+        ownerId: studentId ?? 'anon',
+        title: whatToStudy,
+        goal,
+        topics,
+        subject: whatToStudy,
+        level: level || undefined,
+        targetDate: goal === 'exame' ? targetDate : undefined,
+        materials: storedMaterials,
+        plano: result,
+        shared: false,
+      })
+
+      navigate(`/plano/${created.id}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro a gerar plano')
     } finally {
