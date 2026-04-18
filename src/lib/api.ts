@@ -436,6 +436,25 @@ export const api = {
   async deletePlan(id: string) {
     await fetch(`${BASE}/plans?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
   },
+  async getPlanProgressAll(studentId: string): Promise<Record<string, { diasEstudados: number[]; updatedAt: string }>> {
+    const res = await fetch(`${BASE}/plans/progress?studentId=${encodeURIComponent(studentId)}`)
+    if (!res.ok) return {}
+    return res.json()
+  },
+  async getPlanProgress(studentId: string, planId: string): Promise<{ diasEstudados: number[]; updatedAt: string | null }> {
+    const res = await fetch(`${BASE}/plans/progress?studentId=${encodeURIComponent(studentId)}&planId=${encodeURIComponent(planId)}`)
+    if (!res.ok) return { diasEstudados: [], updatedAt: null }
+    return res.json()
+  },
+  async setPlanProgress(studentId: string, planId: string, diasEstudados: number[]) {
+    const res = await fetch(`${BASE}/plans/progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, planId, diasEstudados }),
+    })
+    if (!res.ok) return null
+    return res.json()
+  },
 
   // ── Study Plan ─────────────────────────────────────────────────────────────
   async shareStudyPlan(fromStudentId: string, examId: string, friendIds: string[]) {

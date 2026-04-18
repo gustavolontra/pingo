@@ -33,7 +33,6 @@ interface StoredPlan {
     regras?: Record<string, number>
     [k: string]: unknown
   }
-  diasEstudados: number[]
 }
 
 export default function StudyDayPage() {
@@ -42,21 +41,34 @@ export default function StudyDayPage() {
   const studentId = useStudentAuthStore((s) => s.studentId)
 
   const [plan, setPlan] = useState<StoredPlan | null>(null)
+  const [progress, setProgress] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
+
+  // Respostas do quiz — lifted state para saber quando o dia pode ser concluído
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({})
 
   const diaNum = useMemo(() => parseInt(diaParam ?? '1', 10), [diaParam])
   const dia = plan?.plano.dias.find((d) => d.dia === diaNum) ?? null
 
   useEffect(() => {
-    if (!id) return
+    if (!id || !studentId) return
     setLoading(true)
-    api.getPlan(id).then((p: StoredPlan | null) => {
+    Promise.all([
+      api.getPlan(id),
+      api.getPlanProgress(studentId, id),
+    ]).then(([p, prog]: [StoredPlan | null, { diasEstudados: number[] }]) => {
       setPlan(p)
+      setProgress(prog.diasEstudados ?? [])
       setLoading(false)
     })
-  }, [id])
+  }, [id, studentId])
+
+  // Reset respostas ao mudar de dia
+  useEffect(() => {
+    setQuizAnswers({})
+  }, [diaNum])
 
   const needsContent = dia != null && (!dia.flashcards || dia.flashcards.length === 0) && (!dia.quiz || dia.quiz.length === 0)
 
@@ -94,11 +106,11 @@ export default function StudyDayPage() {
   }, [plan, dia, needsContent, generating, generateContent])
 
   async function markDone() {
-    if (!plan || !dia) return
-    const already = plan.diasEstudados.includes(dia.dia)
-    const newList = already ? plan.diasEstudados : [...plan.diasEstudados, dia.dia]
-    const updated = await api.updatePlan(plan.id, { diasEstudados: newList })
-    if (updated) setPlan(updated as StoredPlan)
+    if (!plan || !dia || !studentId) return
+    const already = progress.includes(dia.dia)
+    const newList = already ? progress : [...progress, dia.dia]
+    await api.setPlanProgress(studentId, plan.id, newList)
+    setProgress(newList)
     navigate(`/plano/${plan.id}`)
   }
 
@@ -119,8 +131,11 @@ export default function StudyDayPage() {
     )
   }
 
-  const isDone = plan.diasEstudados.includes(dia.dia)
-  const isOwner = plan.ownerId === studentId
+  const isDone = progress.includes(dia.dia)
+  const totalQuiz = dia.quiz?.length ?? 0
+  const answeredQuiz = Object.keys(quizAnswers).length
+  const allAnswered = totalQuiz === 0 || answeredQuiz >= totalQuiz
+  const canConclude = !generating && !needsContent && allAnswered
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-6">
@@ -131,7 +146,7 @@ export default function StudyDayPage() {
         </button>
         <div className="flex-1 min-w-0">
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            {plan.title} · Dia {dia.dia} {isOwner && plan.shared && '· (partilhado)'}
+            {plan.title} · Dia {dia.dia}{plan.shared && ' · partilhado'}
           </p>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text)' }}>{dia.tema}</h1>
         </div>
@@ -161,12 +176,27 @@ export default function StudyDayPage() {
       {!generating && !needsContent && (
         <div className="space-y-6">
           {dia.flashcards && dia.flashcards.length > 0 && <FlashcardsSection cards={dia.flashcards} />}
-          {dia.quiz && dia.quiz.length > 0 && <QuizSection questions={dia.quiz} />}
+          {dia.quiz && dia.quiz.length > 0 && (
+            <QuizSection questions={dia.quiz}
+              answers={quizAnswers}
+              onAnswer={(i, choice) => setQuizAnswers((prev) => ({ ...prev, [i]: choice }))} />
+          )}
           {dia.resumoActivo && <ResumoActivoSection ra={dia.resumoActivo} />}
 
-          <button onClick={markDone}
-            className="btn-primary w-full flex items-center justify-center gap-2 py-3">
-            <Check size={18} /> {isDone ? 'Já concluído — atualizar' : 'Concluir dia'}
+          {!allAnswered && totalQuiz > 0 && (
+            <div className="p-3 rounded-lg text-sm text-center"
+              style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', color: '#b45309' }}>
+              Responde todas as {totalQuiz} perguntas do quiz para poder concluir o dia.
+              <span className="block text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                {answeredQuiz} / {totalQuiz} respondidas
+              </span>
+            </div>
+          )}
+
+          <button onClick={markDone} disabled={!canConclude}
+            className="btn-primary w-full flex items-center justify-center gap-2 py-3"
+            style={{ opacity: canConclude ? 1 : 0.5, cursor: canConclude ? 'pointer' : 'not-allowed' }}>
+            <Check size={18} /> {isDone ? 'Já concluído — voltar' : 'Concluir dia'}
           </button>
         </div>
       )}
@@ -224,25 +254,43 @@ function FlashcardsSection({ cards }: { cards: Flashcard[] }) {
 
 // ── Quiz ────────────────────────────────────────────────────────────────────
 
-function QuizSection({ questions }: { questions: QuizQ[] }) {
+function QuizSection({
+  questions, answers, onAnswer,
+}: {
+  questions: QuizQ[]
+  answers: Record<number, number>
+  onAnswer: (index: number, choice: number) => void
+}) {
+  const total = questions.length
+  const done = Object.keys(answers).length
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Sparkles size={16} style={{ color: '#a78bfa' }} />
         <h3 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
-          Quiz <span className="font-normal" style={{ color: 'var(--text-muted)' }}>({questions.length} perguntas)</span>
+          Quiz <span className="font-normal" style={{ color: 'var(--text-muted)' }}>({done}/{total})</span>
         </h3>
       </div>
       <div className="space-y-4">
-        {questions.map((q, i) => <QuizQuestion key={i} num={i + 1} q={q} />)}
+        {questions.map((q, i) => (
+          <QuizQuestion key={i} num={i + 1} q={q}
+            selected={answers[i]}
+            onSelect={(choice) => onAnswer(i, choice)} />
+        ))}
       </div>
     </div>
   )
 }
 
-function QuizQuestion({ num, q }: { num: number; q: QuizQ }) {
-  const [selected, setSelected] = useState<number | null>(null)
-  const answered = selected !== null
+function QuizQuestion({
+  num, q, selected, onSelect,
+}: {
+  num: number
+  q: QuizQ
+  selected: number | undefined
+  onSelect: (choice: number) => void
+}) {
+  const answered = selected !== undefined
   const isCorrect = selected === q.correta
 
   return (
@@ -251,7 +299,7 @@ function QuizQuestion({ num, q }: { num: number; q: QuizQ }) {
       <div className="space-y-2">
         {q.opcoes.map((opt, i) => (
           <button key={i}
-            onClick={() => { if (!answered) setSelected(i) }}
+            onClick={() => { if (!answered) onSelect(i) }}
             disabled={answered}
             className={cn(
               'w-full text-left px-3 py-2 rounded-lg text-sm transition-all',

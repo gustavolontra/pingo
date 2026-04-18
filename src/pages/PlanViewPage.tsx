@@ -32,17 +32,22 @@ export default function PlanViewPage() {
   const studentId = useStudentAuthStore((s) => s.studentId)
 
   const [plan, setPlan] = useState<StoredPlan | null>(null)
+  const [progress, setProgress] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (!id) return
+    if (!id || !studentId) return
     setLoading(true)
-    api.getPlan(id).then((p: StoredPlan | null) => {
+    Promise.all([
+      api.getPlan(id),
+      api.getPlanProgress(studentId, id),
+    ]).then(([p, prog]: [StoredPlan | null, { diasEstudados: number[] }]) => {
       setPlan(p)
+      setProgress(prog.diasEstudados ?? [])
       setLoading(false)
     })
-  }, [id])
+  }, [id, studentId])
 
   async function toggleShare() {
     if (!plan) return
@@ -149,7 +154,7 @@ export default function PlanViewPage() {
 
       <div className="space-y-2">
         {plano.dias.map((dia) => {
-          const done = plan.diasEstudados.includes(dia.dia)
+          const done = progress.includes(dia.dia)
           return (
             <button key={dia.dia} onClick={() => navigate(`/plano/${plan.id}/dia/${dia.dia}`)}
               className="w-full card text-left hover:opacity-90 transition-opacity">

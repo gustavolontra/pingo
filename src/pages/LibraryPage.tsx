@@ -14,7 +14,6 @@ interface MyPlan {
   level?: string
   targetDate?: string
   plano: { dias: unknown[]; resumo?: string; tempoEstimadoPorDia?: number }
-  diasEstudados: number[]
   shared: boolean
   createdAt: string
 }
@@ -37,6 +36,7 @@ export default function LibraryPage() {
 
   const [tab, setTab] = useState<Tab>('meus')
   const [myPlans, setMyPlans] = useState<MyPlan[]>([])
+  const [myProgress, setMyProgress] = useState<Record<string, { diasEstudados: number[] }>>({})
   const [sharedPlans, setSharedPlans] = useState<SharedPlanEntry[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -47,8 +47,12 @@ export default function LibraryPage() {
   const loadMine = useCallback(async () => {
     if (!studentId) return
     setLoading(true)
-    const plans = await api.getPlansByOwner(studentId)
+    const [plans, progress] = await Promise.all([
+      api.getPlansByOwner(studentId),
+      api.getPlanProgressAll(studentId),
+    ])
     setMyPlans(plans as MyPlan[])
+    setMyProgress(progress)
     setLoading(false)
   }, [studentId])
 
@@ -191,7 +195,7 @@ export default function LibraryPage() {
                       </span>
                     )}
                     <span>{plan.plano.dias.length} dias</span>
-                    <span>· {plan.diasEstudados.length}/{plan.plano.dias.length} feitos</span>
+                    <span>· {(myProgress[plan.id]?.diasEstudados ?? []).length}/{plan.plano.dias.length} feitos</span>
                   </div>
                 </div>
                 {plan.shared && (
