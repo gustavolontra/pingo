@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, Check, Clock, FileText, Loader2, Share2, Sparkles, Tag, Trash2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Check, Clock, FileText, Loader2, Pencil, Share2, Sparkles, Tag, Trash2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
@@ -34,6 +34,12 @@ function splitIntoSentences(text: string): string[] {
   return parts
 }
 
+function formatPtDate(d: Date): string {
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${day}/${month}/${d.getFullYear()}`
+}
+
 function parseTopics(raw: string): string[] {
   if (!raw) return []
   const lines = raw
@@ -54,6 +60,11 @@ export default function PlanViewPage() {
   const [progress, setProgress] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+
+  // Edição da data de prova
+  const [editDateOpen, setEditDateOpen] = useState(false)
+  const [newDate, setNewDate] = useState('')
+  const [dateError, setDateError] = useState('')
 
   useEffect(() => {
     if (!id || !studentId) return
@@ -82,6 +93,56 @@ export default function PlanViewPage() {
     setBusy(true)
     await api.deletePlan(plan.id)
     navigate('/biblioteca')
+  }
+
+  function openEditDate() {
+    if (!plan) return
+    // Pre-preencher com a data actual se existir, senão com hoje.
+    const base = plan.targetDate ? new Date(plan.targetDate) : new Date()
+    setNewDate(base.toISOString().slice(0, 10))
+    setDateError('')
+    setEditDateOpen(true)
+  }
+
+  async function saveNewDate() {
+    if (!plan || !newDate) return
+    const target = new Date(newDate)
+    target.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (target.getTime() <= today.getTime()) {
+      setDateError('A data da prova tem de ser depois de hoje.')
+      return
+    }
+
+    setBusy(true)
+    // Recompõe as datas de cada dia a partir de hoje (um dia por dia plano),
+    // mantendo tema e resumo. O último dia fica em targetDate - 1, excepto
+    // se o plano for mais comprido que o intervalo disponível — aí mantém
+    // o número de dias mas eles podem cair a partir de targetDate (o aluno
+    // pode regerar o plano se precisar de ajustar a densidade).
+    const totalDays = plan.plano.dias.length
+    const updatedDias = plan.plano.dias.map((d, i) => {
+      const data = new Date(today)
+      data.setDate(today.getDate() + i)
+      return { ...d, data: formatPtDate(data) }
+    })
+
+    const updated = await api.updatePlan(plan.id, {
+      targetDate: target.toISOString(),
+      plano: { ...plan.plano, dias: updatedDias },
+    })
+    if (updated) setPlan(updated as StoredPlan)
+    setBusy(false)
+    setEditDateOpen(false)
+
+    // Avisa se o plano extravasa a nova data.
+    const lastDay = new Date(today)
+    lastDay.setDate(today.getDate() + totalDays - 1)
+    if (lastDay > target) {
+      setDateError(`Atenção: o plano tem ${totalDays} dias mas a prova é em ${Math.ceil((target.getTime() - today.getTime()) / 86400000) + 1} dias. O último dia vai passar a data da prova.`)
+      setTimeout(() => setDateError(''), 6000)
+    }
   }
 
   if (loading) {
@@ -131,11 +192,16 @@ export default function PlanViewPage() {
               </span>
             )}
             {targetDate && (
-              <span className="flex items-center gap-1 px-2 py-1 rounded"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+              <button onClick={isOwner && goal === 'exame' ? openEditDate : undefined}
+                disabled={!(isOwner && goal === 'exame')}
+                className="flex items-center gap-1 px-2 py-1 rounded transition-all"
+                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)',
+                         cursor: isOwner && goal === 'exame' ? 'pointer' : 'default' }}
+                title={isOwner && goal === 'exame' ? 'Editar data da prova' : undefined}>
                 <Calendar size={11} />
                 {new Date(targetDate).toLocaleDateString('pt-PT')}
-              </span>
+                {isOwner && goal === 'exame' && <Pencil size={10} className="ml-1 opacity-60" />}
+              </button>
             )}
             {plano.tempoEstimadoPorDia && (
               <span className="flex items-center gap-1 px-2 py-1 rounded"
@@ -274,6 +340,54 @@ export default function PlanViewPage() {
           )
         })}
       </div>
+
+      {/* Modal: editar data da prova */}
+      {editDateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => setEditDateOpen(false)}>
+          <div className="w-full max-w-sm rounded-xl p-5"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                <Calendar size={16} style={{ color: '#a78bfa' }} />
+                Editar data da prova
+              </h3>
+              <button onClick={() => setEditDateOpen(false)} className="p-1 rounded">
+                <X size={16} style={{ color: 'var(--text-muted)' }} />
+              </button>
+            </div>
+            <label className="text-xs font-medium mb-2 block" style={{ color: 'var(--text-muted)' }}>
+              Nova data da prova
+            </label>
+            <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)}
+              min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+              className="w-full px-3 py-2 rounded-lg text-sm"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+              Os dias do plano vão ser re-datados a começar hoje. O conteúdo (tema, resumo, flashcards, quiz) mantém-se.
+            </p>
+            {dateError && (
+              <p className="text-xs mt-3 p-2 rounded" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
+                {dateError}
+              </p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => setEditDateOpen(false)}
+                className="flex-1 py-2 rounded-lg text-sm"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                Cancelar
+              </button>
+              <button onClick={saveNewDate} disabled={busy || !newDate}
+                className="flex-1 py-2 rounded-lg text-sm font-medium"
+                style={{ background: '#a78bfa', color: 'white', opacity: (busy || !newDate) ? 0.5 : 1 }}>
+                {busy ? 'A guardar...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
