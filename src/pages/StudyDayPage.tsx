@@ -160,15 +160,7 @@ export default function StudyDayPage() {
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{dia.resumo}</p>
       </div>
 
-      {generating && (
-        <div className="card text-center py-10">
-          <Sparkles size={28} className="mx-auto mb-3 animate-pulse" style={{ color: '#6270f5' }} />
-          <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>A gerar conteúdo do dia...</p>
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            Flashcards, quiz e pergunta de revisão. Pode demorar 10-20s.
-          </p>
-        </div>
-      )}
+      {generating && <GeneratingContent />}
 
       {error && (
         <div className="p-3 rounded-lg text-sm mb-4" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444' }}>
@@ -204,6 +196,90 @@ export default function StudyDayPage() {
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Loading animado ─────────────────────────────────────────────────────────
+
+const GEN_MESSAGES = [
+  { icon: '📖', text: 'A ler o tema e contexto...' },
+  { icon: '🧠', text: 'A preparar flashcards...' },
+  { icon: '❓', text: 'A formular perguntas de quiz...' },
+  { icon: '✨', text: 'A afinar as respostas e explicações...' },
+  { icon: '⏳', text: 'Quase lá...' },
+]
+
+function GeneratingContent() {
+  const [stepIndex, setStepIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStepIndex((i) => Math.min(i + 1, GEN_MESSAGES.length - 1))
+    }, 3500)
+    return () => clearInterval(interval)
+  }, [])
+
+  const current = GEN_MESSAGES[stepIndex]
+
+  return (
+    <div className="card overflow-hidden relative">
+      <div className="py-10 text-center">
+        {/* Ícone animado com gradiente pulsante */}
+        <div className="relative mx-auto mb-4 w-16 h-16 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full animate-ping"
+            style={{ background: 'rgba(99,143,255,0.15)' }} />
+          <div className="absolute inset-1 rounded-full"
+            style={{ background: 'linear-gradient(135deg, rgba(99,143,255,0.25), rgba(167,139,250,0.25))' }} />
+          <div className="relative text-3xl animate-bounce" style={{ animationDuration: '1.6s' }}>
+            {current.icon}
+          </div>
+        </div>
+
+        {/* Mensagem actual com fade */}
+        <p key={stepIndex} className="text-sm font-medium animate-fade-in"
+          style={{ color: 'var(--text)' }}>
+          {current.text}
+        </p>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+          Este processo pode demorar 10–20 segundos.
+        </p>
+
+        {/* Pontos que pulsam */}
+        <div className="flex items-center justify-center gap-1.5 mt-4">
+          {GEN_MESSAGES.map((_, i) => (
+            <div key={i} className="w-1.5 h-1.5 rounded-full transition-all"
+              style={{
+                background: i <= stepIndex ? '#6270f5' : 'var(--surface-2)',
+                transform: i === stepIndex ? 'scale(1.4)' : 'scale(1)',
+              }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Barra indeterminada no fundo */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 overflow-hidden"
+        style={{ background: 'var(--surface-2)' }}>
+        <div className="h-full w-1/3 animate-gen-shimmer"
+          style={{ background: 'linear-gradient(90deg, transparent, #6270f5, transparent)' }} />
+      </div>
+
+      <style>{`
+        @keyframes gen-shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(400%); }
+        }
+        .animate-gen-shimmer {
+          animation: gen-shimmer 1.6s ease-in-out infinite;
+        }
+        @keyframes gen-fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: gen-fade-in 0.35s ease-out;
+        }
+      `}</style>
     </div>
   )
 }
