@@ -70,6 +70,9 @@ export default function PlanViewPage() {
   const [regenOpen, setRegenOpen] = useState(false)
   const [regenError, setRegenError] = useState('')
 
+  // Apagar
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
   useEffect(() => {
     if (!id || !studentId) return
     setLoading(true)
@@ -91,12 +94,20 @@ export default function PlanViewPage() {
     setBusy(false)
   }
 
-  async function handleDelete() {
+  async function confirmDelete() {
     if (!plan) return
-    if (!confirm('Tens a certeza que queres apagar este plano?')) return
     setBusy(true)
     await api.deletePlan(plan.id)
     navigate('/biblioteca')
+  }
+
+  async function unshareInstead() {
+    if (!plan) return
+    setBusy(true)
+    const updated = await api.updatePlan(plan.id, { shared: false })
+    if (updated) setPlan(updated as StoredPlan)
+    setBusy(false)
+    setDeleteOpen(false)
   }
 
   function openEditDate() {
@@ -307,7 +318,7 @@ export default function PlanViewPage() {
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
               <RefreshCw size={14} style={{ color: '#a78bfa' }} />
             </button>
-            <button onClick={handleDelete} disabled={busy}
+            <button onClick={() => setDeleteOpen(true)} disabled={busy}
               className="p-2 rounded-lg" title="Apagar plano"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
               <Trash2 size={14} style={{ color: '#ef4444' }} />
@@ -424,6 +435,85 @@ export default function PlanViewPage() {
           )
         })}
       </div>
+
+      {/* Modal: apagar plano */}
+      {deleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => !busy && setDeleteOpen(false)}>
+          <div className="w-full max-w-sm rounded-xl p-5"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                <Trash2 size={16} style={{ color: '#ef4444' }} />
+                Apagar plano
+              </h3>
+              <button onClick={() => !busy && setDeleteOpen(false)} className="p-1 rounded">
+                <X size={16} style={{ color: 'var(--text-muted)' }} />
+              </button>
+            </div>
+
+            {plan.shared ? (
+              <>
+                <p className="text-sm mb-3" style={{ color: 'var(--text)' }}>
+                  Este plano está <strong>partilhado</strong> com a comunidade.
+                </p>
+                <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+                  Se apagares, qualquer aluno que esteja a usá-lo perde acesso imediato
+                  — o progresso deles deixa de apontar para lado nenhum.
+                </p>
+                <div className="p-3 rounded-lg mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color: '#10b981' }}>
+                    Sugestão: despartilhar em vez de apagar
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Tira o plano da Biblioteca da comunidade (deixa de aparecer a novos alunos),
+                    mas quem já tem o URL pode continuar a estudar. Ficas em controlo do plano.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button onClick={unshareInstead} disabled={busy}
+                    className="w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
+                    style={{ background: '#10b981', color: 'white', opacity: busy ? 0.6 : 1 }}>
+                    {busy ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                    Despartilhar (manter plano)
+                  </button>
+                  <button onClick={confirmDelete} disabled={busy}
+                    className="w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
+                    style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                    <Trash2 size={14} /> Apagar mesmo
+                  </button>
+                  <button onClick={() => !busy && setDeleteOpen(false)} disabled={busy}
+                    className="w-full py-2 rounded-lg text-sm"
+                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm mb-4" style={{ color: 'var(--text)' }}>
+                  Tens a certeza que queres apagar este plano? O progresso associado também será perdido.
+                </p>
+                <div className="flex gap-2">
+                  <button onClick={() => !busy && setDeleteOpen(false)} disabled={busy}
+                    className="flex-1 py-2 rounded-lg text-sm"
+                    style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                    Cancelar
+                  </button>
+                  <button onClick={confirmDelete} disabled={busy}
+                    className="flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
+                    style={{ background: '#ef4444', color: 'white', opacity: busy ? 0.6 : 1 }}>
+                    {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    Apagar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal: regerar plano */}
       {regenOpen && (
