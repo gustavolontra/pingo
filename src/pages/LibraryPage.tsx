@@ -51,7 +51,8 @@ export default function LibraryPage() {
       api.getPlansByOwner(studentId),
       api.getPlanProgressAll(studentId),
     ])
-    setMyPlans(plans as MyPlan[])
+    const sorted = (plans as MyPlan[]).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    setMyPlans(sorted)
     setMyProgress(progress)
     setLoading(false)
   }, [studentId])
@@ -63,7 +64,8 @@ export default function LibraryPage() {
       level: levelFilter || undefined,
       goal: goalFilter || undefined,
     })
-    setSharedPlans(plans as SharedPlanEntry[])
+    const sorted = (plans as SharedPlanEntry[]).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    setSharedPlans(sorted)
     setLoading(false)
   }, [searchQ, levelFilter, goalFilter])
 

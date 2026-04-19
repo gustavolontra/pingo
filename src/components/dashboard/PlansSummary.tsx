@@ -20,6 +20,7 @@ interface MyPlan {
   targetDate?: string
   plano: { dias: DiaPlano[]; resumo?: string; tempoEstimadoPorDia?: number }
   shared: boolean
+  createdAt: string
 }
 
 function todayStr() {
@@ -97,9 +98,11 @@ export default function PlansSummary({ studentId: _studentId, plans, progressMap
     )
   }
 
-  const estudo = plans.filter((p) => p.goal === 'estudo').map((p) => summarizePlan(p, progressMap[p.id]?.diasEstudados ?? []))
+  // Ordenação: mais recentes primeiro (createdAt descendente).
+  const sorted = [...plans].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const estudo = sorted.filter((p) => p.goal === 'estudo').map((p) => summarizePlan(p, progressMap[p.id]?.diasEstudados ?? []))
   // Planos de exame cuja data já passou deixam de aparecer no dashboard.
-  const exame = plans
+  const exame = sorted
     .filter((p) => p.goal === 'exame')
     .filter((p) => {
       if (!p.targetDate) return true
