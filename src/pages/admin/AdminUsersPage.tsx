@@ -30,9 +30,18 @@ export default function AdminUsersPage() {
       setForm((f) => ({ ...f, [key]: e.target.value }))
   }
 
+  function validateName(name: string) {
+    const parts = name.trim().split(/\s+/).filter(Boolean)
+    return parts.length >= 2
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (!validateName(form.name)) {
+      setError('O nome tem de incluir pelo menos um apelido (ex: "Marina Silva").')
+      return
+    }
     const exists = students.some((s) => s.login === form.login)
     if (exists) { setError('Email já existe.'); return }
     setSaving(true)
@@ -52,6 +61,10 @@ export default function AdminUsersPage() {
     e.preventDefault()
     if (!editingStudent) return
     setError('')
+    if (!validateName(form.name)) {
+      setError('O nome tem de incluir pelo menos um apelido (ex: "Marina Silva").')
+      return
+    }
     const emailTaken = students.some((s) => s.login === form.login && s.id !== editingStudent.id)
     if (emailTaken) { setError('Email já existe noutro utilizador.'); return }
     setSaving(true)

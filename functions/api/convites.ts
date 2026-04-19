@@ -1,3 +1,5 @@
+import { baseHandleFromName, hasFullName, makeUniqueHandle } from '../_shared/handle'
+
 interface Env {
   PINGO_CONTENT: KVNamespace
 }
@@ -84,6 +86,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       termosAceites?: boolean; dataAceite?: string
     }
 
+    if (!hasFullName(nome)) {
+      return Response.json({ error: 'O nome tem de incluir pelo menos um apelido.' }, { status: 400, headers })
+    }
+
     // Validate invite code exists
     const rawStudents = await env.PINGO_CONTENT.get('students')
     const students: Student[] = rawStudents ? JSON.parse(rawStudents) : []
@@ -145,7 +151,13 @@ export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
     const password = generatePassword()
     const passwordHash = await hashPassword(password)
     const login = pedido.email
-    const handle = login.split('@')[0]
+
+    const rawExisting = await env.PINGO_CONTENT.get('students')
+    const existing: Student[] = rawExisting ? JSON.parse(rawExisting) : []
+    const takenHandles = new Set<string>(
+      existing.map((s) => s.handle).filter((h): h is string => typeof h === 'string'),
+    )
+    const handle = makeUniqueHandle(baseHandleFromName(pedido.nome), takenHandles)
 
     const newStudent: Student = {
       id: crypto.randomUUID(),
@@ -158,24 +170,23 @@ export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
       createdAt: new Date().toISOString(),
       isActive: true,
       xp: 0, level: 1, streak: 0, lessonsCompleted: 0, totalStudyMinutes: 0,
+      handle,
       codigoConvite: `PING-${handle}`,
       convidadoPor: pedido.convidadoPor,
       convitesFeitos: [],
       mustChangePassword: true,
     }
 
-    // Add student
-    const rawStudents = await env.PINGO_CONTENT.get('students')
-    const students: Student[] = rawStudents ? JSON.parse(rawStudents) : []
-    students.push(newStudent)
+    // Add student (reutiliza a lista já lida acima)
+    existing.push(newStudent)
 
     // Update inviter's convitesFeitos
-    const inviter = students.find((s) => s.id === pedido.convidadoPor)
+    const inviter = existing.find((s) => s.id === pedido.convidadoPor)
     if (inviter) {
       inviter.convitesFeitos = [...(inviter.convitesFeitos ?? []), newStudent.id]
     }
 
-    await env.PINGO_CONTENT.put('students', JSON.stringify(students))
+    await env.PINGO_CONTENT.put('students', JSON.stringify(existing))
 
     // Update pedido
     pedido.estado = 'aprovado'

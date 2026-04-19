@@ -35,6 +35,11 @@ export default function ConvitePage() {
       setError('É necessário o teu acordo e o do teu encarregado de educação para continuar.')
       return
     }
+    const nameParts = nome.trim().split(/\s+/).filter(Boolean)
+    if (nameParts.length < 2) {
+      setError('Coloca o nome completo (pelo menos primeiro nome e um apelido).')
+      return
+    }
     setSubmitting(true)
     setError('')
     try {

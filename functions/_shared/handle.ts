@@ -30,3 +30,9 @@ export function makeUniqueHandle(base: string, takenHandles: Set<string>, ignore
   while (taken.has(`${base}${n}`)) n++
   return `${base}${n}`
 }
+
+/** Valida que o nome tem pelo menos 2 palavras (primeiro nome + apelido). */
+export function hasFullName(name: string): boolean {
+  const parts = (name ?? '').trim().split(/\s+/).filter((p) => p.length > 0)
+  return parts.length >= 2
+}

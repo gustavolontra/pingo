@@ -1,4 +1,4 @@
-import { baseHandleFromName, makeUniqueHandle } from '../_shared/handle'
+import { baseHandleFromName, hasFullName, makeUniqueHandle } from '../_shared/handle'
 
 interface Env {
   PINGO_CONTENT: KVNamespace
@@ -70,6 +70,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       login: string; name: string; school: string; grade: string; password: string
     }
 
+    if (!hasFullName(name)) {
+      return Response.json({ error: 'O nome tem de incluir pelo menos um apelido (ex: "Marina Silva").' }, { status: 400, headers })
+    }
+
     const passwordHash = await hashPassword(password)
     const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim()
 
@@ -113,7 +117,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
 export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
   try {
-    const { id, newPassword, ...data } = await request.json() as { id: string; newPassword?: string; [key: string]: unknown }
+    const { id, newPassword, ...data } = await request.json() as { id: string; newPassword?: string; name?: string; [key: string]: unknown }
+
+    if (typeof data.name === 'string' && !hasFullName(data.name)) {
+      return Response.json({ error: 'O nome tem de incluir pelo menos um apelido (ex: "Marina Silva").' }, { status: 400, headers })
+    }
 
     // If newPassword is provided, hash it and set passwordHash + clear mustChangePassword
     if (newPassword) {
@@ -123,10 +131,27 @@ export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
 
     const raw = await env.PINGO_CONTENT.get('students')
     const students: Student[] = raw ? JSON.parse(raw) : []
+
+    const target = students.find((s) => s.id === id)
+    // Se o nome mudou, recalcula o handle com base no novo nome (mantendo o
+    // actual se ainda bater certo; caso contrário, atribui um novo e único).
+    if (target && typeof data.name === 'string' && data.name.trim() !== target.name.trim()) {
+      const newBase = baseHandleFromName(data.name)
+      const currentHandle = typeof target.handle === 'string' ? target.handle : ''
+      // Só actualiza se a base derivada do novo nome for diferente da base do handle actual.
+      const currentBase = currentHandle.replace(/\d+$/, '')
+      if (newBase !== currentBase) {
+        const taken = new Set<string>(
+          students.map((s) => s.handle).filter((h): h is string => typeof h === 'string'),
+        )
+        data.handle = makeUniqueHandle(newBase, taken, currentHandle)
+      }
+    }
+
     const updated = students.map((s) => (s.id === id ? { ...s, ...data } : s))
     await env.PINGO_CONTENT.put('students', JSON.stringify(updated))
 
-    return Response.json({ ok: true }, { headers })
+    return Response.json({ ok: true, handle: data.handle ?? target?.handle }, { headers })
   } catch {
     return Response.json({ error: 'Internal error' }, { status: 500, headers })
   }
