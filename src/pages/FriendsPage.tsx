@@ -136,9 +136,22 @@ export default function FriendsPage() {
     (p) => p.convidadoPor === studentId && p.estado === 'pendente'
   )
 
-  const friendIds = getFriends()
+  const rawFriendIds = getFriends()
+  // Filtra IDs de amigos cujos registos já não existem (contas apagadas).
+  // Se os alunos ainda não carregaram, mantém a lista bruta para não "perder" amigos momentaneamente.
+  const friendIds = students.length > 0
+    ? rawFriendIds.filter((id) => students.some((s) => s.id === id))
+    : rawFriendIds
   const ignoredIds = getIgnoredSuggestions()
   const me = students.find((s) => s.id === studentId)
+
+  // Limpa amigos órfãos (conta apagada) — remove-os do store assim que os alunos carregam.
+  useEffect(() => {
+    if (students.length === 0) return
+    const stale = rawFriendIds.filter((id) => !students.some((s) => s.id === id))
+    stale.forEach((id) => removeFriend(id))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [students.length])
 
   // Sugestões: mesma escola, não é o próprio, não é amigo, não ignorado
   const suggestions = students.filter(
