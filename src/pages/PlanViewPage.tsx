@@ -170,8 +170,6 @@ export default function PlanViewPage() {
     // Se o plano tem um nº de dias diferente do que a nova data comporta,
     // regeneramos a estrutura para o aluno não ficar com overflow ou lacunas.
     if (totalDays !== availableDays) {
-      // Primeiro persistimos a nova targetDate, depois chamamos o regenerate.
-      await api.updatePlan(plan.id, { targetDate: target.toISOString() })
       setEditDateOpen(false)
 
       // Materiais da biblioteca (pasted/local perdem-se).
@@ -194,12 +192,17 @@ export default function PlanViewPage() {
           targetDate: target.toISOString(),
           materials: materialsForApi,
         })
-        const updated = await api.updatePlan(plan.id, { plano: result })
+        // Um só PATCH com targetDate + plano para evitar race condition com
+        // o KV (eventual consistency pode reverter o targetDate se forem 2 calls).
+        const updated = await api.updatePlan(plan.id, {
+          targetDate: target.toISOString(),
+          plano: result,
+        })
         if (updated) setPlan(updated as StoredPlan)
         await api.setPlanProgress(studentId!, plan.id, [])
         setProgress([])
       } catch (e) {
-        setDateError(e instanceof Error ? `Data guardada, mas regeneração falhou: ${e.message}` : 'Data guardada, mas regeneração falhou.')
+        setDateError(e instanceof Error ? `Regeneração falhou: ${e.message}` : 'Regeneração falhou.')
       }
       setBusy(false)
       return
