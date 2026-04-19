@@ -87,6 +87,8 @@ export default function App() {
         <Route path="usuarios" element={<AdminUsersPage />} />
         <Route path="usuarios/:id" element={<AdminStudentDetailPage />} />
         <Route path="planos" element={<AdminPlansPage />} />
+        <Route path="planos/:id" element={<PlanViewPage />} />
+        <Route path="planos/:id/dia/:dia" element={<StudyDayPage />} />
         <Route path="materias" element={<AdminSubjectsPage />} />
         <Route path="materias/:id" element={<AdminDisciplineContentPage />} />
         <Route path="aprendizados" element={<AdminLearningsPage />} />

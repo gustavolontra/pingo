@@ -187,7 +187,7 @@ export default function AdminPlansPage() {
                 return (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td className="px-3 py-3">
-                      <a href={`/plano/${p.id}`} target="_blank" rel="noreferrer"
+                      <a href={`/admin/planos/${p.id}`} target="_blank" rel="noreferrer"
                         className="font-medium hover:underline" style={{ color: 'var(--text)' }}>
                         {p.title}
                       </a>
@@ -252,7 +252,7 @@ export default function AdminPlansPage() {
                     </td>
                     <td className="px-3 py-3 text-xs">
                       <div className="flex items-center gap-1">
-                        <a href={`/plano/${p.id}`} target="_blank" rel="noreferrer"
+                        <a href={`/admin/planos/${p.id}`} target="_blank" rel="noreferrer"
                           className="p-1.5 rounded hover:bg-slate-100" title="Abrir plano">
                           <ExternalLink size={13} style={{ color: 'var(--text-muted)' }} />
                         </a>

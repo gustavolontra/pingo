@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Brain, Check, CheckCircle2, ChevronRight, Lightbulb, Loader2, RotateCcw, Sparkles, XCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
@@ -38,7 +38,11 @@ interface StoredPlan {
 export default function StudyDayPage() {
   const { id, dia: diaParam } = useParams<{ id: string; dia: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const studentId = useStudentAuthStore((s) => s.studentId)
+  const inAdminContext = location.pathname.startsWith('/admin/')
+  const planPath = inAdminContext ? `/admin/planos/${id}` : `/plano/${id}`
+  const libraryPath = inAdminContext ? '/admin/planos' : '/biblioteca'
 
   const [plan, setPlan] = useState<StoredPlan | null>(null)
   const [progress, setProgress] = useState<number[]>([])
@@ -115,7 +119,7 @@ export default function StudyDayPage() {
     const newList = already ? progress : [...progress, dia.dia]
     await api.setPlanProgress(studentId, plan.id, newList)
     setProgress(newList)
-    navigate(`/plano/${plan.id}`)
+    navigate(planPath)
   }
 
   if (loading) {
@@ -130,7 +134,7 @@ export default function StudyDayPage() {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
         <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Dia não encontrado.</p>
-        <button onClick={() => navigate('/biblioteca')} className="btn-primary mt-4">Voltar</button>
+        <button onClick={() => navigate(libraryPath)} className="btn-primary mt-4">Voltar</button>
       </div>
     )
   }
@@ -144,7 +148,7 @@ export default function StudyDayPage() {
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-6">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(`/plano/${plan.id}`)}
+        <button onClick={() => navigate(planPath)}
           className="p-2 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
           <ArrowLeft size={18} />
         </button>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, BookmarkPlus, BookmarkCheck, Calendar, Check, Clock, FileText, Loader2, Pencil, RefreshCw, Share2, Sparkles, Tag, Trash2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
@@ -23,6 +23,7 @@ interface StoredPlan {
   }
   shared: boolean
   wasShared?: boolean
+  followersCount?: number
   createdAt: string
   updatedAt: string
   diasEstudados: number[]
@@ -56,8 +57,16 @@ function parseTopics(raw: string): string[] {
 export default function PlanViewPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const studentId = useStudentAuthStore((s) => s.studentId)
   const isAdmin = useAdminStore((s) => s.isAuthenticated)
+  // Quando a rota actual começa por /admin o admin navega dentro do painel admin;
+  // quando não, estamos no caminho de aluno normal.
+  const inAdminContext = location.pathname.startsWith('/admin/')
+  const backHref = inAdminContext ? '/admin/planos' : '/biblioteca'
+  const dayPathFor = (diaNum: number) => inAdminContext
+    ? `/admin/planos/${id}/dia/${diaNum}`
+    : `/plano/${id}/dia/${diaNum}`
 
   const [plan, setPlan] = useState<StoredPlan | null>(null)
   const [progress, setProgress] = useState<number[]>([])
@@ -75,6 +84,9 @@ export default function PlanViewPage() {
 
   // Apagar
   const [deleteOpen, setDeleteOpen] = useState(false)
+
+  // Confirmar despartilhar
+  const [confirmUnshareOpen, setConfirmUnshareOpen] = useState(false)
 
   // Seguir (para visitantes)
   const [isFollowing, setIsFollowing] = useState(false)
@@ -98,10 +110,24 @@ export default function PlanViewPage() {
 
   async function toggleShare() {
     if (!plan) return
+    // Despartilhar é acção de precaução — pede confirmação explícita.
+    if (plan.shared) {
+      setConfirmUnshareOpen(true)
+      return
+    }
     setBusy(true)
-    const updated = await api.updatePlan(plan.id, { shared: !plan.shared })
+    const updated = await api.updatePlan(plan.id, { shared: true })
     if (updated) setPlan(updated as StoredPlan)
     setBusy(false)
+  }
+
+  async function confirmUnshare() {
+    if (!plan) return
+    setBusy(true)
+    const updated = await api.updatePlan(plan.id, { shared: false })
+    if (updated) setPlan(updated as StoredPlan)
+    setBusy(false)
+    setConfirmUnshareOpen(false)
   }
 
   async function confirmDelete() {
@@ -109,7 +135,7 @@ export default function PlanViewPage() {
     setBusy(true)
     // Admin pode apagar mesmo planos partilhados (force ignora a proteção wasShared).
     await api.deletePlan(plan.id, { force: isAdmin })
-    navigate(isAdmin ? '/admin/planos' : '/biblioteca')
+    navigate(inAdminContext ? '/admin/planos' : '/biblioteca')
   }
 
   async function toggleFollow() {
@@ -133,7 +159,7 @@ export default function PlanViewPage() {
       setConfirmFollowOpen(true)
       return
     }
-    navigate(`/plano/${plan.id}/dia/${diaNum}`)
+    navigate(dayPathFor(diaNum))
   }
 
   async function confirmFollowAndStudy() {
@@ -145,7 +171,7 @@ export default function PlanViewPage() {
     const dia = pendingDay
     setPendingDay(null)
     setConfirmFollowOpen(false)
-    navigate(`/plano/${plan.id}/dia/${dia}`)
+    navigate(dayPathFor(dia))
   }
 
   function studyWithoutFollowing() {
@@ -153,7 +179,7 @@ export default function PlanViewPage() {
     const dia = pendingDay
     setPendingDay(null)
     setConfirmFollowOpen(false)
-    navigate(`/plano/${plan.id}/dia/${dia}`)
+    navigate(dayPathFor(dia))
   }
 
   async function unshareInstead() {
@@ -163,6 +189,7 @@ export default function PlanViewPage() {
     if (updated) setPlan(updated as StoredPlan)
     setBusy(false)
     setDeleteOpen(false)
+    setConfirmUnshareOpen(false)
   }
 
   function openEditDate() {
@@ -320,7 +347,7 @@ export default function PlanViewPage() {
     <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-5">
       {/* Header */}
       <div className="flex items-start gap-3">
-        <button onClick={() => navigate('/biblioteca')}
+        <button onClick={() => navigate(backHref)}
           className="p-2 rounded-lg mt-1" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
           <ArrowLeft size={18} />
         </button>
@@ -517,6 +544,50 @@ export default function PlanViewPage() {
           )
         })}
       </div>
+
+      {/* Modal: confirmar despartilhar */}
+      {confirmUnshareOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => !busy && setConfirmUnshareOpen(false)}>
+          <div className="w-full max-w-sm rounded-xl p-5"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                <Share2 size={16} style={{ color: '#10b981' }} />
+                Despartilhar plano
+              </h3>
+              <button onClick={() => !busy && setConfirmUnshareOpen(false)} className="p-1 rounded">
+                <X size={16} style={{ color: 'var(--text-muted)' }} />
+              </button>
+            </div>
+            <p className="text-sm mb-3" style={{ color: 'var(--text)' }}>
+              Tens a certeza que queres despartilhar este plano?
+            </p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+              Deixa de aparecer na Biblioteca da comunidade para novos alunos, mas
+              quem já o está a estudar continua com acesso.
+              {(plan.followersCount ?? 0) > 0 && (
+                <> Este plano tem <strong>{plan.followersCount}</strong> seguidor{plan.followersCount === 1 ? '' : 'es'}.</>
+              )}
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => !busy && setConfirmUnshareOpen(false)} disabled={busy}
+                className="flex-1 py-2 rounded-lg text-sm"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                Cancelar
+              </button>
+              <button onClick={confirmUnshare} disabled={busy}
+                className="flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
+                style={{ background: '#10b981', color: 'white', opacity: busy ? 0.6 : 1 }}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                Despartilhar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: adicionar plano antes de estudar */}
       {confirmFollowOpen && (
