@@ -195,9 +195,13 @@ function SharedListBreakdown({ autorId, conteudo }: { autorId: string; conteudo:
 
 function FeedCard({ item }: { item: FeedItem }) {
   const { reactToFeedItem, deleteFeedItem } = useAdminStore()
+  const students = useAdminStore((s) => s.students)
   const { studentId } = useStudentAuthStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const isOwner = studentId != null && studentId === item.autorId
+  // Handle vivo do autor (fallback para o que ficou congelado no post).
+  const author = students.find((s) => s.id === item.autorId)
+  const handle = author?.handle ?? item.autorAt
 
   return (
     <div className="card space-y-3.5">
@@ -216,8 +220,8 @@ function FeedCard({ item }: { item: FeedItem }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{item.autorNome}</span>
-            {item.autorAt && (
-              <span className="text-xs" style={{ color: '#6270f5' }}>@{item.autorAt}</span>
+            {handle && (
+              <span className="text-xs" style={{ color: '#6270f5' }}>@{handle}</span>
             )}
             <span
               className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"

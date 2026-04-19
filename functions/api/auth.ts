@@ -1,3 +1,5 @@
+import { baseHandleFromName, makeUniqueHandle } from '../_shared/handle'
+
 interface Env {
   PINGO_CONTENT: KVNamespace
 }
@@ -8,6 +10,7 @@ interface Student {
   name: string
   email: string
   passwordHash: string
+  handle?: string
   [key: string]: unknown
 }
 
@@ -38,9 +41,17 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     }
 
     const token = crypto.randomUUID()
-    const handle = typeof student.handle === 'string' && student.handle.length > 0
-      ? student.handle
-      : student.email.split('@')[0]
+    let handle = typeof student.handle === 'string' && student.handle.length > 0 ? student.handle : ''
+    if (!handle) {
+      // Sem handle em KV: deriva-o do nome ("Marina Sarturi Avila" → "mavila")
+      // e persiste, garantindo unicidade contra os handles já existentes.
+      const taken = new Set<string>(
+        students.map((s) => s.handle).filter((h): h is string => typeof h === 'string' && h.length > 0),
+      )
+      handle = makeUniqueHandle(baseHandleFromName(student.name ?? ''), taken)
+      const updated = students.map((s) => (s.id === student.id ? { ...s, handle } : s))
+      await env.PINGO_CONTENT.put('students', JSON.stringify(updated))
+    }
     const session = {
       studentId: student.id,
       name: student.name,
