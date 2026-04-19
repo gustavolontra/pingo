@@ -172,7 +172,7 @@ export default function AdminUsersPage() {
                     {p.escola} · {p.ano} · {p.email}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: '#6270f5' }}>
-                    Convidado por @{inviterStudent?.login.split('@')[0] ?? '?'}
+                    Convidado por @{inviterStudent?.handle ?? inviterStudent?.login.split('@')[0] ?? '?'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -277,6 +277,11 @@ function StudentRow({ student, onEdit, onDelete }: { student: Student; onEdit: (
             <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fef2f2', color: '#dc2626' }}>Inativo</span>
           )}
         </div>
+        {student.handle && (
+          <div className="text-xs mt-0.5" style={{ color: '#6270f5' }}>
+            @{student.handle}
+          </div>
+        )}
       </td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.login}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.school}</td>

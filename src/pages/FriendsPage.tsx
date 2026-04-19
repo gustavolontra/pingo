@@ -18,7 +18,7 @@ function SuggestionCard({
   const students = useAdminStore((s) => s.students)
   const s = students.find((st) => st.id === sid)
   if (!s) return null
-  const handle = s.login.split('@')[0]
+  const handle = s.handle ?? s.login.split('@')[0]
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
@@ -67,7 +67,7 @@ function FriendCard({
   const [confirmRemove, setConfirmRemove] = useState(false)
   const s = students.find((st) => st.id === friendId)
   if (!s) return null
-  const handle = s.login.split('@')[0]
+  const handle = s.handle ?? s.login.split('@')[0]
 
   return (
     <div className="card flex items-center gap-4">
@@ -172,7 +172,7 @@ export default function FriendsPage() {
         (s) =>
           s.id !== studentId &&
           !friendIds.includes(s.id) &&
-          s.login.split('@')[0].toLowerCase().startsWith(searchQuery)
+          (s.handle ?? s.login.split('@')[0]).toLowerCase().startsWith(searchQuery)
       ).slice(0, 6)
     : []
 
@@ -195,7 +195,7 @@ export default function FriendsPage() {
     const h = searchQuery.trim()
     if (!h) return
     const found = students.find(
-      (s) => s.login.split('@')[0].toLowerCase() === h && s.id !== studentId
+      (s) => (s.handle ?? s.login.split('@')[0]).toLowerCase() === h && s.id !== studentId
     )
     if (!found) { setNotFound(true); return }
     if (friendIds.includes(found.id)) { setNotFound(false); return }
@@ -294,7 +294,7 @@ export default function FriendsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{s.name}</p>
-                    <p className="text-xs" style={{ color: '#6270f5' }}>@{s.login.split('@')[0]} · {s.school}</p>
+                    <p className="text-xs" style={{ color: '#6270f5' }}>@{s.handle ?? s.login.split('@')[0]} · {s.school}</p>
                   </div>
                 </button>
               ))}

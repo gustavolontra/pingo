@@ -142,7 +142,7 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
   function handleSend() {
     if (!text.trim() || !studentId || selected.length === 0) return
     const targets = friends.filter((f) => selected.includes(f.id))
-    const mentions = targets.map((t) => `@${t.login.split('@')[0]}`).join(', ')
+    const mentions = targets.map((t) => `@${t.handle ?? t.login.split('@')[0]}`).join(', ')
     const names = targets.map((t) => t.name).join(', ')
     addFeedItem({
       autorId: studentId,
@@ -186,7 +186,7 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col gap-2">
               {friends.map((f) => {
                 const isSelected = selected.includes(f.id)
-                const handle = f.login.split('@')[0]
+                const handle = f.handle ?? f.login.split('@')[0]
                 return (
                   <button
                     key={f.id}

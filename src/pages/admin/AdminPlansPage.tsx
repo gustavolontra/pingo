@@ -67,7 +67,7 @@ export default function AdminPlansPage() {
 
   const studentsById = useMemo(() => {
     const map: Record<string, { name: string; handle: string }> = {}
-    for (const s of students) map[s.id] = { name: s.name, handle: s.login.split('@')[0] }
+    for (const s of students) map[s.id] = { name: s.name, handle: s.handle ?? s.login.split('@')[0] }
     return map
   }, [students])
 

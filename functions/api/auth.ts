@@ -38,7 +38,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     }
 
     const token = crypto.randomUUID()
-    const handle = student.email.split('@')[0]
+    const handle = typeof student.handle === 'string' && student.handle.length > 0
+      ? student.handle
+      : student.email.split('@')[0]
     const session = {
       studentId: student.id,
       name: student.name,

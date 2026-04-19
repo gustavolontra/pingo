@@ -33,6 +33,7 @@ export interface Student {
   streak: number
   lessonsCompleted: number
   totalStudyMinutes: number
+  handle?: string
   lastActiveAt?: string
   sharedBooks?: { bookId: string; titulo: string; autor: string; resumo: string; dataFim: string }[]
   listaPartilhada?: boolean

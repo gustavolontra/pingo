@@ -241,7 +241,7 @@ export default function ProfilePage() {
 
           {invitedBy && (
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              Foste convidado por <strong style={{ color: '#6270f5' }}>@{invitedBy.login.split('@')[0]}</strong>
+              Foste convidado por <strong style={{ color: '#6270f5' }}>@{invitedBy.handle ?? invitedBy.login.split('@')[0]}</strong>
             </p>
           )}
 

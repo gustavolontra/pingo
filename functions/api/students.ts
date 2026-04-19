@@ -1,3 +1,5 @@
+import { baseHandleFromName, makeUniqueHandle } from '../_shared/handle'
+
 interface Env {
   PINGO_CONTENT: KVNamespace
 }
@@ -17,7 +19,27 @@ interface Student {
   streak: number
   lessonsCompleted: number
   totalStudyMinutes: number
+  /** Handle público único — gerado a partir do nome (1ª letra do primeiro + último apelido). */
+  handle?: string
   [key: string]: unknown
+}
+
+function backfillHandles(students: Student[]): { changed: boolean; students: Student[] } {
+  const taken = new Set<string>()
+  // Primeiro recolhe handles já atribuídos, para as colisões ficarem estáveis.
+  for (const s of students) {
+    if (typeof s.handle === 'string' && s.handle.length > 0) taken.add(s.handle)
+  }
+  let changed = false
+  const result = students.map((s) => {
+    if (typeof s.handle === 'string' && s.handle.length > 0) return s
+    const base = baseHandleFromName(s.name ?? '')
+    const unique = makeUniqueHandle(base, taken)
+    taken.add(unique)
+    changed = true
+    return { ...s, handle: unique }
+  })
+  return { changed, students: result }
 }
 
 async function hashPassword(password: string): Promise<string> {
@@ -33,7 +55,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const headers = corsHeaders()
   const raw = await env.PINGO_CONTENT.get('students')
   const students: Student[] = raw ? JSON.parse(raw) : []
-  return Response.json(students, { headers })
+  // Migração idempotente: gera handles para alunos antigos que ainda não têm.
+  const { changed, students: migrated } = backfillHandles(students)
+  if (changed) {
+    await env.PINGO_CONTENT.put('students', JSON.stringify(migrated))
+  }
+  return Response.json(migrated, { headers })
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
@@ -46,11 +73,18 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     const passwordHash = await hashPassword(password)
     const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()).trim()
 
-    const handle = login.toLowerCase().trim().split('@')[0]
+    const raw = await env.PINGO_CONTENT.get('students')
+    const { students } = backfillHandles(raw ? JSON.parse(raw) : [])
+    const taken = new Set<string>(
+      students.map((s) => s.handle).filter((h): h is string => typeof h === 'string'),
+    )
+    const nameForHandle = titleCase(name)
+    const handle = makeUniqueHandle(baseHandleFromName(nameForHandle), taken)
+
     const student: Student = {
       id: crypto.randomUUID(),
       login: login.toLowerCase().trim(),
-      name: titleCase(name),
+      name: nameForHandle,
       email: login.toLowerCase().trim(),
       school: titleCase(school),
       grade,
@@ -62,12 +96,11 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       streak: 0,
       lessonsCompleted: 0,
       totalStudyMinutes: 0,
+      handle,
       codigoConvite: `PING-${handle}`,
       convitesFeitos: [],
     }
 
-    const raw = await env.PINGO_CONTENT.get('students')
-    const students: Student[] = raw ? JSON.parse(raw) : []
     students.push(student)
     await env.PINGO_CONTENT.put('students', JSON.stringify(students))
 
