@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, BookmarkPlus, BookmarkCheck, Calendar, Check, Clock, FileText, Loader2, Pencil, RefreshCw, Share2, Sparkles, Tag, Trash2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
+import { useAdminStore } from '@/store/useAdminStore'
 
 interface StoredPlan {
   id: string
@@ -56,6 +57,7 @@ export default function PlanViewPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const studentId = useStudentAuthStore((s) => s.studentId)
+  const isAdmin = useAdminStore((s) => s.isAuthenticated)
 
   const [plan, setPlan] = useState<StoredPlan | null>(null)
   const [progress, setProgress] = useState<number[]>([])
@@ -105,8 +107,9 @@ export default function PlanViewPage() {
   async function confirmDelete() {
     if (!plan) return
     setBusy(true)
-    await api.deletePlan(plan.id)
-    navigate('/biblioteca')
+    // Admin pode apagar mesmo planos partilhados (force ignora a proteção wasShared).
+    await api.deletePlan(plan.id, { force: isAdmin })
+    navigate(isAdmin ? '/admin/planos' : '/biblioteca')
   }
 
   async function toggleFollow() {
@@ -305,6 +308,8 @@ export default function PlanViewPage() {
   }
 
   const isOwner = plan.ownerId === studentId
+  // Admin tem os mesmos poderes que o dono (pode ainda apagar mesmo partilhados via force).
+  const canEdit = isOwner || isAdmin
   const { title, goal, targetDate, materials, plano } = plan
   const topics = parseTopics(plan.topics)
   const totalDays = plano.dias.length
@@ -334,15 +339,15 @@ export default function PlanViewPage() {
               </span>
             )}
             {targetDate && (
-              <button onClick={isOwner && goal === 'exame' ? openEditDate : undefined}
-                disabled={!(isOwner && goal === 'exame')}
+              <button onClick={canEdit && goal === 'exame' ? openEditDate : undefined}
+                disabled={!(canEdit && goal === 'exame')}
                 className="flex items-center gap-1 px-2 py-1 rounded transition-all"
                 style={{ background: 'var(--surface-2)', color: 'var(--text-muted)',
-                         cursor: isOwner && goal === 'exame' ? 'pointer' : 'default' }}
-                title={isOwner && goal === 'exame' ? 'Editar data da prova' : undefined}>
+                         cursor: canEdit && goal === 'exame' ? 'pointer' : 'default' }}
+                title={canEdit && goal === 'exame' ? 'Editar data da prova' : undefined}>
                 <Calendar size={11} />
                 {new Date(targetDate).toLocaleDateString('pt-PT')}
-                {isOwner && goal === 'exame' && <Pencil size={10} className="ml-1 opacity-60" />}
+                {canEdit && goal === 'exame' && <Pencil size={10} className="ml-1 opacity-60" />}
               </button>
             )}
             {plano.tempoEstimadoPorDia && (
@@ -354,8 +359,15 @@ export default function PlanViewPage() {
             )}
           </div>
         </div>
-        {isOwner && (
+        {canEdit && (
           <div className="flex items-center gap-1 mt-1">
+            {isAdmin && !isOwner && (
+              <span className="text-[10px] font-semibold px-2 py-1 rounded self-center"
+                style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
+                title="Estás a ver como administrador">
+                Admin
+              </span>
+            )}
             <button onClick={toggleShare} disabled={busy}
               className="p-2 rounded-lg flex items-center gap-1.5"
               title={plan.shared ? 'Deixar de partilhar' : 'Partilhar com a comunidade'}
@@ -370,7 +382,8 @@ export default function PlanViewPage() {
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
               <RefreshCw size={14} style={{ color: '#a78bfa' }} />
             </button>
-            {!(plan.shared || plan.wasShared) && (
+            {/* Admin pode sempre apagar; dono só se nunca foi partilhado. */}
+            {(isAdmin || !(plan.shared || plan.wasShared)) && (
               <button onClick={() => setDeleteOpen(true)} disabled={busy}
                 className="p-2 rounded-lg" title="Apagar plano"
                 style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
@@ -379,7 +392,7 @@ export default function PlanViewPage() {
             )}
           </div>
         )}
-        {!isOwner && (
+        {!canEdit && (
           <div className="flex items-center gap-1 mt-1">
             <button onClick={toggleFollow} disabled={busy}
               className="px-3 py-2 rounded-lg flex items-center gap-1.5 text-xs font-medium"

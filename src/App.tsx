@@ -29,8 +29,11 @@ import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
 function StudentGuard({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useStudentAuthStore((s) => s.isAuthenticated)
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+  const isStudent = useStudentAuthStore((s) => s.isAuthenticated)
+  // Admins autenticados também conseguem ver as páginas de aluno (ex: abrir um
+  // plano a partir do painel admin sem ter de fazer login como estudante).
+  const isAdmin = useAdminStore((s) => s.isAuthenticated)
+  return (isStudent || isAdmin) ? <>{children}</> : <Navigate to="/login" replace />
 }
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
