@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAdminStore, type FeedItem } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useStore } from '@/store/useStore'
-import { Rss, ThumbsUp, Flame, Star, Plus, X, BookOpen, List, Trophy, Swords, Users } from 'lucide-react'
+import { Rss, ThumbsUp, Flame, Star, Plus, X, BookOpen, List, Trophy, Swords, Users, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -73,6 +73,85 @@ function FeedContent({ text }: { text: string }) {
   )
 }
 
+// ── Lista partilhada: quebrada por estado ─────────────────────────────────────
+
+function SharedListBreakdown({ autorId }: { autorId: string }) {
+  const students = useAdminStore((s) => s.students)
+  const author = students.find((s) => s.id === autorId)
+  const all = author?.allBooks ?? []
+  const lendoAll = all.filter((b) => b.status === 'lendo')
+  const lidosAll = all.filter((b) => b.status === 'lido')
+  const lendo = lendoAll.slice(0, 10)
+  const lidos = lidosAll.slice(0, 10)
+
+  const column = (
+    kind: 'lendo' | 'lido',
+    items: typeof lendo,
+    total: number,
+  ) => {
+    const isLendo = kind === 'lendo'
+    const accent = isLendo ? '#6270f5' : '#10b981'
+    const label = isLendo ? 'A ler' : 'Lidos'
+    const Icon = isLendo ? BookOpen : CheckCircle2
+
+    return (
+      <div
+        className="rounded-2xl p-3.5"
+        style={{
+          background: isLendo ? 'rgba(98,112,245,0.05)' : 'rgba(16,185,129,0.05)',
+          border: `1px solid ${isLendo ? 'rgba(98,112,245,0.18)' : 'rgba(16,185,129,0.18)'}`,
+        }}
+      >
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: accent }}>
+            <Icon size={12} /> {label}
+          </span>
+          <span
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+            style={{ background: `${accent}18`, color: accent }}
+          >
+            {total}
+          </span>
+        </div>
+        {items.length === 0 ? (
+          <p className="text-xs italic" style={{ color: 'var(--text-muted)' }}>
+            Nenhum livro ainda.
+          </p>
+        ) : (
+          <ul className="space-y-1">
+            {items.map((b, i) => (
+              <li key={i} className="text-xs leading-snug flex gap-1.5">
+                <span className="shrink-0" style={{ color: accent, opacity: 0.6 }}>•</span>
+                <span className="min-w-0">
+                  <span className="font-semibold" style={{ color: 'var(--text)' }}>{b.titulo}</span>
+                  <span style={{ color: 'var(--text-muted)' }}> · {b.autor}</span>
+                </span>
+              </li>
+            ))}
+            {total > items.length && (
+              <li className="text-[11px] italic pt-0.5" style={{ color: 'var(--text-muted)' }}>
+                + {total - items.length} {total - items.length === 1 ? 'livro' : 'livros'}
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2.5">
+      <p className="text-sm" style={{ color: 'var(--text)' }}>
+        Partilhou a sua lista de leituras.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {column('lendo', lendo, lendoAll.length)}
+        {column('lido', lidos, lidosAll.length)}
+      </div>
+    </div>
+  )
+}
+
 // ── Card de publicação ────────────────────────────────────────────────────────
 
 function FeedCard({ item }: { item: FeedItem }) {
@@ -129,7 +208,11 @@ function FeedCard({ item }: { item: FeedItem }) {
       </div>
 
       {/* Conteúdo */}
-      <FeedContent text={item.conteudo} />
+      {item.tipo === 'lista' ? (
+        <SharedListBreakdown autorId={item.autorId} />
+      ) : (
+        <FeedContent text={item.conteudo} />
+      )}
 
       {/* Reações */}
       <div className="flex items-center gap-2 pt-1">
