@@ -428,10 +428,18 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
 
 export default function FeedPage() {
   const feedItems = useAdminStore((s) => s.feedItems)
+  const fetchFeed = useAdminStore((s) => s.fetchFeed)
+  const fetchStudents = useAdminStore((s) => s.fetchStudents)
   const { studentId } = useStudentAuthStore()
   const { getFriends, markFeedSeen } = useStore()
   const friendIds = getFriends()
   const [challengeOpen, setChallengeOpen] = useState(false)
+
+  // Atualiza feed e alunos ao entrar na página para apanhar partilhas recentes.
+  useEffect(() => {
+    fetchFeed()
+    fetchStudents()
+  }, [fetchFeed, fetchStudents])
 
   useEffect(() => { markFeedSeen() }, [feedItems.length])
   const [tab, setTab] = useState<'todos' | 'amigos'>('amigos')
