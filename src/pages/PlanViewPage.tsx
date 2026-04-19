@@ -392,8 +392,8 @@ export default function PlanViewPage() {
             {isAdmin && !isOwner && (
               <span className="text-[10px] font-semibold px-2 py-1 rounded self-center"
                 style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
-                title="Estás a ver como administrador">
-                Admin
+                title="Estás a operar este plano como administrador (não és o autor)">
+                Modo admin
               </span>
             )}
             <button onClick={toggleShare} disabled={busy}
