@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminStore, type Student } from '@/store/useAdminStore'
 import { hashPassword } from '@/lib/crypto'
-import { UserPlus, Trash2, X, ChevronRight, Pencil, Check, Ban, Copy, Clock } from 'lucide-react'
+import { UserPlus, Trash2, X, ChevronRight, Pencil, Check, Ban, Copy, Clock, AtSign } from 'lucide-react'
+import { baseHandleFromName } from '@/lib/handle'
 
 const GRADE_OPTIONS = [
   '1.º ano', '2.º ano', '3.º ano', '4.º ano',
@@ -110,6 +111,7 @@ export default function AdminUsersPage() {
         <Modal title="Novo utilizador" onClose={() => { setShowForm(false); setError('') }}>
           <form onSubmit={handleCreate} className="flex flex-col gap-3.5" autoComplete="off">
             <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
+            <HandlePreview name={form.name} existingHandle={null} students={students} />
             <FormField label="Email (login)" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required />
             <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
             <GradeSelect value={form.grade} onChange={field('grade')} />
@@ -128,6 +130,7 @@ export default function AdminUsersPage() {
         <Modal title={`Editar — ${editingStudent.name}`} onClose={() => setEditingStudent(null)}>
           <form onSubmit={handleEdit} className="flex flex-col gap-3.5" autoComplete="off">
             <FormField label="Nome completo" value={form.name} onChange={field('name')} placeholder="Ana Costa" required />
+            <HandlePreview name={form.name} existingHandle={editingStudent.handle ?? null} students={students} editingStudentId={editingStudent.id} />
             <FormField label="Email (login)" type="email" value={form.login} onChange={field('login')} placeholder="ana@escola.pt" required />
             <FormField label="Escola" value={form.school} onChange={field('school')} placeholder="Escola Básica de Lisboa" required />
             <GradeSelect value={form.grade} onChange={field('grade')} />
@@ -313,6 +316,54 @@ function StudentRow({ student, onEdit, onDelete }: { student: Student; onEdit: (
         </div>
       </td>
     </tr>
+  )
+}
+
+function HandlePreview({
+  name, existingHandle, students, editingStudentId,
+}: {
+  name: string
+  existingHandle: string | null
+  students: Student[]
+  editingStudentId?: string
+}) {
+  const base = baseHandleFromName(name)
+  const takenHandles = new Set(
+    students
+      .filter((s) => !editingStudentId || s.id !== editingStudentId)
+      .map((s) => s.handle)
+      .filter((h): h is string => typeof h === 'string'),
+  )
+  let preview = base
+  if (preview && takenHandles.has(preview)) {
+    let n = 2
+    while (takenHandles.has(`${preview}${n}`)) n++
+    preview = `${preview}${n}`
+  }
+
+  const valid = name.trim().split(/\s+/).filter(Boolean).length >= 2
+  const willChange = existingHandle ? preview && preview !== existingHandle : false
+
+  return (
+    <div className="flex items-start gap-2 -mt-2 px-3 py-2 rounded-lg"
+      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+      <AtSign size={14} className="mt-0.5" style={{ color: '#6270f5' }} />
+      <div className="flex-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+        {!valid ? (
+          <span>Indica primeiro nome e pelo menos um apelido para gerar o handle.</span>
+        ) : existingHandle && !willChange ? (
+          <span>Handle: <strong style={{ color: '#6270f5' }}>@{existingHandle}</strong> (não será alterado)</span>
+        ) : existingHandle && willChange ? (
+          <span>
+            Handle actual <strong style={{ color: 'var(--text-muted)' }}>@{existingHandle}</strong>
+            {' → '}
+            <strong style={{ color: '#6270f5' }}>@{preview}</strong>
+          </span>
+        ) : (
+          <span>Handle que será atribuído: <strong style={{ color: '#6270f5' }}>@{preview}</strong></span>
+        )}
+      </div>
+    </div>
   )
 }
 
