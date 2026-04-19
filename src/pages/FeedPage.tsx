@@ -45,7 +45,7 @@ function capitalizeFirst(s: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
-function FeedContent({ text }: { text: string }) {
+function FeedContent({ tipo, text }: { tipo: FeedItem['tipo']; text: string }) {
   // Separa a "primeira linha" (a acção) do bloco que vem depois de \n\n (citação do aluno)
   const idx = text.indexOf('\n\n')
   const head = idx >= 0 ? text.slice(0, idx) : text
@@ -54,19 +54,48 @@ function FeedContent({ text }: { text: string }) {
   const isQuote = body.startsWith('"') && body.endsWith('"')
   const quote = isQuote ? body.slice(1, -1) : body
 
+  // Posts de resumo têm o formato: leu "Titulo" de Autor\n\n"citação"
+  // Destacamos o título em negrito e o autor numa linha secundária.
+  const resumoMatch = tipo === 'resumo' ? head.match(/^\s*leu\s+"([^"]+)"\s+de\s+(.+)$/i) : null
+
   return (
-    <div className="space-y-2">
-      <p className="text-sm" style={{ color: 'var(--text)' }}>
-        {capitalizeFirst(head)}
-      </p>
+    <div className="space-y-2.5">
+      {resumoMatch ? (
+        <div className="flex items-start gap-3">
+          <div
+            className="shrink-0 w-10 h-14 rounded-lg flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(135deg, rgba(99,143,255,0.14), rgba(167,139,250,0.12))',
+              border: '1px solid rgba(99,143,255,0.2)',
+            }}
+          >
+            <BookOpen size={16} style={{ color: '#6270f5', opacity: 0.8 }} />
+          </div>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: 'var(--text-muted)' }}>
+              Leu
+            </p>
+            <p className="text-[15px] font-bold leading-tight mt-0.5" style={{ color: 'var(--text)' }}>
+              {resumoMatch[1]}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              de {resumoMatch[2]}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+          {capitalizeFirst(head)}
+        </p>
+      )}
       {body && (
         isQuote ? (
-          <blockquote className="text-sm italic px-3 py-2 rounded-lg whitespace-pre-line"
-            style={{ background: 'var(--surface-2)', borderLeft: '3px solid #6270f5', color: 'var(--text)' }}>
+          <blockquote className="text-sm italic px-3.5 py-2.5 rounded-xl whitespace-pre-line"
+            style={{ background: 'rgba(98,112,245,0.06)', borderLeft: '3px solid #6270f5', color: 'var(--text)' }}>
             {quote}
           </blockquote>
         ) : (
-          <p className="text-sm whitespace-pre-line" style={{ color: 'var(--text-muted)' }}>{body}</p>
+          <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'var(--text-muted)' }}>{body}</p>
         )
       )}
     </div>
@@ -75,10 +104,20 @@ function FeedContent({ text }: { text: string }) {
 
 // ── Lista partilhada: quebrada por estado ─────────────────────────────────────
 
-function SharedListBreakdown({ autorId }: { autorId: string }) {
+function SharedListBreakdown({ autorId, conteudo }: { autorId: string; conteudo: string }) {
   const students = useAdminStore((s) => s.students)
   const author = students.find((s) => s.id === autorId)
   const all = author?.allBooks ?? []
+
+  // Fallback: autor já não tem `allBooks` (lista despartilhada ou dados antigos).
+  if (all.length === 0) {
+    return (
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text)' }}>
+        {capitalizeFirst(conteudo)}
+      </p>
+    )
+  }
+
   const lendoAll = all.filter((b) => b.status === 'lendo')
   const lidosAll = all.filter((b) => b.status === 'lido')
   const lendo = lendoAll.slice(0, 10)
@@ -161,12 +200,16 @@ function FeedCard({ item }: { item: FeedItem }) {
   const isOwner = studentId != null && studentId === item.autorId
 
   return (
-    <div className="card space-y-3">
+    <div className="card space-y-3.5">
       {/* Header */}
       <div className="flex items-start gap-3">
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
-          style={{ background: 'rgba(98,112,245,0.12)', color: '#6270f5' }}
+          className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+          style={{
+            background: 'linear-gradient(135deg, rgba(98,112,245,0.18), rgba(167,139,250,0.18))',
+            color: '#6270f5',
+            border: '1px solid rgba(98,112,245,0.18)',
+          }}
         >
           {item.autorNome.charAt(0)}
         </div>
@@ -176,7 +219,10 @@ function FeedCard({ item }: { item: FeedItem }) {
             {item.autorAt && (
               <span className="text-xs" style={{ color: '#6270f5' }}>@{item.autorAt}</span>
             )}
-            <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+            <span
+              className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
+              style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+            >
               {TIPO_ICON[item.tipo]} {TIPO_LABEL[item.tipo]}
             </span>
           </div>
@@ -209,9 +255,9 @@ function FeedCard({ item }: { item: FeedItem }) {
 
       {/* Conteúdo */}
       {item.tipo === 'lista' ? (
-        <SharedListBreakdown autorId={item.autorId} />
+        <SharedListBreakdown autorId={item.autorId} conteudo={item.conteudo} />
       ) : (
-        <FeedContent text={item.conteudo} />
+        <FeedContent tipo={item.tipo} text={item.conteudo} />
       )}
 
       {/* Reações */}

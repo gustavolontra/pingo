@@ -472,7 +472,7 @@ function BooksColumn({
 export default function BooksPage() {
   const { getBooks, addBook, markBookRead } = useStore()
   const { studentId, studentName, studentHandle } = useStudentAuthStore()
-  const { addFeedItem, toggleStudentListShare, students } = useAdminStore()
+  const { addFeedItem, toggleStudentListShare, students, feedItems, deleteFeedItem } = useAdminStore()
   const books = getBooks()
 
   const student = students.find((s) => s.id === studentId)
@@ -519,6 +519,10 @@ export default function BooksPage() {
         tipo: 'lista',
         conteudo: `partilhou a sua lista de leituras (${books.length} livro${books.length !== 1 ? 's' : ''}: ${books.slice(0, 3).map(b => `"${b.titulo}"`).join(', ')}${books.length > 3 ? '...' : ''})`,
       })
+    } else {
+      // Ao despartilhar, remove do feed todos os posts "lista" deste aluno.
+      const mine = feedItems.filter((f) => f.autorId === studentId && f.tipo === 'lista')
+      for (const f of mine) deleteFeedItem(f.id)
     }
   }
 
