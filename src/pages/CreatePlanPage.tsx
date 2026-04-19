@@ -88,10 +88,9 @@ export default function CreatePlanPage() {
 
   // Material colado
   const [pastedContent, setPastedContent] = useState('')
-  const [pastedShared, setPastedShared] = useState(false)
 
-  // Partilha do plano em si
-  const [planShared, setPlanShared] = useState(false)
+  // Partilha: uma única decisão que cobre plano + material colado (se houver).
+  const [shareWithCommunity, setShareWithCommunity] = useState(false)
 
   // Materiais escolhidos da biblioteca
   const [libraryMaterials, setLibraryMaterials] = useState<DraftMaterial[]>([])
@@ -141,7 +140,7 @@ export default function CreatePlanPage() {
       // Material colado → cria Material on the fly
       if (pastedContent.trim()) {
         const title = firstWordsTitle(pastedContent)
-        if (pastedShared) {
+        if (shareWithCommunity) {
           const tagRes = await fetch('/api/generate-tags', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -200,7 +199,7 @@ export default function CreatePlanPage() {
         targetDate: goal === 'exame' ? targetDate : undefined,
         materials: storedMaterials,
         plano: result,
-        shared: planShared,
+        shared: shareWithCommunity,
       })
 
       navigate(`/plano/${created.id}`)
@@ -324,11 +323,6 @@ export default function CreatePlanPage() {
               rows={5}
               className="w-full px-4 py-3 rounded-xl text-sm resize-none"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-            <label className="flex items-center gap-2 mt-2 cursor-pointer">
-              <input type="checkbox" checked={pastedShared} onChange={(e) => setPastedShared(e.target.checked)}
-                className="accent-[#6270f5]" />
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Partilhar este material com a comunidade</span>
-            </label>
             <button onClick={() => setLibraryOpen(true)}
               className="mt-3 w-full py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
@@ -351,19 +345,19 @@ export default function CreatePlanPage() {
             )}
           </div>
 
-          {/* Partilha do plano */}
+          {/* Partilha: uma só decisão cobre o plano e o material colado (se houver). */}
           <div className="pt-4 mt-2" style={{ borderTop: '1px solid var(--border)' }}>
             <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl"
-              style={{ background: planShared ? 'rgba(16,185,129,0.08)' : 'var(--surface-2)',
-                       border: `1px solid ${planShared ? 'rgba(16,185,129,0.25)' : 'var(--border)'}` }}>
-              <input type="checkbox" checked={planShared} onChange={(e) => setPlanShared(e.target.checked)}
+              style={{ background: shareWithCommunity ? 'rgba(16,185,129,0.08)' : 'var(--surface-2)',
+                       border: `1px solid ${shareWithCommunity ? 'rgba(16,185,129,0.25)' : 'var(--border)'}` }}>
+              <input type="checkbox" checked={shareWithCommunity} onChange={(e) => setShareWithCommunity(e.target.checked)}
                 className="accent-[#10b981] mt-0.5" />
               <div>
                 <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                  Partilhar este plano com a comunidade
+                  Partilhar com a comunidade
                 </p>
                 <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                  Outros alunos vão poder abrir este plano na Biblioteca. O conteúdo gerado (flashcards, quiz) é reutilizado por todos — poupa chamadas à IA.
+                  Outros alunos vão poder abrir este plano na Biblioteca{pastedContent.trim() ? ' (incluindo o material que colaste)' : ''}. O conteúdo gerado (flashcards, quiz) é reutilizado por todos — poupa chamadas à IA.
                 </p>
               </div>
             </label>
