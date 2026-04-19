@@ -1,6 +1,6 @@
-interface Env {
-  ANTHROPIC_API_KEY: string
-}
+import { callLLM, LLMError, type LLMEnv } from '../_shared/llm'
+
+interface Env extends LLMEnv {}
 
 interface MaterialForDay {
   title?: string
@@ -26,9 +26,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     }
     const { subject, year, tema, resumo, regras, avancado } = body
 
-    if (!env.ANTHROPIC_API_KEY) {
-      return Response.json({ error: 'API key not configured' }, { status: 500, headers })
-    }
+    // A validação da chave é feita dentro de callLLM() conforme o provider escolhido.
 
     const MAX_PER_MATERIAL = 2000
     let materiaisText = ''
@@ -67,17 +65,7 @@ Também gera:
   "transformacao": [...],
   "identificacao": [...]` : ''
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
-        system: `Gera conteúdo de estudo para UM dia de um plano de estudo de ${subject} (${year}).
+    const systemPrompt = `Gera conteúdo de estudo para UM dia de um plano de estudo de ${subject} (${year}).
 
 Tema do dia: ${tema}
 Contexto: ${resumo}
@@ -132,18 +120,28 @@ Devolve APENAS JSON válido:
   "flashcards": [{ "frente": "...", "verso": "..." }],
   "quiz": [{ "pergunta": "...", "opcoes": ["opcao1","opcao2","opcao3","opcao4"], "correta": "texto exacto da opção correcta", "explicacao": "..." }],
   "resumoActivo": { "pergunta": "...", "respostaEsperada": "..." }${advancedFormat}
-}`,
-        messages: [{ role: 'user', content: hasMaterials ? `Material de referência:\n${materiaisText.slice(0, 6000)}` : `Gera conteúdo genérico para o tema "${tema}" de ${subject} ${year}.` }],
-      }),
-    })
+}`
 
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '')
-      return Response.json({ error: `AI failed (${res.status})`, detail: errBody.slice(0, 200) }, { status: 502, headers })
+    const userMessage = hasMaterials
+      ? `Material de referência:\n${materiaisText.slice(0, 6000)}`
+      : `Gera conteúdo genérico para o tema "${tema}" de ${subject} ${year}.`
+
+    const llmOverride = new URL(request.url).searchParams.get('llm')
+    let llmResult
+    try {
+      llmResult = await callLLM(env, {
+        system: systemPrompt,
+        user: userMessage,
+        maxTokens: 4096,
+        model: 'fast',
+      }, llmOverride)
+    } catch (err) {
+      if (err instanceof LLMError) {
+        return Response.json({ error: `AI failed (${err.status})`, provider: err.provider, detail: err.detail }, { status: 502, headers })
+      }
+      throw err
     }
-
-    const data = await res.json() as { content: { type: string; text: string }[] }
-    const text = data.content?.[0]?.text ?? ''
+    const text = llmResult.text
 
     let parsed: Record<string, unknown> | null = null
     const stripped = text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()

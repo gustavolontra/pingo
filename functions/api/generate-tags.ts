@@ -1,6 +1,6 @@
-interface Env {
-  ANTHROPIC_API_KEY: string
-}
+import { callLLM, LLMError, type LLMEnv } from '../_shared/llm'
+
+interface Env extends LLMEnv {}
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
@@ -11,9 +11,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       level?: string
     }
 
-    if (!env.ANTHROPIC_API_KEY) {
-      return Response.json({ error: 'API key not configured' }, { status: 500, headers })
-    }
     if (!content || content.trim().length < 20) {
       return Response.json({ tags: [] }, { headers })
     }
@@ -24,17 +21,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       level ? `Nível: ${level}` : '',
     ].filter(Boolean).join('\n')
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 200,
-        system: `Extrai entre 3 e 6 tags curtas (1-3 palavras) que descrevam o TEMA e o TIPO deste material de estudo. As tags devem ajudar outro aluno a perceber rapidamente se o material lhe serve.
+    const systemPrompt = `Extrai entre 3 e 6 tags curtas (1-3 palavras) que descrevam o TEMA e o TIPO deste material de estudo. As tags devem ajudar outro aluno a perceber rapidamente se o material lhe serve.
 
 Regras:
 - Minúsculas, sem pontuação
@@ -42,17 +29,23 @@ Regras:
 - Foca no conteúdo, não na forma (evita "apontamentos", "ficha")
 - Inclui conceitos-chave, sub-tópicos, períodos históricos, fórmulas, etc.
 
-Devolve APENAS JSON: {"tags": ["tag1","tag2",...]}`,
-        messages: [{ role: 'user', content: `${context}\n\n---\n${excerpt}` }],
-      }),
-    })
+Devolve APENAS JSON: {"tags": ["tag1","tag2",...]}`
 
-    if (!res.ok) {
-      return Response.json({ tags: [] }, { headers })
+    const llmOverride = new URL(request.url).searchParams.get('llm')
+    let text = ''
+    try {
+      const llmResult = await callLLM(env, {
+        system: systemPrompt,
+        user: `${context}\n\n---\n${excerpt}`,
+        maxTokens: 200,
+        model: 'fast',
+      }, llmOverride)
+      text = llmResult.text
+    } catch (err) {
+      if (err instanceof LLMError) return Response.json({ tags: [] }, { headers })
+      throw err
     }
 
-    const data = await res.json() as { content: { type: string; text: string }[] }
-    const text = data.content?.[0]?.text ?? ''
     const stripped = text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()
 
     let parsed: { tags?: unknown } | null = null
