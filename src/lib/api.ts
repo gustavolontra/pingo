@@ -391,6 +391,47 @@ export const api = {
     return res.json()
   },
 
+  // ── Reports ────────────────────────────────────────────────────────────────
+  async submitReport(data: {
+    studentId: string
+    studentName?: string
+    studentHandle?: string
+    context: 'plan' | 'day' | 'app'
+    planId?: string
+    planTitle?: string
+    diaNumber?: number
+    diaTitle?: string
+    description: string
+  }) {
+    const res = await fetch(`${BASE}/reports`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+      throw new Error(err.error ?? `HTTP ${res.status}`)
+    }
+    return res.json()
+  },
+  async getReports() {
+    const res = await fetch(`${BASE}/reports`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async updateReportStatus(id: string, status: 'aberto' | 'resolvido' | 'ignorado') {
+    const res = await fetch(`${BASE}/reports?id=${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (!res.ok) return null
+    return res.json()
+  },
+  async deleteReport(id: string) {
+    await fetch(`${BASE}/reports?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+  },
+
   // ── Plans (v2: persistidos globalmente) ───────────────────────────────────
   async createPlan(data: Record<string, unknown>) {
     const res = await fetch(`${BASE}/plans`, {

@@ -4,6 +4,7 @@ import { ArrowLeft, Brain, Check, CheckCircle2, ChevronRight, Lightbulb, Loader2
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { cn } from '@/lib/utils'
+import ReportProblemButton from '@/components/ReportProblemButton'
 
 interface Flashcard { frente: string; verso: string }
 interface QuizQ { pergunta: string; opcoes: string[]; correta: number; explicacao: string }
@@ -198,6 +199,17 @@ export default function StudyDayPage() {
             style={{ opacity: canConclude ? 1 : 0.5, cursor: canConclude ? 'pointer' : 'not-allowed' }}>
             <Check size={18} /> {isDone ? 'Já concluído — voltar' : 'Concluir dia'}
           </button>
+
+          <div className="pt-2 flex justify-center">
+            <ReportProblemButton
+              context="day"
+              planId={plan.id}
+              planTitle={plan.title}
+              diaNumber={dia.dia}
+              diaTitle={dia.tema}
+              label="Algo errado neste dia? Reportar"
+            />
+          </div>
         </div>
       )}
     </div>

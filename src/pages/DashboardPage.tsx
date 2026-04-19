@@ -16,6 +16,10 @@ export default function DashboardPage() {
   const students = useAdminStore((s) => s.students)
   const displayName = studentName || user.name
   const { plans, progressMap, loading: plansLoading } = usePlansSummary(studentId)
+  // Prefer o handle fresco do backfill em vez do que foi persistido na sessão
+  // antiga (que antes era derivado do email).
+  const freshHandle = students.find((s) => s.id === studentId)?.handle
+  const handleToShow = freshHandle ?? studentHandle
   const me = students.find((s) => s.id === studentId)
   const inviteCode = me?.codigoConvite ?? ''
   const thisWeekXP = dailyStats.slice(-7).reduce((sum, s) => sum + s.xpEarned, 0)
@@ -28,8 +32,8 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-display font-bold text-white">
           Olá, {displayName.split(' ')[0]}! {user.streak > 0 ? <Flame size={22} style={{ color: '#f59e0b', display: 'inline' }} /> : '👋'}
         </h2>
-        {studentHandle && (
-          <p className="text-sm font-medium mt-0.5" style={{ color: '#6270f5' }}>@{studentHandle}</p>
+        {handleToShow && (
+          <p className="text-sm font-medium mt-0.5" style={{ color: '#6270f5' }}>@{handleToShow}</p>
         )}
         <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
           {user.streak > 0

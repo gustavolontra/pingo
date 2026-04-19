@@ -24,6 +24,7 @@ import AdminDisciplineContentPage from '@/pages/admin/AdminDisciplineContentPage
 import AdminLearningsPage from '@/pages/admin/AdminLearningsPage'
 import AdminActivityLogPage from '@/pages/admin/AdminActivityLogPage'
 import AdminPlansPage from '@/pages/admin/AdminPlansPage'
+import AdminReportsPage from '@/pages/admin/AdminReportsPage'
 import ConvitePage from '@/pages/ConvitePage'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="materias" element={<AdminSubjectsPage />} />
         <Route path="materias/:id" element={<AdminDisciplineContentPage />} />
         <Route path="aprendizados" element={<AdminLearningsPage />} />
+        <Route path="reports" element={<AdminReportsPage />} />
         <Route path="log" element={<AdminActivityLogPage />} />
       </Route>
     </Routes>

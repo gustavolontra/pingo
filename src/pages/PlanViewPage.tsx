@@ -4,6 +4,7 @@ import { ArrowLeft, BookmarkPlus, BookmarkCheck, Calendar, Check, Clock, FileTex
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
+import ReportProblemButton from '@/components/ReportProblemButton'
 
 interface StoredPlan {
   id: string
@@ -495,9 +496,12 @@ export default function PlanViewPage() {
 
       {/* Lista de dias */}
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
-          Dias
-        </p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+            Dias
+          </p>
+          <ReportProblemButton context="plan" planId={plan.id} planTitle={plan.title} label="Reportar problema neste plano" />
+        </div>
         {plano.dias.map((dia) => {
           const done = progress.includes(dia.dia)
           const sentences = splitIntoSentences(dia.resumo)

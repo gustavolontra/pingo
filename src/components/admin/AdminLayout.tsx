@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
-import { LayoutDashboard, Users, BookOpen, LogOut, FileText, Activity, Library } from 'lucide-react'
+import { LayoutDashboard, Users, BookOpen, LogOut, FileText, Activity, Library, MessageSquareWarning } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/admin/planos', icon: Library, label: 'Planos' },
   { to: '/admin/materias', icon: BookOpen, label: 'Matérias Publicadas' },
   { to: '/admin/aprendizados', icon: FileText, label: 'Aprendizados' },
+  { to: '/admin/reports', icon: MessageSquareWarning, label: 'Reports' },
   { to: '/admin/log', icon: Activity, label: 'Log de Atividade' },
 ]
 
