@@ -49,7 +49,10 @@
       "Bash(curl -s -X DELETE \"https://pingo-team.pages.dev/api/feed?id=8e92ecb9-0f81-4c71-9e93-e695bb914fb2\")",
       "Bash(curl -s -X DELETE \"https://pingo-team.pages.dev/api/feed?id=46c40673-57e3-40de-8c22-1dd5ce1613a2\")",
       "Bash(curl -s -X DELETE \"https://pingo-team.pages.dev/api/feed?id=8e92ecb9-0f81-4c71-9e93-e695bb914fb2\" -w \"\\\\nHTTP %{http_code}\\\\n\")",
-      "Bash(curl -s -X DELETE \"https://pingo-team.pages.dev/api/feed?id=55b8c7d7-aa19-4f97-b5b2-be3cb6a0bb3b\")"
+      "Bash(curl -s -X DELETE \"https://pingo-team.pages.dev/api/feed?id=55b8c7d7-aa19-4f97-b5b2-be3cb6a0bb3b\")",
+      "Bash(curl -s https://pingo.pages.dev/api/feed)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'Total posts: {len\\(d\\)}'\\); [print\\(f\\\\\"{i['tipo']:>8} | {i['autorNome']:20} | {i['conteudo'][:60]}\\\\\"\\) for i in d]\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'Total: {len\\(d\\)}'\\); [print\\(f\\\\\"{i.get\\('tipo'\\):>8} | {i.get\\('autorNome',''\\):25} | {i.get\\('conteudo',''\\)[:80]}\\\\\"\\) for i in d]\")"
     ],
     "additionalDirectories": [
       "/Users/gustavolontra/vs code/pingo-study/src/types",

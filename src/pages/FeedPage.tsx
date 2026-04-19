@@ -428,6 +428,7 @@ function ChallengeModal({ onClose }: { onClose: () => void }) {
 
 export default function FeedPage() {
   const feedItems = useAdminStore((s) => s.feedItems)
+  const students = useAdminStore((s) => s.students)
   const fetchFeed = useAdminStore((s) => s.fetchFeed)
   const fetchStudents = useAdminStore((s) => s.fetchStudents)
   const { studentId } = useStudentAuthStore()
@@ -444,9 +445,35 @@ export default function FeedPage() {
   useEffect(() => { markFeedSeen() }, [feedItems.length])
   const [tab, setTab] = useState<'todos' | 'amigos'>('amigos')
 
+  // Posts de "lista" são derivados do flag `listaPartilhada` dos alunos, não
+  // dum feed item persistido — evita drift quando o POST do feed falha. Para
+  // cada autor criamos um item sintético; se já existir um real mantemos-lhe o
+  // timestamp.
+  const listaFeedItems: FeedItem[] = students
+    .filter((s) => s.listaPartilhada === true && (s.allBooks?.length ?? 0) > 0)
+    .map((s) => {
+      const existing = feedItems.find((f) => f.tipo === 'lista' && f.autorId === s.id)
+      return existing ?? {
+        id: `virtual-lista-${s.id}`,
+        autorId: s.id,
+        autorNome: s.name,
+        autorAt: s.handle ?? '',
+        tipo: 'lista' as const,
+        conteudo: 'partilhou a sua lista de leituras',
+        data: new Date().toISOString(),
+        reacoes: {},
+      }
+    })
+
+  // Combina: restantes tipos (resumo/badge/desafio) + listas derivadas.
+  const combined = [
+    ...feedItems.filter((f) => f.tipo !== 'lista'),
+    ...listaFeedItems,
+  ].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+
   const shown = tab === 'amigos'
-    ? feedItems.filter((f) => f.autorId === studentId || friendIds.includes(f.autorId))
-    : feedItems
+    ? combined.filter((f) => f.autorId === studentId || friendIds.includes(f.autorId))
+    : combined
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
