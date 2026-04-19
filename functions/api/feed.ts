@@ -15,9 +15,20 @@ interface FeedItem {
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const headers = corsHeaders()
-  const raw = await env.PINGO_CONTENT.get('feed')
-  const items: FeedItem[] = raw ? JSON.parse(raw) : []
-  return Response.json(items, { headers })
+  const [rawFeed, rawStudents] = await Promise.all([
+    env.PINGO_CONTENT.get('feed'),
+    env.PINGO_CONTENT.get('students'),
+  ])
+  const items: FeedItem[] = rawFeed ? JSON.parse(rawFeed) : []
+  const students: { id: string }[] = rawStudents ? JSON.parse(rawStudents) : []
+  const liveIds = new Set(students.map((s) => s.id))
+  // Remove posts de autores que já não existem; se algum foi apagado,
+  // persiste a lista filtrada (cleanup idempotente).
+  const alive = items.filter((it) => liveIds.has(it.autorId))
+  if (alive.length !== items.length) {
+    await env.PINGO_CONTENT.put('feed', JSON.stringify(alive))
+  }
+  return Response.json(alive, { headers })
 }
 
 export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {

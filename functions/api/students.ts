@@ -171,6 +171,16 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request }) => {
   const updated = students.filter((s) => s.id !== id)
   await env.PINGO_CONTENT.put('students', JSON.stringify(updated))
 
+  // Limpa artefactos associados ao aluno apagado para não ficarem no feed/convites.
+  const feedRaw = await env.PINGO_CONTENT.get('feed')
+  if (feedRaw) {
+    const items = JSON.parse(feedRaw) as { autorId?: string }[]
+    const cleaned = items.filter((it) => it.autorId !== id)
+    if (cleaned.length !== items.length) {
+      await env.PINGO_CONTENT.put('feed', JSON.stringify(cleaned))
+    }
+  }
+
   return Response.json({ ok: true }, { headers })
 }
 
