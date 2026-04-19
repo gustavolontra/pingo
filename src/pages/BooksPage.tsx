@@ -7,7 +7,6 @@ import {
   BookOpen, Share2, List,
 } from 'lucide-react'
 
-type Tab = 'lendo' | 'lido'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -327,77 +326,144 @@ function BookCard({
         />
       )}
 
-      <div
-        className="card flex gap-4"
-        style={{ borderColor: book.partilhado ? 'rgba(16,185,129,0.2)' : undefined }}
-      >
-        {/* Capa */}
-        <div
-          className="shrink-0 w-14 h-20 rounded-xl overflow-hidden flex items-center justify-center"
-          style={{ background: 'rgba(98,112,245,0.08)', border: '1px solid var(--border)' }}
-        >
-          {book.capa ? (
-            <img src={book.capa} alt={book.titulo} className="w-full h-full object-cover" />
-          ) : (
-            <BookMarked size={22} style={{ color: '#6270f5', opacity: 0.5 }} />
-          )}
+      <div className="group relative rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
+        style={{
+          background: 'var(--surface)',
+          border: `1px solid ${book.partilhado ? 'rgba(16,185,129,0.25)' : 'var(--border)'}`,
+          boxShadow: '0 1px 2px rgba(15,23,42,0.04), 0 2px 6px rgba(15,23,42,0.04)',
+        }}>
+        {/* Status badge no topo-direito */}
+        <span className="absolute top-3 right-3 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+          style={{
+            background: book.status === 'lido' ? 'rgba(16,185,129,0.12)' : 'rgba(99,143,255,0.12)',
+            color: book.status === 'lido' ? '#10b981' : '#6270f5',
+          }}>
+          {book.status === 'lido' ? 'Lido' : 'A ler'}
+        </span>
+
+        <div className="flex gap-3">
+          {/* Capa */}
+          <div className="shrink-0 w-14 h-20 rounded-xl overflow-hidden flex items-center justify-center"
+            style={{
+              background: book.status === 'lido'
+                ? 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.04))'
+                : 'linear-gradient(135deg, rgba(99,143,255,0.14), rgba(167,139,250,0.12))',
+              border: '1px solid var(--border)',
+            }}>
+            {book.capa ? (
+              <img src={book.capa} alt={book.titulo} className="w-full h-full object-cover" />
+            ) : (
+              <BookMarked size={22} style={{ color: book.status === 'lido' ? '#10b981' : '#6270f5', opacity: 0.6 }} />
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0 pr-14">
+            <p className="font-semibold leading-tight truncate text-[15px]" style={{ color: 'var(--text)' }}>{book.titulo}</p>
+            <p className="text-sm mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{book.autor}</p>
+            <p className="text-xs mt-2 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+              {book.status === 'lido' && book.dataFim
+                ? <>✓ Lido em {formatDate(book.dataFim)}</>
+                : <>📖 A ler desde {formatDate(book.dataInicio)}</>}
+            </p>
+            {book.partilhado && (
+              <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full font-medium"
+                style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
+                partilhado com colegas
+              </span>
+            )}
+            {book.resumo && (
+              <p className="text-xs mt-2 line-clamp-3 pl-3 py-1"
+                style={{ color: 'var(--text-muted)', borderLeft: '2px solid rgba(99,143,255,0.25)' }}>
+                {book.resumo}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold leading-tight truncate" style={{ color: 'var(--text)' }}>{book.titulo}</p>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{book.autor}</p>
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
-            {book.status === 'lido' && book.dataFim
-              ? `Lido em ${formatDate(book.dataFim)}`
-              : `A ler desde ${formatDate(book.dataInicio)}`}
-          </p>
-          {book.partilhado && (
-            <span className="inline-block mt-1.5 text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
-              partilhado
-            </span>
-          )}
-          {book.resumo && (
-            <p className="text-xs mt-2 line-clamp-3" style={{ color: 'var(--text-muted)' }}>{book.resumo}</p>
-          )}
-        </div>
-
-        {/* Ações */}
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-slate-100/10" title="Editar">
-            <Pencil size={13} style={{ color: 'var(--text-muted)' }} />
-          </button>
-          {confirmDelete ? (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => deleteBook(book.id)}
-                className="px-2 py-1 rounded-lg text-xs font-semibold"
-                style={{ background: '#ef444420', color: '#ef4444' }}
-              >
-                Confirmar
-              </button>
-              <button onClick={() => setConfirmDelete(false)}>
-                <X size={13} style={{ color: 'var(--text-muted)' }} />
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => setConfirmDelete(true)} className="p-1.5 rounded-lg hover:bg-slate-100/10" title="Eliminar">
-              <Trash2 size={13} style={{ color: 'var(--text-muted)' }} />
+        {/* Ações no rodapé */}
+        <div className="flex items-center justify-between gap-2 mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Editar">
+              <Pencil size={13} style={{ color: 'var(--text-muted)' }} />
             </button>
-          )}
+            {confirmDelete ? (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => deleteBook(book.id)}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold"
+                  style={{ background: '#ef444420', color: '#ef4444' }}
+                >
+                  Confirmar
+                </button>
+                <button onClick={() => setConfirmDelete(false)} className="p-1 rounded">
+                  <X size={12} style={{ color: 'var(--text-muted)' }} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Eliminar">
+                <Trash2 size={13} style={{ color: '#ef4444' }} />
+              </button>
+            )}
+          </div>
           {book.status === 'lendo' && (
             <button
               onClick={() => onMarkRead(book)}
-              className="mt-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
-              style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white' }}
               title="Marcar como lido"
             >
-              <CheckCircle2 size={12} /> Lido
+              <CheckCircle2 size={12} /> Marcar lido
             </button>
           )}
         </div>
       </div>
     </>
+  )
+}
+
+// ── Coluna por estado ─────────────────────────────────────────────────────────
+
+function BooksColumn({
+  title, icon, accent, books, onMarkRead, emptyText,
+}: {
+  title: string
+  icon: string
+  accent: string
+  books: Book[]
+  onMarkRead: (book: Book) => void
+  emptyText: string
+}) {
+  return (
+    <div className="rounded-2xl p-4 md:p-5"
+      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
+            style={{ background: `${accent}20`, color: accent }}>
+            {icon}
+          </span>
+          {title}
+        </h3>
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+          style={{ background: `${accent}18`, color: accent }}>
+          {books.length}
+        </span>
+      </div>
+
+      {books.length === 0 ? (
+        <div className="text-center py-10 rounded-xl" style={{ background: 'var(--surface)' }}>
+          <BookMarked size={26} className="mx-auto mb-2 opacity-25" style={{ color: 'var(--text-muted)' }} />
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{emptyText}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {books.map((book) => (
+            <BookCard key={book.id} book={book} onMarkRead={onMarkRead} />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -412,13 +478,11 @@ export default function BooksPage() {
   const student = students.find((s) => s.id === studentId)
   const listaPartilhada = student?.listaPartilhada ?? false
 
-  const [tab, setTab] = useState<Tab>('lendo')
   const [adding, setAdding] = useState(false)
   const [markingBook, setMarkingBook] = useState<Book | null>(null)
 
   const lendo = books.filter((b) => b.status === 'lendo')
   const lidos = books.filter((b) => b.status === 'lido')
-  const shown = tab === 'lendo' ? lendo : lidos
 
   function handleMarkDone(resumo: string | undefined, partilhado: boolean) {
     if (!markingBook || !studentId) return
@@ -440,7 +504,6 @@ export default function BooksPage() {
       })
     }
     setMarkingBook(null)
-    setTab('lido')
   }
 
   function handleToggleList() {
@@ -460,78 +523,66 @@ export default function BooksPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-2xl font-display font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
-            <BookMarked size={22} style={{ color: '#6270f5' }} /> Os meus livros
+          <h2 className="text-2xl md:text-3xl font-display font-bold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+            <span className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, rgba(99,143,255,0.18), rgba(167,139,250,0.18))' }}>
+              <BookMarked size={18} style={{ color: '#6270f5' }} />
+            </span>
+            Os meus livros
           </h2>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+          <p className="mt-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>
             Regista o que estás a ler e partilha resumos com os teus colegas.
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
           <button
             onClick={handleToggleList}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all"
             style={{
-              background: listaPartilhada ? 'rgba(16,185,129,0.12)' : 'var(--surface-2)',
+              background: listaPartilhada ? 'rgba(16,185,129,0.12)' : 'transparent',
               color: listaPartilhada ? '#10b981' : 'var(--text-muted)',
-              border: `1px solid ${listaPartilhada ? 'rgba(16,185,129,0.25)' : 'var(--border)'}`,
+              border: `1px solid ${listaPartilhada ? 'rgba(16,185,129,0.3)' : 'var(--border)'}`,
             }}
             title={listaPartilhada ? 'Lista visível no perfil público — clica para deixar de partilhar' : 'Partilhar lista no perfil público'}
           >
             {listaPartilhada ? <List size={14} /> : <Share2 size={14} />}
             {listaPartilhada ? 'Lista partilhada' : 'Partilhar lista'}
           </button>
-          <button onClick={() => setAdding(true)} className="btn-primary flex items-center gap-2">
+          <button onClick={() => setAdding(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, #6270f5, #a78bfa)',
+              color: 'white',
+              boxShadow: '0 2px 8px rgba(99,143,255,0.35)',
+            }}>
             <Plus size={15} /> Adicionar livro
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex rounded-xl p-1" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-        {([['lendo', 'A ler', lendo.length], ['lido', 'Lidos', lidos.length]] as const).map(([key, label, count]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-1.5"
-            style={{
-              background: tab === key ? 'var(--surface)' : 'transparent',
-              color: tab === key ? 'var(--text)' : 'var(--text-muted)',
-              boxShadow: tab === key ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-            }}
-          >
-            {label}
-            {count > 0 && (
-              <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ background: tab === key ? 'rgba(98,112,245,0.12)' : 'var(--border)', color: tab === key ? '#6270f5' : 'var(--text-muted)' }}>
-                {count}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Duas colunas: A ler | Lidos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <BooksColumn
+          title="A ler"
+          icon="📖"
+          accent="#6270f5"
+          books={lendo}
+          onMarkRead={setMarkingBook}
+          emptyText="Adiciona o livro que estás a ler."
+        />
+        <BooksColumn
+          title="Lidos"
+          icon="✓"
+          accent="#10b981"
+          books={lidos}
+          onMarkRead={setMarkingBook}
+          emptyText="Marca um livro como lido para aparecer aqui."
+        />
       </div>
-
-      {/* Lista */}
-      {shown.length === 0 ? (
-        <div className="card text-center py-12">
-          <BookMarked size={36} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--text-muted)' }} />
-          <p className="font-semibold" style={{ color: 'var(--text)' }}>
-            {tab === 'lendo' ? 'Nenhum livro em leitura' : 'Ainda não terminaste nenhum livro'}
-          </p>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            {tab === 'lendo' ? 'Adiciona o livro que estás a ler.' : 'Marca um livro como lido para aparecer aqui.'}
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {shown.map((book) => (
-            <BookCard key={book.id} book={book} onMarkRead={setMarkingBook} />
-          ))}
-        </div>
-      )}
 
       {/* Modais */}
       {adding && (
