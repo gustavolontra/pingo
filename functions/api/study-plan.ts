@@ -1,6 +1,6 @@
-interface Env {
-  ANTHROPIC_API_KEY: string
-}
+import { callLLM, LLMError, type LLMEnv } from '../_shared/llm'
+
+interface Env extends LLMEnv {}
 
 interface MaterialInput {
   nome?: string
@@ -53,9 +53,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       materials?: MaterialInput[]
     }
 
-    if (!env.ANTHROPIC_API_KEY) {
-      return Response.json({ error: 'API key not configured' }, { status: 500, headers })
-    }
+    // A validação da chave é feita dentro de callLLM() conforme o provider escolhido.
 
     const subject = body.subject ?? ''
     const year = body.year ?? ''
@@ -118,17 +116,7 @@ OBJETIVO: ${goal === 'exame' ? `Exame em ${daysAvailable} dias (${targetStr})` :
 DATA DE HOJE (Dia 1): ${todayStr}
 ${subject ? `MATÉRIA: ${subject}\n` : ''}${year ? `NÍVEL: ${year}\n` : ''}${!hasOwnMaterial ? '\nNão há materiais fornecidos — gera o conteúdo base a partir dos tópicos.' : ''}`
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8192,
-        system: `És um tutor especializado em criar planos de estudo personalizados.
+    const systemPrompt = `És um tutor especializado em criar planos de estudo personalizados.
 
 Cria APENAS a estrutura do plano — temas e resumos para cada dia. NÃO geres flashcards, quiz nem exercícios.
 
@@ -153,18 +141,24 @@ Devolve APENAS JSON válido:
   "dias": [
     { "dia": 1, "data": "DD/MM/AAAA", "tema": "tema do dia", "resumo": "2-3 frases sobre o que estudar", "fontes": [0, 1] }
   ]
-}`,
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
-    })
+}`
 
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => '')
-      return Response.json({ error: `AI request failed (${res.status})`, detail: errBody.slice(0, 200) }, { status: 502, headers })
+    const llmOverride = new URL(request.url).searchParams.get('llm')
+    let llmResult
+    try {
+      llmResult = await callLLM(env, {
+        system: systemPrompt,
+        user: userPrompt,
+        maxTokens: 8192,
+        model: 'deep',
+      }, llmOverride)
+    } catch (err) {
+      if (err instanceof LLMError) {
+        return Response.json({ error: `AI request failed (${err.status})`, provider: err.provider, detail: err.detail }, { status: 502, headers })
+      }
+      throw err
     }
-
-    const data = await res.json() as { content: { type: string; text: string }[]; stop_reason?: string }
-    const text = data.content?.[0]?.text ?? ''
+    const text = llmResult.text
 
     let plan: { resumo?: string; tempoEstimadoPorDia?: number; avancado?: boolean; regras?: Record<string, number>; dias?: PlanoDia[] } | null = null
     const stripped = text.replace(/```json?\s*/g, '').replace(/```\s*/g, '').trim()
@@ -175,8 +169,9 @@ Devolve APENAS JSON válido:
     }
 
     if (!plan || !Array.isArray(plan.dias)) {
-      const detail = data.stop_reason === 'max_tokens' ? 'Resposta truncada (max_tokens)' : 'JSON inválido'
-      return Response.json({ error: 'Formato inesperado da IA — tenta novamente', detail }, { status: 500, headers })
+      const truncated = llmResult.finishReason === 'max_tokens' || llmResult.finishReason === 'length'
+      const detail = truncated ? 'Resposta truncada (max_tokens)' : 'JSON inválido'
+      return Response.json({ error: 'Formato inesperado da IA — tenta novamente', detail, provider: llmResult.provider }, { status: 500, headers })
     }
 
     const errors = validatePlano(plan.dias, plannedDays)
