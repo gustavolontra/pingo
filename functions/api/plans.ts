@@ -14,6 +14,8 @@ interface StoredPlan {
   materials: { id: string; title: string; type: string }[]
   /** Sticky: fica true assim que o plano é partilhado ao menos uma vez. */
   wasShared?: boolean
+  /** Número de alunos (não-donos) que adicionaram este plano aos seus. */
+  followersCount?: number
   plano: {
     resumo?: string
     tempoEstimadoPorDia?: number
@@ -107,6 +109,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     plano: body.plano,
     shared: body.shared ?? false,
     wasShared: Boolean(body.shared),
+    followersCount: 0,
     createdAt: now,
     updatedAt: now,
     diasEstudados: body.diasEstudados ?? [],
@@ -130,6 +133,26 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
   const url = new URL(request.url)
   const ownerId = url.searchParams.get('ownerId')
   const shared = url.searchParams.get('shared')
+  const all = url.searchParams.get('all')
+
+  if (all === '1') {
+    // Admin: lista todos os planos. Itera as chaves `plan:{uuid}` e filtra sub-chaves.
+    const out: StoredPlan[] = []
+    let cursor: string | undefined
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const list = await env.PINGO_CONTENT.list({ prefix: 'plan:', cursor })
+      for (const k of list.keys) {
+        // Só aceita chaves no formato plan:{uuid} (sem mais `:` depois).
+        if (k.name.split(':').length !== 2) continue
+        const plan = await readJSON<StoredPlan | null>(env, k.name, null)
+        if (plan) out.push(plan)
+      }
+      if (list.list_complete) break
+      cursor = list.cursor
+    }
+    return Response.json(out, { headers })
+  }
 
   if (ownerId && !shared) {
     const [ownedIds, followedIds] = await Promise.all([
@@ -212,7 +235,8 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request }) => {
   const existing = await readJSON<StoredPlan | null>(env, PLAN_KEY(id), null)
   if (!existing) return Response.json({ ok: true }, { headers })
 
-  if (existing.wasShared || existing.shared) {
+  const force = url.searchParams.get('force') === '1'
+  if (!force && (existing.wasShared || existing.shared)) {
     return Response.json({
       error: 'Este plano já foi partilhado e não pode ser apagado. Podes despartilhar — quem já começou a estudar mantém acesso.',
     }, { status: 409, headers })

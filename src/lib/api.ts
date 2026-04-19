@@ -433,8 +433,15 @@ export const api = {
     if (!res.ok) return null
     return res.json()
   },
-  async deletePlan(id: string) {
-    await fetch(`${BASE}/plans?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+  async deletePlan(id: string, opts?: { force?: boolean }) {
+    const params = new URLSearchParams({ id })
+    if (opts?.force) params.set('force', '1')
+    await fetch(`${BASE}/plans?${params.toString()}`, { method: 'DELETE' })
+  },
+  async getAllPlans() {
+    const res = await fetch(`${BASE}/plans?all=1`)
+    if (!res.ok) return []
+    return res.json()
   },
   async getFollowedPlanIds(studentId: string): Promise<string[]> {
     const res = await fetch(`${BASE}/plans/followed?studentId=${encodeURIComponent(studentId)}`)

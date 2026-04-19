@@ -23,6 +23,7 @@ import AdminStudentDetailPage from '@/pages/admin/AdminStudentDetailPage'
 import AdminDisciplineContentPage from '@/pages/admin/AdminDisciplineContentPage'
 import AdminLearningsPage from '@/pages/admin/AdminLearningsPage'
 import AdminActivityLogPage from '@/pages/admin/AdminActivityLogPage'
+import AdminPlansPage from '@/pages/admin/AdminPlansPage'
 import ConvitePage from '@/pages/ConvitePage'
 import { useAdminStore } from '@/store/useAdminStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
@@ -82,6 +83,7 @@ export default function App() {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="usuarios" element={<AdminUsersPage />} />
         <Route path="usuarios/:id" element={<AdminStudentDetailPage />} />
+        <Route path="planos" element={<AdminPlansPage />} />
         <Route path="materias" element={<AdminSubjectsPage />} />
         <Route path="materias/:id" element={<AdminDisciplineContentPage />} />
         <Route path="aprendizados" element={<AdminLearningsPage />} />

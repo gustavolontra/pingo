@@ -2,7 +2,25 @@ interface Env {
   PINGO_CONTENT: KVNamespace
 }
 
+interface StoredPlanLite {
+  ownerId?: string
+  followersCount?: number
+  [k: string]: unknown
+}
+
 const KEY = (studentId: string) => `student:${studentId}:followed-plans`
+const PLAN_KEY = (id: string) => `plan:${id}`
+
+async function adjustFollowersCount(env: Env, planId: string, delta: number): Promise<void> {
+  const raw = await env.PINGO_CONTENT.get(PLAN_KEY(planId))
+  if (!raw) return
+  try {
+    const plan = JSON.parse(raw) as StoredPlanLite
+    const current = typeof plan.followersCount === 'number' ? plan.followersCount : 0
+    plan.followersCount = Math.max(0, current + delta)
+    await env.PINGO_CONTENT.put(PLAN_KEY(planId), JSON.stringify(plan))
+  } catch { /* ignora */ }
+}
 
 async function readList(env: Env, studentId: string): Promise<string[]> {
   const raw = await env.PINGO_CONTENT.get(KEY(studentId))
@@ -35,6 +53,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
   if (!ids.includes(body.planId)) {
     ids.push(body.planId)
     await writeList(env, body.studentId, ids)
+    await adjustFollowersCount(env, body.planId, +1)
   }
   return Response.json({ ok: true, ids }, { headers })
 }
@@ -50,7 +69,10 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request }) => {
   }
   const ids = await readList(env, studentId)
   const filtered = ids.filter((id) => id !== planId)
-  await writeList(env, studentId, filtered)
+  if (filtered.length !== ids.length) {
+    await writeList(env, studentId, filtered)
+    await adjustFollowersCount(env, planId, -1)
+  }
   return Response.json({ ok: true, ids: filtered }, { headers })
 }
 
