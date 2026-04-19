@@ -18,10 +18,41 @@ interface PlanoDia {
   fontes?: number[]
 }
 
-function getRegras(avancado: boolean) {
-  const base = { flashcards: 5, quiz: 3, intensidade: 'Ritmo linear', tempoEstimado: 20 }
+/**
+ * Escala quantidade de exercícios por dia conforme a compressão do plano.
+ * Baseline: 9 dias de conteúdo → 5 flashcards + 3 quiz/dia.
+ * Menos dias → mais exercícios/dia para manter a cobertura total similar,
+ * com tectos práticos para não sobrecarregar.
+ */
+function getRegras(contentDays: number, avancado: boolean) {
+  const REFERENCE_DAYS = 9
+  const BASE_FLASH = 5
+  const BASE_QUIZ = 3
+  const BASE_MINUTOS = 20
+
+  const safeDays = Math.max(1, contentDays)
+  const factor = REFERENCE_DAYS / safeDays
+
+  const flashcards = Math.min(15, Math.max(BASE_FLASH, Math.round(BASE_FLASH * factor)))
+  const quiz = Math.min(10, Math.max(BASE_QUIZ, Math.round(BASE_QUIZ * factor)))
+  const tempoEstimado = Math.min(60, Math.max(BASE_MINUTOS, Math.round(BASE_MINUTOS * Math.sqrt(factor))))
+
+  const intensidade = factor >= 4 ? 'Revisão intensiva'
+    : factor >= 2 ? 'Consolidação'
+    : factor > 1.1 ? 'Ritmo acelerado'
+    : 'Ritmo linear'
+
+  const base = { flashcards, quiz, intensidade, tempoEstimado }
   if (avancado) {
-    return { ...base, flashcards: 3, tempoEstimado: 35, lacunas: 3, classificacao: 2, transformacao: 2, identificacao: 1 }
+    return {
+      ...base,
+      flashcards: Math.max(3, Math.floor(flashcards * 0.7)),
+      tempoEstimado: Math.min(75, tempoEstimado + 20),
+      lacunas: 3,
+      classificacao: 2,
+      transformacao: 2,
+      identificacao: 1,
+    }
   }
   return base
 }
@@ -82,7 +113,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     }
 
     const isAdvanced = body.avancado === true
-    const regras = getRegras(isAdvanced)
 
     // Número de dias: exame usa daysAvailable; estudo contínuo usa heurística simples por tópicos.
     // Reservamos sempre o último dia para revisão geral.
@@ -93,6 +123,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
 
     // Divide cada material em plannedDays-1 fatias lineares (último dia = revisão) e constrói o bloco de contexto.
     const contentDays = Math.max(1, plannedDays - 1)
+    // Regras escalam com a compressão: plannos curtos têm mais flashcards/quiz por dia.
+    const regras = getRegras(contentDays, isAdvanced)
     const MAX_PER_MATERIAL = 1500
     const materialsBlock = normalizedMaterials
       .map((m, i) => {
