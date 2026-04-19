@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, Check, Clock, FileText, Loader2, Pencil, RefreshCw, Share2, Sparkles, Tag, Trash2, X } from 'lucide-react'
+import { ArrowLeft, BookmarkPlus, BookmarkCheck, Calendar, Check, Clock, FileText, Loader2, Pencil, RefreshCw, Share2, Sparkles, Tag, Trash2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
@@ -74,15 +74,20 @@ export default function PlanViewPage() {
   // Apagar
   const [deleteOpen, setDeleteOpen] = useState(false)
 
+  // Seguir (para visitantes)
+  const [isFollowing, setIsFollowing] = useState(false)
+
   useEffect(() => {
     if (!id || !studentId) return
     setLoading(true)
     Promise.all([
       api.getPlan(id),
       api.getPlanProgress(studentId, id),
-    ]).then(([p, prog]: [StoredPlan | null, { diasEstudados: number[] }]) => {
+      api.getFollowedPlanIds(studentId),
+    ]).then(([p, prog, followedIds]: [StoredPlan | null, { diasEstudados: number[] }, string[]]) => {
       setPlan(p)
       setProgress(prog.diasEstudados ?? [])
+      setIsFollowing(followedIds.includes(id))
       setLoading(false)
     })
   }, [id, studentId])
@@ -100,6 +105,19 @@ export default function PlanViewPage() {
     setBusy(true)
     await api.deletePlan(plan.id)
     navigate('/biblioteca')
+  }
+
+  async function toggleFollow() {
+    if (!plan || !studentId) return
+    setBusy(true)
+    if (isFollowing) {
+      await api.unfollowPlan(studentId, plan.id)
+      setIsFollowing(false)
+    } else {
+      await api.followPlan(studentId, plan.id)
+      setIsFollowing(true)
+    }
+    setBusy(false)
   }
 
   async function unshareInstead() {
@@ -326,6 +344,21 @@ export default function PlanViewPage() {
                 <Trash2 size={14} style={{ color: '#ef4444' }} />
               </button>
             )}
+          </div>
+        )}
+        {!isOwner && (
+          <div className="flex items-center gap-1 mt-1">
+            <button onClick={toggleFollow} disabled={busy}
+              className="px-3 py-2 rounded-lg flex items-center gap-1.5 text-xs font-medium"
+              title={isFollowing ? 'Remover dos teus planos' : 'Adicionar aos teus planos'}
+              style={{ background: isFollowing ? 'rgba(16,185,129,0.1)' : '#6270f5',
+                       border: `1px solid ${isFollowing ? 'rgba(16,185,129,0.3)' : '#6270f5'}`,
+                       color: isFollowing ? '#10b981' : 'white', opacity: busy ? 0.6 : 1 }}>
+              {busy ? <Loader2 size={14} className="animate-spin" />
+                : isFollowing ? <BookmarkCheck size={14} />
+                : <BookmarkPlus size={14} />}
+              {isFollowing ? 'Nos meus planos' : 'Adicionar aos meus planos'}
+            </button>
           </div>
         )}
       </div>

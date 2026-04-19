@@ -50,6 +50,7 @@ interface PlanIndexEntry {
 
 const PLAN_KEY = (id: string) => `plan:${id}`
 const STUDENT_PLANS_KEY = (studentId: string) => `student:${studentId}:plans`
+const FOLLOWED_KEY = (studentId: string) => `student:${studentId}:followed-plans`
 const SHARED_INDEX_KEY = 'plans:index'
 
 async function readJSON<T>(env: Env, key: string, fallback: T): Promise<T> {
@@ -131,8 +132,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
   const shared = url.searchParams.get('shared')
 
   if (ownerId && !shared) {
-    const ids = await readJSON<string[]>(env, STUDENT_PLANS_KEY(ownerId), [])
-    const plans = await Promise.all(ids.map((id) => readJSON<StoredPlan | null>(env, PLAN_KEY(id), null)))
+    const [ownedIds, followedIds] = await Promise.all([
+      readJSON<string[]>(env, STUDENT_PLANS_KEY(ownerId), []),
+      readJSON<string[]>(env, FOLLOWED_KEY(ownerId), []),
+    ])
+    const allIds = Array.from(new Set([...ownedIds, ...followedIds]))
+    const plans = await Promise.all(allIds.map((id) => readJSON<StoredPlan | null>(env, PLAN_KEY(id), null)))
     return Response.json(plans.filter((p): p is StoredPlan => p !== null), { headers })
   }
 

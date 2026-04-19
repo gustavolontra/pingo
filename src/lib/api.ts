@@ -436,6 +436,25 @@ export const api = {
   async deletePlan(id: string) {
     await fetch(`${BASE}/plans?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
   },
+  async getFollowedPlanIds(studentId: string): Promise<string[]> {
+    const res = await fetch(`${BASE}/plans/followed?studentId=${encodeURIComponent(studentId)}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async followPlan(studentId: string, planId: string) {
+    const res = await fetch(`${BASE}/plans/followed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, planId }),
+    })
+    if (!res.ok) return null
+    return res.json()
+  },
+  async unfollowPlan(studentId: string, planId: string) {
+    const res = await fetch(`${BASE}/plans/followed?studentId=${encodeURIComponent(studentId)}&planId=${encodeURIComponent(planId)}`, { method: 'DELETE' })
+    if (!res.ok) return null
+    return res.json()
+  },
   async getPlanProgressAll(studentId: string): Promise<Record<string, { diasEstudados: number[]; updatedAt: string }>> {
     const res = await fetch(`${BASE}/plans/progress?studentId=${encodeURIComponent(studentId)}`)
     if (!res.ok) return {}

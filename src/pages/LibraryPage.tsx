@@ -16,6 +16,7 @@ interface MyPlan {
   plano: { dias: unknown[]; resumo?: string; tempoEstimadoPorDia?: number }
   shared: boolean
   createdAt: string
+  ownerId: string
 }
 
 interface SharedPlanEntry {
@@ -208,12 +209,20 @@ export default function LibraryPage() {
                     <span>· {(myProgress[plan.id]?.diasEstudados ?? []).length}/{plan.plano.dias.length} feitos</span>
                   </div>
                 </div>
-                {plan.shared && (
-                  <span className="text-xs px-2 py-0.5 rounded"
-                    style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
-                    Partilhado
-                  </span>
-                )}
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  {plan.shared && (
+                    <span className="text-xs px-2 py-0.5 rounded"
+                      style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>
+                      Partilhado
+                    </span>
+                  )}
+                  {plan.ownerId !== studentId && (
+                    <span className="text-xs px-2 py-0.5 rounded"
+                      style={{ background: 'rgba(99,143,255,0.1)', color: '#6270f5' }}>
+                      Da comunidade
+                    </span>
+                  )}
+                </div>
               </div>
             </button>
           ))}
