@@ -76,6 +76,8 @@ export default function PlanViewPage() {
 
   // Seguir (para visitantes)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [confirmFollowOpen, setConfirmFollowOpen] = useState(false)
+  const [pendingDay, setPendingDay] = useState<number | null>(null)
 
   useEffect(() => {
     if (!id || !studentId) return
@@ -118,6 +120,37 @@ export default function PlanViewPage() {
       setIsFollowing(true)
     }
     setBusy(false)
+  }
+
+  function handleDayClick(diaNum: number) {
+    if (!plan) return
+    const isVisitor = plan.ownerId !== studentId
+    if (isVisitor && !isFollowing) {
+      setPendingDay(diaNum)
+      setConfirmFollowOpen(true)
+      return
+    }
+    navigate(`/plano/${plan.id}/dia/${diaNum}`)
+  }
+
+  async function confirmFollowAndStudy() {
+    if (!plan || !studentId || pendingDay == null) return
+    setBusy(true)
+    await api.followPlan(studentId, plan.id)
+    setIsFollowing(true)
+    setBusy(false)
+    const dia = pendingDay
+    setPendingDay(null)
+    setConfirmFollowOpen(false)
+    navigate(`/plano/${plan.id}/dia/${dia}`)
+  }
+
+  function studyWithoutFollowing() {
+    if (!plan || pendingDay == null) return
+    const dia = pendingDay
+    setPendingDay(null)
+    setConfirmFollowOpen(false)
+    navigate(`/plano/${plan.id}/dia/${dia}`)
   }
 
   async function unshareInstead() {
@@ -429,7 +462,7 @@ export default function PlanViewPage() {
           const done = progress.includes(dia.dia)
           const sentences = splitIntoSentences(dia.resumo)
           return (
-            <button key={dia.dia} onClick={() => navigate(`/plano/${plan.id}/dia/${dia.dia}`)}
+            <button key={dia.dia} onClick={() => handleDayClick(dia.dia)}
               className="w-full text-left p-4 rounded-xl transition-all hover:opacity-95"
               style={{ background: 'var(--surface)',
                        border: `1px solid ${done ? 'rgba(16,185,129,0.25)' : 'var(--border)'}` }}>
@@ -471,6 +504,53 @@ export default function PlanViewPage() {
           )
         })}
       </div>
+
+      {/* Modal: adicionar plano antes de estudar */}
+      {confirmFollowOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => !busy && setConfirmFollowOpen(false)}>
+          <div className="w-full max-w-sm rounded-xl p-5"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                <BookmarkPlus size={16} style={{ color: '#6270f5' }} />
+                Começar a estudar
+              </h3>
+              <button onClick={() => !busy && setConfirmFollowOpen(false)} className="p-1 rounded">
+                <X size={16} style={{ color: 'var(--text-muted)' }} />
+              </button>
+            </div>
+            <p className="text-sm mb-3" style={{ color: 'var(--text)' }}>
+              Este plano é da comunidade. Queres adicioná-lo aos teus planos para aparecer
+              no teu dashboard e biblioteca?
+            </p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+              Se preferires só espreitar, podes estudar o dia sem adicionar — depois
+              decides se queres guardar.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button onClick={confirmFollowAndStudy} disabled={busy}
+                className="w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
+                style={{ background: '#6270f5', color: 'white', opacity: busy ? 0.6 : 1 }}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <BookmarkPlus size={14} />}
+                Adicionar aos meus planos e estudar
+              </button>
+              <button onClick={studyWithoutFollowing} disabled={busy}
+                className="w-full py-2 rounded-lg text-sm font-medium"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                Só ver este dia
+              </button>
+              <button onClick={() => !busy && setConfirmFollowOpen(false)} disabled={busy}
+                className="w-full py-2 rounded-lg text-xs"
+                style={{ color: 'var(--text-muted)' }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: apagar plano */}
       {deleteOpen && (

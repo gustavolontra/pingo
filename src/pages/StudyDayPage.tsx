@@ -62,15 +62,6 @@ export default function StudyDayPage() {
       setPlan(p)
       setProgress(prog.diasEstudados ?? [])
       setLoading(false)
-      // Auto-follow: se o aluno está a estudar um dia de um plano que não é
-      // seu e ainda não segue, adicionamos aos planos dele.
-      if (p && p.ownerId !== studentId) {
-        api.getFollowedPlanIds(studentId).then((ids) => {
-          if (!ids.includes(p.id)) {
-            api.followPlan(studentId, p.id)
-          }
-        }).catch(() => { /* silencioso */ })
-      }
     })
   }, [id, studentId])
 
