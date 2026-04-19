@@ -203,10 +203,14 @@ export default function StudyDayPage() {
 // ── Loading animado ─────────────────────────────────────────────────────────
 
 const GEN_MESSAGES = [
-  { icon: '📖', text: 'A ler o tema e contexto...' },
-  { icon: '🧠', text: 'A preparar flashcards...' },
-  { icon: '❓', text: 'A formular perguntas de quiz...' },
-  { icon: '✨', text: 'A afinar as respostas e explicações...' },
+  { icon: '📖', text: 'A ler o tema e o contexto do dia...' },
+  { icon: '🎯', text: 'A identificar os conceitos mais importantes...' },
+  { icon: '🧠', text: 'A preparar flashcards que reforçam a aprendizagem...' },
+  { icon: '❓', text: 'A formular perguntas que testam a compreensão...' },
+  { icon: '✍️', text: 'A escrever explicações claras em Português de Portugal...' },
+  { icon: '🔍', text: 'A rever a coerência entre respostas e explicações...' },
+  { icon: '⚖️', text: 'A equilibrar dificuldade com o nível de ensino...' },
+  { icon: '✨', text: 'A afinar os últimos detalhes...' },
   { icon: '⏳', text: 'Quase lá...' },
 ]
 
@@ -216,7 +220,7 @@ function GeneratingContent() {
   useEffect(() => {
     const interval = setInterval(() => {
       setStepIndex((i) => Math.min(i + 1, GEN_MESSAGES.length - 1))
-    }, 3500)
+    }, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -241,8 +245,8 @@ function GeneratingContent() {
           style={{ color: 'var(--text)' }}>
           {current.text}
         </p>
-        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-          Este processo pode demorar 10–20 segundos.
+        <p className="text-xs mt-2 max-w-sm mx-auto leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+          A preparação cuidada de flashcards e quiz consistentes demora normalmente entre <strong>1 e 2 minutos</strong>. Vale a pena esperar — o material fica mais afinado ao nível e aos tópicos.
         </p>
 
         {/* Pontos que pulsam */}
