@@ -232,7 +232,7 @@ function PlanRow({
           </div>
 
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            {completedCount}/{total} dias feitos
+            {completedCount}/{total} dia{total === 1 ? '' : 's'} feito{total === 1 ? '' : 's'}
             {plan.shared && ' · partilhado'}
           </p>
 

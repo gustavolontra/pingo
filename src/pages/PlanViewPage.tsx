@@ -162,12 +162,50 @@ export default function PlanViewPage() {
     }
 
     setBusy(true)
-    // Recompõe as datas de cada dia a partir de hoje (um dia por dia plano),
-    // mantendo tema e resumo. O último dia fica em targetDate - 1, excepto
-    // se o plano for mais comprido que o intervalo disponível — aí mantém
-    // o número de dias mas eles podem cair a partir de targetDate (o aluno
-    // pode regerar o plano se precisar de ajustar a densidade).
+
     const totalDays = plan.plano.dias.length
+    // Dias disponíveis entre hoje e a data da prova (inclusivo do dia da prova).
+    const availableDays = Math.max(1, Math.ceil((target.getTime() - today.getTime()) / 86400000) + 1)
+
+    // Se o plano tem um nº de dias diferente do que a nova data comporta,
+    // regeneramos a estrutura para o aluno não ficar com overflow ou lacunas.
+    if (totalDays !== availableDays) {
+      // Primeiro persistimos a nova targetDate, depois chamamos o regenerate.
+      await api.updatePlan(plan.id, { targetDate: target.toISOString() })
+      setEditDateOpen(false)
+
+      // Materiais da biblioteca (pasted/local perdem-se).
+      const materialsForApi: { title: string; content: string; type: string }[] = []
+      for (const m of plan.materials) {
+        if (m.id.startsWith('pasted-') || m.id.startsWith('local-')) continue
+        const res = await fetch(`/api/materials/${encodeURIComponent(m.id)}`).catch(() => null)
+        if (res && res.ok) {
+          const full = await res.json() as { title: string; content: string; type: string }
+          materialsForApi.push({ title: full.title, content: full.content, type: full.type })
+        }
+      }
+      try {
+        const result = await api.generateStudyPlan({
+          title: plan.title,
+          goal: plan.goal,
+          topics: plan.topics,
+          subject: plan.subject ?? plan.title,
+          year: plan.level,
+          targetDate: target.toISOString(),
+          materials: materialsForApi,
+        })
+        const updated = await api.updatePlan(plan.id, { plano: result })
+        if (updated) setPlan(updated as StoredPlan)
+        await api.setPlanProgress(studentId!, plan.id, [])
+        setProgress([])
+      } catch (e) {
+        setDateError(e instanceof Error ? `Data guardada, mas regeneração falhou: ${e.message}` : 'Data guardada, mas regeneração falhou.')
+      }
+      setBusy(false)
+      return
+    }
+
+    // Se o nº de dias bate certo, só re-datamos sem regerar.
     const updatedDias = plan.plano.dias.map((d, i) => {
       const data = new Date(today)
       data.setDate(today.getDate() + i)
@@ -181,14 +219,6 @@ export default function PlanViewPage() {
     if (updated) setPlan(updated as StoredPlan)
     setBusy(false)
     setEditDateOpen(false)
-
-    // Avisa se o plano extravasa a nova data.
-    const lastDay = new Date(today)
-    lastDay.setDate(today.getDate() + totalDays - 1)
-    if (lastDay > target) {
-      setDateError(`Atenção: o plano tem ${totalDays} dias mas a prova é em ${Math.ceil((target.getTime() - today.getTime()) / 86400000) + 1} dias. O último dia vai passar a data da prova.`)
-      setTimeout(() => setDateError(''), 6000)
-    }
   }
 
   if (loading) {
@@ -291,7 +321,7 @@ export default function PlanViewPage() {
               {plano.resumo ?? `Plano de ${totalDays} dia${totalDays !== 1 ? 's' : ''}`}
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {doneCount}/{totalDays} dias concluídos
+              {doneCount}/{totalDays} dia{totalDays === 1 ? '' : 's'} concluído{totalDays === 1 ? '' : 's'}
             </p>
           </div>
           <div className="text-xs font-bold" style={{ color: pct === 100 ? '#10b981' : '#6270f5' }}>
@@ -472,7 +502,7 @@ export default function PlanViewPage() {
               className="w-full px-3 py-2 rounded-lg text-sm"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }} />
             <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-              Os dias do plano vão ser re-datados a começar hoje. O conteúdo (tema, resumo, flashcards, quiz) mantém-se.
+              Se o número de dias do plano bater com o intervalo até à nova data, apenas re-datamos. Se não bater, o plano é regerado para caber no novo intervalo (o conteúdo existente será substituído).
             </p>
             {dateError && (
               <p className="text-xs mt-3 p-2 rounded" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>

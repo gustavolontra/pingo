@@ -204,7 +204,7 @@ export default function LibraryPage() {
                         <Calendar size={10} /> {new Date(plan.targetDate).toLocaleDateString('pt-PT')}
                       </span>
                     )}
-                    <span>{plan.plano.dias.length} dias</span>
+                    <span>{plan.plano.dias.length} dia{plan.plano.dias.length === 1 ? '' : 's'}</span>
                     <span>· {(myProgress[plan.id]?.diasEstudados ?? []).length}/{plan.plano.dias.length} feitos</span>
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export default function LibraryPage() {
                         <GraduationCap size={10} /> {plan.level}
                       </span>
                     )}
-                    <span>{plan.days} dias</span>
+                    <span>{plan.days} dia{plan.days === 1 ? '' : 's'}</span>
                     <span className="flex items-center gap-1">
                       <User size={10} /> {plan.usageCount}× usado
                     </span>
