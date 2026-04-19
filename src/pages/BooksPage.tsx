@@ -241,8 +241,8 @@ function BookCard({
               partilhado
             </span>
           )}
-          {book.resumo && !book.partilhado && (
-            <p className="text-xs mt-2 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{book.resumo}</p>
+          {book.resumo && (
+            <p className="text-xs mt-2 line-clamp-3" style={{ color: 'var(--text-muted)' }}>{book.resumo}</p>
           )}
         </div>
 
