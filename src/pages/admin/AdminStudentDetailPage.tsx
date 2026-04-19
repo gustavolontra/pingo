@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
-import { ArrowLeft, Zap, Flame, Clock, BookOpen, Trophy, School, Mail, GraduationCap } from 'lucide-react'
+import { ArrowLeft, Zap, Flame, Clock, BookOpen, Trophy, School, Mail, GraduationCap, Calendar, AtSign } from 'lucide-react'
 import { formatMinutes } from '@/lib/utils'
 
 export default function AdminStudentDetailPage() {
@@ -63,6 +63,18 @@ export default function AdminStudentDetailPage() {
             <span className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>
               <GraduationCap size={13} /> {student.grade}
             </span>
+            {student.handle && (
+              <span className="flex items-center gap-1.5 text-sm" style={{ color: '#6270f5' }}>
+                <AtSign size={13} /> {student.handle}
+              </span>
+            )}
+            {student.createdAt && (
+              <span className="flex items-center gap-1.5 text-sm"
+                style={{ color: 'var(--text-muted)' }}
+                title={`Desde ${new Date(student.createdAt).toLocaleString('pt-PT')}`}>
+                <Calendar size={13} /> Desde {new Date(student.createdAt).toLocaleDateString('pt-PT')}
+              </span>
+            )}
           </div>
           {student.lastActiveAt && (
             <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>

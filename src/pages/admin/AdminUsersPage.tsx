@@ -260,7 +260,7 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-                {['Nome', 'Email', 'Escola', 'Série', ''].map((h) => (
+                {['Nome', 'Email', 'Escola', 'Série', 'Desde', ''].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold" style={{ color: 'var(--text-muted)' }}>{h}</th>
                 ))}
               </tr>
@@ -302,6 +302,10 @@ function StudentRow({ student, onEdit, onDelete }: { student: Student; onEdit: (
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.login}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.school}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.grade}</td>
+      <td className="px-5 py-3.5 text-xs" style={{ color: 'var(--text-muted)' }}
+        title={student.createdAt ? new Date(student.createdAt).toLocaleString('pt-PT') : undefined}>
+        {student.createdAt ? new Date(student.createdAt).toLocaleDateString('pt-PT') : '—'}
+      </td>
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-1">
           <button onClick={() => navigate(`/admin/usuarios/${student.id}`)} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: '#6270f5' }} title="Ver detalhe">
