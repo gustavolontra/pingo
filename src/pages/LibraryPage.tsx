@@ -121,17 +121,13 @@ export default function LibraryPage() {
             className="px-3 py-2 rounded-xl text-sm"
             style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
             <option value="">Qualquer nível</option>
-            <optgroup label="1.º ciclo">
+            <optgroup label="Básico">
               <option value="1.º ano">1.º ano</option>
               <option value="2.º ano">2.º ano</option>
               <option value="3.º ano">3.º ano</option>
               <option value="4.º ano">4.º ano</option>
-            </optgroup>
-            <optgroup label="2.º ciclo">
               <option value="5.º ano">5.º ano</option>
               <option value="6.º ano">6.º ano</option>
-            </optgroup>
-            <optgroup label="3.º ciclo">
               <option value="7.º ano">7.º ano</option>
               <option value="8.º ano">8.º ano</option>
               <option value="9.º ano">9.º ano</option>
@@ -141,11 +137,23 @@ export default function LibraryPage() {
               <option value="11.º ano">11.º ano</option>
               <option value="12.º ano">12.º ano</option>
             </optgroup>
-            <option value="Universidade">Universidade</option>
-            <option value="Pós-graduação">Pós-graduação</option>
-            <option value="Profissional">Profissional</option>
-            <option value="Adulto">Adulto</option>
-            <option value="Outro">Outro</option>
+            <optgroup label="Superior">
+              <option value="Universitário">Universitário</option>
+              <option value="Pós-graduação">Pós-graduação</option>
+            </optgroup>
+            <optgroup label="Línguas & Certificações">
+              <option value="TOEFL">TOEFL</option>
+              <option value="IELTS">IELTS</option>
+              <option value="Cambridge">Cambridge</option>
+              <option value="DELF / DALF">DELF / DALF</option>
+              <option value="DELE">DELE</option>
+              <option value="Goethe">Goethe</option>
+            </optgroup>
+            <optgroup label="Profissional">
+              <option value="Curso técnico">Curso técnico</option>
+              <option value="Preparação concurso">Preparação concurso</option>
+              <option value="Certificação profissional">Certificação profissional</option>
+            </optgroup>
           </select>
           <button onClick={loadShared}
             className="px-4 rounded-xl text-sm" style={{ background: '#6270f5', color: 'white' }}>

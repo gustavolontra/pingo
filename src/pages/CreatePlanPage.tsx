@@ -25,24 +25,14 @@ interface LevelGroup {
 
 const LEVEL_GROUPS: LevelGroup[] = [
   {
-    label: '1.º ciclo',
+    label: 'Básico',
     options: [
       { value: '1.º ano', label: '1.º ano' },
       { value: '2.º ano', label: '2.º ano' },
       { value: '3.º ano', label: '3.º ano' },
       { value: '4.º ano', label: '4.º ano' },
-    ],
-  },
-  {
-    label: '2.º ciclo',
-    options: [
       { value: '5.º ano', label: '5.º ano' },
       { value: '6.º ano', label: '6.º ano' },
-    ],
-  },
-  {
-    label: '3.º ciclo',
-    options: [
       { value: '7.º ano', label: '7.º ano' },
       { value: '8.º ano', label: '8.º ano' },
       { value: '9.º ano', label: '9.º ano' },
@@ -59,16 +49,27 @@ const LEVEL_GROUPS: LevelGroup[] = [
   {
     label: 'Superior',
     options: [
-      { value: 'Universidade', label: 'Universidade' },
+      { value: 'Universitário', label: 'Universitário' },
       { value: 'Pós-graduação', label: 'Pós-graduação' },
     ],
   },
   {
-    label: 'Outros',
+    label: 'Línguas & Certificações',
     options: [
-      { value: 'Profissional', label: 'Ensino profissional' },
-      { value: 'Adulto', label: 'Adulto / autodidata' },
-      { value: 'Outro', label: 'Outro' },
+      { value: 'TOEFL', label: 'TOEFL' },
+      { value: 'IELTS', label: 'IELTS' },
+      { value: 'Cambridge', label: 'Cambridge' },
+      { value: 'DELF / DALF', label: 'DELF / DALF' },
+      { value: 'DELE', label: 'DELE' },
+      { value: 'Goethe', label: 'Goethe' },
+    ],
+  },
+  {
+    label: 'Profissional',
+    options: [
+      { value: 'Curso técnico', label: 'Curso técnico' },
+      { value: 'Preparação concurso', label: 'Preparação concurso' },
+      { value: 'Certificação profissional', label: 'Certificação profissional' },
     ],
   },
 ]
