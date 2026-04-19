@@ -13,6 +13,7 @@ import { persist } from 'zustand/middleware'
 import type { User, Discipline, StudySession, DailyStats } from '@/types'
 import { mockUser, mockDailyStats } from '@/lib/mockData'
 import { syncCurrentStudentStats } from '@/store/useStudentAuthStore'
+import { useAdminStore } from '@/store/useAdminStore'
 import { api } from '@/lib/api'
 
 // ── Tipos de progresso guardados pelo aluno ──────────────────────────────────
@@ -499,8 +500,23 @@ export const useStore = create<AppState>()(
       deleteBook: (bookId) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
+        const bookToDelete = prev.find((b) => b.id === bookId)
         set({ booksByStudent: { ...get().booksByStudent, [sid]: prev.filter((b) => b.id !== bookId) } })
         api.deleteBook(sid, bookId)
+
+        // Remove posts do feed associados a este livro (bookId direto ou
+        // fallback por título para posts antigos antes do campo existir).
+        const adminState = useAdminStore.getState()
+        const feedItems = adminState.feedItems
+        const toDelete = feedItems.filter((f) => {
+          if (f.autorId !== sid) return false
+          if (f.bookId === bookId) return true
+          if (bookToDelete && (f.tipo === 'resumo' || f.tipo === 'lista')) {
+            return f.conteudo.includes(`"${bookToDelete.titulo}"`)
+          }
+          return false
+        })
+        for (const f of toDelete) adminState.deleteFeedItem(f.id)
       },
 
       markBookRead: (bookId, resumo, partilhado) => {

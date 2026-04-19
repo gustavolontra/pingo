@@ -67,6 +67,8 @@ export interface FeedItem {
   conteudo: string
   data: string
   reacoes: Record<string, string[]>  // tipo → [studentId, ...]
+  /** ID do livro associado (se for um resumo ou partilha de livro). */
+  bookId?: string
 }
 
 // ─── Content types ────────────────────────────────────────────────────────────

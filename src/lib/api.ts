@@ -195,7 +195,7 @@ export const api = {
     if (!res.ok) return []
     return res.json()
   },
-  async addFeedItem(item: { autorId: string; autorNome: string; autorAt: string; tipo: string; conteudo: string }) {
+  async addFeedItem(item: { autorId: string; autorNome: string; autorAt: string; tipo: string; conteudo: string; bookId?: string }) {
     const res = await fetch(`${BASE}/feed`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

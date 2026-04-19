@@ -11,6 +11,7 @@ interface FeedItem {
   conteudo: string
   data: string
   reacoes: Record<string, string[]>
+  bookId?: string
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {

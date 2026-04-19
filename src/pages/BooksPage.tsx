@@ -119,28 +119,40 @@ function MarkReadModal({
       <div className="w-full max-w-md rounded-2xl p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         {step === 'ask' ? (
           <>
-            <div className="text-center space-y-2">
-              <CheckCircle2 size={36} className="mx-auto" style={{ color: '#10b981' }} />
-              <h3 className="font-display font-bold text-lg" style={{ color: 'var(--text)' }}>
-                Já terminaste <em>{book.titulo}</em>!
-              </h3>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                Queres escrever um resumo e partilhar com os teus colegas?
-              </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={20} style={{ color: '#10b981' }} />
+                <h3 className="font-display font-bold text-base" style={{ color: 'var(--text)' }}>
+                  Já terminaste <em>{book.titulo}</em>!
+                </h3>
+              </div>
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70" title="Cancelar">
+                <X size={16} style={{ color: 'var(--text-muted)' }} />
+              </button>
             </div>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              Queres escrever um resumo? Podes partilhá-lo com os teus colegas ou guardá-lo só para ti.
+            </p>
             <div className="flex flex-col gap-2 pt-1">
               <button
                 onClick={() => setStep('resumo')}
                 className="btn-primary flex items-center justify-center gap-2 py-3"
               >
-                <BookOpen size={15} /> Sim, quero partilhar
+                <BookOpen size={15} /> Escrever resumo
               </button>
               <button
                 onClick={() => onDone(undefined, false)}
                 className="flex items-center justify-center py-3 rounded-xl text-sm font-semibold"
                 style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
               >
-                Não, guardar só para mim
+                Só marcar como lido
+              </button>
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center py-2 rounded-xl text-xs"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Cancelar
               </button>
             </div>
           </>
@@ -148,12 +160,12 @@ function MarkReadModal({
           <>
             <div className="flex items-center justify-between">
               <h3 className="font-display font-bold" style={{ color: 'var(--text)' }}>Escreve o teu resumo</h3>
-              <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70">
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:opacity-70" title="Cancelar">
                 <X size={16} style={{ color: 'var(--text-muted)' }} />
               </button>
             </div>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              O resumo ficará visível no teu perfil e poderá ser visto pelos teus colegas.
+              O resumo fica sempre visível no teu perfil. Se partilhares, os teus colegas também podem ver.
             </p>
             <textarea
               value={resumo}
@@ -163,19 +175,28 @@ function MarkReadModal({
               className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-y"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
             />
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => onDone(resumo.trim() || undefined, true)}
-                className="btn-primary flex-1"
+                disabled={!resumo.trim()}
+                className="btn-primary py-2.5"
+                style={{ opacity: resumo.trim() ? 1 : 0.5 }}
               >
-                Partilhar resumo
+                Partilhar resumo com colegas
               </button>
               <button
-                onClick={() => onDone(undefined, false)}
-                className="px-4 py-2 rounded-xl text-sm font-semibold"
-                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
+                onClick={() => onDone(resumo.trim() || undefined, false)}
+                className="py-2.5 rounded-xl text-sm font-semibold"
+                style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)' }}
               >
-                Sem resumo
+                Guardar só para mim
+              </button>
+              <button
+                onClick={() => setStep('ask')}
+                className="py-2 rounded-xl text-xs"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                ← Voltar
               </button>
             </div>
           </>
@@ -320,6 +341,7 @@ export default function BooksPage() {
         autorAt: studentHandle ?? '',
         tipo: 'resumo',
         conteudo: `leu "${markingBook.titulo}" de ${markingBook.autor}${resumo ? `\n\n"${resumo}"` : ''}`,
+        bookId: markingBook.id,
       })
     }
     setMarkingBook(null)
