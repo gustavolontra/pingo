@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, Check, Clock, FileText, Loader2, Pencil, Share2, Sparkles, Tag, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Calendar, Check, Clock, FileText, Loader2, Pencil, RefreshCw, Share2, Sparkles, Tag, Trash2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 
@@ -66,6 +66,10 @@ export default function PlanViewPage() {
   const [newDate, setNewDate] = useState('')
   const [dateError, setDateError] = useState('')
 
+  // Regeneração
+  const [regenOpen, setRegenOpen] = useState(false)
+  const [regenError, setRegenError] = useState('')
+
   useEffect(() => {
     if (!id || !studentId) return
     setLoading(true)
@@ -102,6 +106,48 @@ export default function PlanViewPage() {
     setNewDate(base.toISOString().slice(0, 10))
     setDateError('')
     setEditDateOpen(true)
+  }
+
+  async function regeneratePlan() {
+    if (!plan || !studentId) return
+    setBusy(true)
+    setRegenError('')
+    try {
+      // Tenta recuperar conteúdo dos materiais que ficaram na biblioteca.
+      // Materiais colados localmente (id "pasted-...") perdem-se.
+      const materialsForApi: { title: string; content: string; type: string }[] = []
+      for (const m of plan.materials) {
+        if (m.id.startsWith('pasted-') || m.id.startsWith('local-')) continue
+        const res = await fetch(`/api/materials/${encodeURIComponent(m.id)}`).catch(() => null)
+        if (res && res.ok) {
+          const full = await res.json() as { title: string; content: string; type: string }
+          materialsForApi.push({ title: full.title, content: full.content, type: full.type })
+        }
+      }
+
+      const result = await api.generateStudyPlan({
+        title: plan.title,
+        goal: plan.goal,
+        topics: plan.topics,
+        subject: plan.subject ?? plan.title,
+        year: plan.level,
+        targetDate: plan.targetDate,
+        materials: materialsForApi,
+      })
+
+      const updated = await api.updatePlan(plan.id, { plano: result })
+      if (updated) setPlan(updated as StoredPlan)
+
+      // Reinicia o progresso deste aluno — os números de dia apontam agora
+      // para temas diferentes.
+      await api.setPlanProgress(studentId, plan.id, [])
+      setProgress([])
+
+      setRegenOpen(false)
+    } catch (e) {
+      setRegenError(e instanceof Error ? e.message : 'Erro a regerar plano')
+    }
+    setBusy(false)
   }
 
   async function saveNewDate() {
@@ -223,6 +269,11 @@ export default function PlanViewPage() {
               <Share2 size={14} />
               <span className="text-xs">{plan.shared ? 'Partilhado' : 'Partilhar'}</span>
             </button>
+            <button onClick={() => { setRegenError(''); setRegenOpen(true) }} disabled={busy}
+              className="p-2 rounded-lg" title="Regerar plano"
+              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+              <RefreshCw size={14} style={{ color: '#a78bfa' }} />
+            </button>
             <button onClick={handleDelete} disabled={busy}
               className="p-2 rounded-lg" title="Apagar plano"
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
@@ -340,6 +391,61 @@ export default function PlanViewPage() {
           )
         })}
       </div>
+
+      {/* Modal: regerar plano */}
+      {regenOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={() => !busy && setRegenOpen(false)}>
+          <div className="w-full max-w-sm rounded-xl p-5"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}>
+                <RefreshCw size={16} style={{ color: '#a78bfa' }} />
+                Regerar plano
+              </h3>
+              <button onClick={() => !busy && setRegenOpen(false)} className="p-1 rounded">
+                <X size={16} style={{ color: 'var(--text-muted)' }} />
+              </button>
+            </div>
+            <p className="text-sm mb-3" style={{ color: 'var(--text)' }}>
+              A IA vai criar uma nova estrutura para este plano com os mesmos tópicos e nível.
+            </p>
+            <ul className="text-xs space-y-1 mb-3 list-disc pl-4" style={{ color: 'var(--text-muted)' }}>
+              <li>Todos os dias (tema, resumo) serão substituídos.</li>
+              <li>O conteúdo já gerado (flashcards, quiz) dos dias actuais é apagado.</li>
+              <li>O teu progresso é reiniciado porque os dias vão cobrir temas diferentes.</li>
+              {plan.materials.some((m) => m.id.startsWith('pasted-') || m.id.startsWith('local-')) && (
+                <li>Material colado localmente não pode ser recuperado — a regeneração será feita a partir dos tópicos.</li>
+              )}
+            </ul>
+            {plan.shared && (
+              <p className="text-xs mt-3 p-2 rounded" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#b45309' }}>
+                Este plano está partilhado. Todos os alunos que o estão a usar vão ver a nova estrutura — o progresso deles mantém-se mas pode deixar de fazer sentido.
+              </p>
+            )}
+            {regenError && (
+              <p className="text-xs mt-3 p-2 rounded" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
+                {regenError}
+              </p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button onClick={() => !busy && setRegenOpen(false)} disabled={busy}
+                className="flex-1 py-2 rounded-lg text-sm"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                Cancelar
+              </button>
+              <button onClick={regeneratePlan} disabled={busy}
+                className="flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
+                style={{ background: '#a78bfa', color: 'white', opacity: busy ? 0.6 : 1 }}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                {busy ? 'A regerar...' : 'Regerar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: editar data da prova */}
       {editDateOpen && (
