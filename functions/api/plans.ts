@@ -151,6 +151,34 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
       if (list.list_complete) break
       cursor = list.cursor
     }
+
+    // Reconcilia followersCount a partir das listas student:*:followed-plans.
+    // O counter anterior só actualizava em follow/unfollow — follows antigos
+    // ou corridas com erros deixam o contador drift. Esta reconciliação corrige.
+    const counts: Record<string, number> = {}
+    let fcursor: string | undefined
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const list = await env.PINGO_CONTENT.list({ prefix: 'student:', cursor: fcursor })
+      for (const k of list.keys) {
+        if (!k.name.endsWith(':followed-plans')) continue
+        const ids = await readJSON<string[]>(env, k.name, [])
+        for (const pid of ids) counts[pid] = (counts[pid] ?? 0) + 1
+      }
+      if (list.list_complete) break
+      fcursor = list.cursor
+    }
+    // Actualiza só os planos cujo valor guardado está desactualizado.
+    const updates: Promise<void>[] = []
+    for (const plan of out) {
+      const real = counts[plan.id] ?? 0
+      if (plan.followersCount !== real) {
+        plan.followersCount = real
+        updates.push(writeJSON(env, PLAN_KEY(plan.id), plan))
+      }
+    }
+    if (updates.length > 0) await Promise.all(updates)
+
     return Response.json(out, { headers })
   }
 
