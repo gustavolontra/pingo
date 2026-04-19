@@ -62,6 +62,15 @@ export default function StudyDayPage() {
       setPlan(p)
       setProgress(prog.diasEstudados ?? [])
       setLoading(false)
+      // Auto-follow: se o aluno está a estudar um dia de um plano que não é
+      // seu e ainda não segue, adicionamos aos planos dele.
+      if (p && p.ownerId !== studentId) {
+        api.getFollowedPlanIds(studentId).then((ids) => {
+          if (!ids.includes(p.id)) {
+            api.followPlan(studentId, p.id)
+          }
+        }).catch(() => { /* silencioso */ })
+      }
     })
   }, [id, studentId])
 
@@ -293,11 +302,50 @@ function GeneratingContent() {
 function FlashcardsSection({ cards }: { cards: Flashcard[] }) {
   const [index, setIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
+  const [completed, setCompleted] = useState(false)
   const card = cards[index]
+  const isLast = index === cards.length - 1
 
   function next() {
+    if (isLast) {
+      setCompleted(true)
+      setFlipped(false)
+      return
+    }
     setFlipped(false)
-    setIndex((i) => (i + 1) % cards.length)
+    setIndex((i) => i + 1)
+  }
+
+  function restart() {
+    setCompleted(false)
+    setIndex(0)
+    setFlipped(false)
+  }
+
+  if (completed) {
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Brain size={16} style={{ color: '#10b981' }} />
+          <h3 className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
+            Flashcards <span className="font-normal" style={{ color: 'var(--text-muted)' }}>({cards.length}/{cards.length} ✓)</span>
+          </h3>
+        </div>
+        <div className="w-full p-6 rounded-2xl text-center"
+          style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+          <div className="text-3xl mb-2">🎉</div>
+          <p className="text-sm font-semibold mb-1" style={{ color: '#10b981' }}>Completaste todos os flashcards!</p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            Viste as {cards.length} cartas deste dia. Podes recomeçar para rever ou seguir para o quiz.
+          </p>
+          <button onClick={restart}
+            className="mt-4 px-4 py-2 rounded-lg text-xs flex items-center gap-1.5 mx-auto"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+            <RotateCcw size={12} /> Recomeçar
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -320,8 +368,19 @@ function FlashcardsSection({ cards }: { cards: Flashcard[] }) {
           {flipped ? 'Clica para ver a pergunta' : 'Clica para ver a resposta'}
         </p>
       </button>
+      {/* Progress pips */}
+      <div className="flex items-center gap-1 mt-3 justify-center">
+        {cards.map((_, i) => (
+          <div key={i} className="rounded-full transition-all"
+            style={{
+              width: i === index ? 14 : 6,
+              height: 6,
+              background: i === index ? '#6270f5' : i < index ? 'rgba(99,143,255,0.45)' : 'var(--surface-2)',
+            }} />
+        ))}
+      </div>
       <div className="flex gap-2 mt-3">
-        <button onClick={() => { setIndex(0); setFlipped(false) }}
+        <button onClick={restart}
           className="px-3 py-2 rounded-lg text-xs flex items-center gap-1"
           style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
           <RotateCcw size={12} /> Recomeçar
@@ -329,7 +388,7 @@ function FlashcardsSection({ cards }: { cards: Flashcard[] }) {
         <button onClick={next}
           className="flex-1 px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1"
           style={{ background: '#6270f5', color: 'white' }}>
-          Próximo <ChevronRight size={14} />
+          {isLast ? 'Terminar' : 'Próximo'} <ChevronRight size={14} />
         </button>
       </div>
     </div>
