@@ -12,6 +12,8 @@ interface StoredPlan {
   level?: string
   targetDate?: string
   materials: { id: string; title: string; type: string }[]
+  /** Sticky: fica true assim que o plano é partilhado ao menos uma vez. */
+  wasShared?: boolean
   plano: {
     resumo?: string
     tempoEstimadoPorDia?: number
@@ -103,6 +105,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     materials: body.materials ?? [],
     plano: body.plano,
     shared: body.shared ?? false,
+    wasShared: Boolean(body.shared),
     createdAt: now,
     updatedAt: now,
     diasEstudados: body.diasEstudados ?? [],
@@ -164,7 +167,11 @@ export const onRequestPatch: PagesFunction<Env> = async ({ env, request }) => {
   if (!existing) return Response.json({ error: 'Not found' }, { status: 404, headers })
 
   const patch = await request.json() as Partial<StoredPlan>
-  const wasShared = existing.shared
+  const isCurrentlySharedBefore = existing.shared
+
+  // wasShared é sticky: uma vez partilhado, fica true para sempre, mesmo após despartilhar.
+  const willBeShared = patch.shared ?? existing.shared
+  const stickyWasShared = Boolean(existing.wasShared) || isCurrentlySharedBefore || willBeShared
 
   const updated: StoredPlan = {
     ...existing,
@@ -173,15 +180,16 @@ export const onRequestPatch: PagesFunction<Env> = async ({ env, request }) => {
     ownerId: existing.ownerId,
     createdAt: existing.createdAt,
     updatedAt: new Date().toISOString(),
+    wasShared: stickyWasShared,
   }
 
   await writeJSON(env, PLAN_KEY(id), updated)
 
-  if (updated.shared && !wasShared) {
+  if (updated.shared && !isCurrentlySharedBefore) {
     await updateSharedIndex(env, toIndexEntry(updated))
-  } else if (!updated.shared && wasShared) {
+  } else if (!updated.shared && isCurrentlySharedBefore) {
     await updateSharedIndex(env, { id, remove: true })
-  } else if (updated.shared && wasShared) {
+  } else if (updated.shared && isCurrentlySharedBefore) {
     // update metadata in index in case title/subject/level changed
     await updateSharedIndex(env, toIndexEntry(updated))
   }
@@ -189,7 +197,7 @@ export const onRequestPatch: PagesFunction<Env> = async ({ env, request }) => {
   return Response.json(updated, { headers })
 }
 
-// DELETE /api/plans?id= — remove plano
+// DELETE /api/plans?id= — remove plano (só se nunca foi partilhado)
 export const onRequestDelete: PagesFunction<Env> = async ({ env, request }) => {
   const headers = corsHeaders()
   const url = new URL(request.url)
@@ -198,6 +206,12 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request }) => {
 
   const existing = await readJSON<StoredPlan | null>(env, PLAN_KEY(id), null)
   if (!existing) return Response.json({ ok: true }, { headers })
+
+  if (existing.wasShared || existing.shared) {
+    return Response.json({
+      error: 'Este plano já foi partilhado e não pode ser apagado. Podes despartilhar — quem já começou a estudar mantém acesso.',
+    }, { status: 409, headers })
+  }
 
   await env.PINGO_CONTENT.delete(PLAN_KEY(id))
 

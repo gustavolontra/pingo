@@ -21,6 +21,7 @@ interface StoredPlan {
     dias: { dia: number; data: string; tema: string; resumo: string; fontes?: number[] }[]
   }
   shared: boolean
+  wasShared?: boolean
   createdAt: string
   updatedAt: string
   diasEstudados: number[]
@@ -318,11 +319,13 @@ export default function PlanViewPage() {
               style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
               <RefreshCw size={14} style={{ color: '#a78bfa' }} />
             </button>
-            <button onClick={() => setDeleteOpen(true)} disabled={busy}
-              className="p-2 rounded-lg" title="Apagar plano"
-              style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-              <Trash2 size={14} style={{ color: '#ef4444' }} />
-            </button>
+            {!(plan.shared || plan.wasShared) && (
+              <button onClick={() => setDeleteOpen(true)} disabled={busy}
+                className="p-2 rounded-lg" title="Apagar plano"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+                <Trash2 size={14} style={{ color: '#ef4444' }} />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -460,29 +463,16 @@ export default function PlanViewPage() {
                   Este plano está <strong>partilhado</strong> com a comunidade.
                 </p>
                 <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-                  Se apagares, qualquer aluno que esteja a usá-lo perde acesso imediato
-                  — o progresso deles deixa de apontar para lado nenhum.
+                  Planos partilhados não podem ser apagados — quem já começou a estudar
+                  mantém acesso. Podes despartilhar: deixa de aparecer na Biblioteca a
+                  novos alunos, mas os que já lá estavam continuam.
                 </p>
-                <div className="p-3 rounded-lg mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
-                  <p className="text-xs font-semibold mb-1" style={{ color: '#10b981' }}>
-                    Sugestão: despartilhar em vez de apagar
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    Tira o plano da Biblioteca da comunidade (deixa de aparecer a novos alunos),
-                    mas quem já tem o URL pode continuar a estudar. Ficas em controlo do plano.
-                  </p>
-                </div>
                 <div className="flex flex-col gap-2">
                   <button onClick={unshareInstead} disabled={busy}
                     className="w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
                     style={{ background: '#10b981', color: 'white', opacity: busy ? 0.6 : 1 }}>
                     {busy ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
-                    Despartilhar (manter plano)
-                  </button>
-                  <button onClick={confirmDelete} disabled={busy}
-                    className="w-full py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5"
-                    style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
-                    <Trash2 size={14} /> Apagar mesmo
+                    Despartilhar
                   </button>
                   <button onClick={() => !busy && setDeleteOpen(false)} disabled={busy}
                     className="w-full py-2 rounded-lg text-sm"
@@ -490,6 +480,22 @@ export default function PlanViewPage() {
                     Cancelar
                   </button>
                 </div>
+              </>
+            ) : plan.wasShared ? (
+              <>
+                <p className="text-sm mb-3" style={{ color: 'var(--text)' }}>
+                  Este plano já foi <strong>partilhado</strong> no passado.
+                </p>
+                <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+                  Por precaução não pode ser apagado — pode haver alunos que começaram
+                  a estudar a partir dele. Fica em modo privado e continua acessível
+                  para quem tem o URL ou progresso associado.
+                </p>
+                <button onClick={() => !busy && setDeleteOpen(false)}
+                  className="w-full py-2 rounded-lg text-sm font-medium"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                  Compreendi
+                </button>
               </>
             ) : (
               <>
