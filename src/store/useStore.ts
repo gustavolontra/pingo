@@ -137,7 +137,7 @@ interface AppState {
   ignoreSuggestion: (friendId: string) => void
 
   addBook: (data: Pick<Book, 'titulo' | 'autor' | 'capa'>) => void
-  updateBook: (id: string, data: Partial<Pick<Book, 'titulo' | 'autor' | 'capa'>>) => void
+  updateBook: (id: string, data: Partial<Pick<Book, 'titulo' | 'autor' | 'capa' | 'resumo' | 'partilhado'>>) => void
   deleteBook: (id: string) => void
   markBookRead: (id: string, resumo: string | undefined, partilhado: boolean) => void
 

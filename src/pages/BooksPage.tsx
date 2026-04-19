@@ -30,21 +30,33 @@ function syncSharedBooks(studentId: string, books: Book[]) {
 
 // ── Modal: Adicionar / Editar ─────────────────────────────────────────────────
 
+interface BookFormSave {
+  titulo: string
+  autor: string
+  resumo?: string
+  partilhado?: boolean
+}
+
 function BookFormModal({
   initial,
   onSave,
   onClose,
 }: {
   initial?: Book
-  onSave: (titulo: string, autor: string) => void
+  onSave: (data: BookFormSave) => void
   onClose: () => void
 }) {
   const [titulo, setTitulo] = useState(initial?.titulo ?? '')
   const [autor, setAutor] = useState(initial?.autor ?? '')
+  const [resumo, setResumo] = useState(initial?.resumo ?? '')
+  const [partilhado, setPartilhado] = useState(initial?.partilhado ?? false)
+
+  const isLido = initial?.status === 'lido'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-      <div className="w-full max-w-md rounded-2xl p-6 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="w-full max-w-md rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex items-center justify-between">
           <h3 className="font-display font-bold text-lg" style={{ color: 'var(--text)' }}>
             {initial ? 'Editar livro' : 'Adicionar livro'}
@@ -76,11 +88,54 @@ function BookFormModal({
             />
           </div>
 
+          {isLido && (
+            <>
+              <div className="pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+                <label className="block text-sm font-medium mb-1.5 mt-2" style={{ color: 'var(--text-muted)' }}>
+                  Resumo
+                </label>
+                <textarea
+                  value={resumo}
+                  onChange={(e) => setResumo(e.target.value)}
+                  placeholder="O que achaste do livro? Deixa em branco para remover."
+                  rows={4}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-y"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                />
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer p-3 rounded-xl"
+                style={{ background: partilhado ? 'rgba(16,185,129,0.08)' : 'var(--surface-2)',
+                         border: `1px solid ${partilhado ? 'rgba(16,185,129,0.25)' : 'var(--border)'}` }}>
+                <input type="checkbox" checked={partilhado}
+                  onChange={(e) => setPartilhado(e.target.checked)}
+                  className="accent-[#10b981] mt-0.5"
+                  disabled={!resumo.trim()} />
+                <div>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                    Partilhar com colegas
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    {resumo.trim()
+                      ? 'O resumo ficará visível no feed dos teus colegas.'
+                      : 'Escreve um resumo para poder partilhar.'}
+                  </p>
+                </div>
+              </label>
+            </>
+          )}
         </div>
 
         <div className="flex gap-3 pt-1">
           <button
-            onClick={() => { if (titulo.trim() && autor.trim()) onSave(titulo.trim(), autor.trim()) }}
+            onClick={() => {
+              if (!titulo.trim() || !autor.trim()) return
+              onSave({
+                titulo: titulo.trim(),
+                autor: autor.trim(),
+                resumo: isLido ? (resumo.trim() || undefined) : undefined,
+                partilhado: isLido ? (partilhado && !!resumo.trim()) : undefined,
+              })
+            }}
             disabled={!titulo.trim() || !autor.trim()}
             className="btn-primary flex-1"
             style={{ opacity: !titulo.trim() || !autor.trim() ? 0.5 : 1 }}
@@ -216,18 +271,58 @@ function BookCard({
   onMarkRead: (book: Book) => void
 }) {
   const { updateBook, deleteBook } = useStore()
+  const { studentId, studentName, studentHandle } = useStudentAuthStore()
+  const { feedItems, addFeedItem, deleteFeedItem } = useAdminStore()
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  function handleSave(data: BookFormSave) {
+    const wasShared = book.partilhado
+    const oldResumo = book.resumo ?? ''
+    const newResumo = data.resumo ?? ''
+    const nowShared = data.partilhado ?? false
+
+    updateBook(book.id, {
+      titulo: data.titulo,
+      autor: data.autor,
+      resumo: data.resumo,
+      partilhado: nowShared,
+    })
+
+    // Sincroniza feed se algo relevante para os colegas mudou.
+    const resumoMudou = oldResumo !== newResumo
+    const partilhaMudou = wasShared !== nowShared
+    if (book.status === 'lido' && (resumoMudou || partilhaMudou)) {
+      // Remove posts existentes sobre este livro (tanto por bookId como por título).
+      const orphans = feedItems.filter((f) =>
+        f.autorId === studentId && (
+          f.bookId === book.id ||
+          (f.tipo === 'resumo' && f.conteudo.includes(`"${book.titulo}"`))
+        ),
+      )
+      for (const f of orphans) deleteFeedItem(f.id)
+
+      // Recria se continua partilhado com resumo.
+      if (nowShared && newResumo && studentId) {
+        addFeedItem({
+          autorId: studentId,
+          autorNome: studentName ?? 'Aluno',
+          autorAt: studentHandle ?? '',
+          tipo: 'resumo',
+          conteudo: `leu "${data.titulo}" de ${data.autor}\n\n"${newResumo}"`,
+          bookId: book.id,
+        })
+      }
+    }
+    setEditing(false)
+  }
 
   return (
     <>
       {editing && (
         <BookFormModal
           initial={book}
-          onSave={(titulo, autor) => {
-            updateBook(book.id, { titulo, autor })
-            setEditing(false)
-          }}
+          onSave={handleSave}
           onClose={() => setEditing(false)}
         />
       )}
@@ -441,7 +536,7 @@ export default function BooksPage() {
       {/* Modais */}
       {adding && (
         <BookFormModal
-          onSave={(titulo, autor) => { addBook({ titulo, autor }); setAdding(false) }}
+          onSave={({ titulo, autor }) => { addBook({ titulo, autor }); setAdding(false) }}
           onClose={() => setAdding(false)}
         />
       )}
