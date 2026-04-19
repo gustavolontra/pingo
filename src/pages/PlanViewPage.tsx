@@ -60,10 +60,14 @@ export default function PlanViewPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const studentId = useStudentAuthStore((s) => s.studentId)
-  const isAdmin = useAdminStore((s) => s.isAuthenticated)
+  const adminAuthed = useAdminStore((s) => s.isAuthenticated)
   // Quando a rota actual começa por /admin o admin navega dentro do painel admin;
   // quando não, estamos no caminho de aluno normal.
   const inAdminContext = location.pathname.startsWith('/admin/')
+  // Só consideramos "modo admin" quando estamos mesmo numa rota /admin/*.
+  // Isto evita que a sessão admin persistida conceda poderes em URLs de aluno
+  // (ex: se o master abre /plano/:id depois de fazer login como estudante).
+  const isAdmin = adminAuthed && inAdminContext
   const backHref = inAdminContext ? '/admin/planos' : '/biblioteca'
   const dayPathFor = (diaNum: number) => inAdminContext
     ? `/admin/planos/${id}/dia/${diaNum}`
