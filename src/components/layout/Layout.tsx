@@ -21,6 +21,23 @@ export default function Layout() {
     useStore.getState().fetchServerData(studentId)
   }, [studentId])
 
+  // Poll do feed em segundo plano para o badge de "novo" no sidebar actualizar
+  // quando amigos publicam. Refresca a cada 60s e quando o browser volta a ficar
+  // visível (evita fetches quando o separador está em background).
+  useEffect(() => {
+    if (!studentId) return
+    const refresh = () => useAdminStore.getState().fetchFeed()
+    const interval = window.setInterval(() => {
+      if (!document.hidden) refresh()
+    }, 60_000)
+    const onVisibility = () => { if (!document.hidden) refresh() }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [studentId])
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <Sidebar />

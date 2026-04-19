@@ -38,6 +38,41 @@ const REACTIONS = [
   { tipo: 'star', icon: Star, color: '#eab308' },
 ] as const
 
+// ── Conteúdo formatado ────────────────────────────────────────────────────────
+
+function capitalizeFirst(s: string): string {
+  const t = s.trimStart()
+  return t.charAt(0).toUpperCase() + t.slice(1)
+}
+
+function FeedContent({ text }: { text: string }) {
+  // Separa a "primeira linha" (a acção) do bloco que vem depois de \n\n (citação do aluno)
+  const idx = text.indexOf('\n\n')
+  const head = idx >= 0 ? text.slice(0, idx) : text
+  const body = idx >= 0 ? text.slice(idx + 2).trim() : ''
+  // Se body já começa e termina com aspas, mostramos como citação destacada
+  const isQuote = body.startsWith('"') && body.endsWith('"')
+  const quote = isQuote ? body.slice(1, -1) : body
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm" style={{ color: 'var(--text)' }}>
+        {capitalizeFirst(head)}
+      </p>
+      {body && (
+        isQuote ? (
+          <blockquote className="text-sm italic px-3 py-2 rounded-lg whitespace-pre-line"
+            style={{ background: 'var(--surface-2)', borderLeft: '3px solid #6270f5', color: 'var(--text)' }}>
+            {quote}
+          </blockquote>
+        ) : (
+          <p className="text-sm whitespace-pre-line" style={{ color: 'var(--text-muted)' }}>{body}</p>
+        )
+      )}
+    </div>
+  )
+}
+
 // ── Card de publicação ────────────────────────────────────────────────────────
 
 function FeedCard({ item }: { item: FeedItem }) {
@@ -94,7 +129,7 @@ function FeedCard({ item }: { item: FeedItem }) {
       </div>
 
       {/* Conteúdo */}
-      <p className="text-sm whitespace-pre-line" style={{ color: 'var(--text)' }}>{item.conteudo}</p>
+      <FeedContent text={item.conteudo} />
 
       {/* Reações */}
       <div className="flex items-center gap-2 pt-1">
