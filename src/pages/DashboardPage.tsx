@@ -3,7 +3,7 @@ import { useStore } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import { formatMinutes } from '@/lib/utils'
-import { Flame, Clock, Zap, BookOpen, UserPlus, Copy, Check } from 'lucide-react'
+import { Flame, Clock, Zap, Award, UserPlus, Copy, Check, Sparkles } from 'lucide-react'
 import StatCard from '@/components/ui/StatCard'
 import WeeklyChart from '@/components/dashboard/WeeklyChart'
 import TodayGoal from '@/components/dashboard/TodayGoal'
@@ -16,8 +16,6 @@ export default function DashboardPage() {
   const students = useAdminStore((s) => s.students)
   const displayName = studentName || user.name
   const { plans, progressMap, loading: plansLoading } = usePlansSummary(studentId)
-  // Prefer o handle fresco do backfill em vez do que foi persistido na sessão
-  // antiga (que antes era derivado do email).
   const freshHandle = students.find((s) => s.id === studentId)?.handle
   const handleToShow = freshHandle ?? studentHandle
   const me = students.find((s) => s.id === studentId)
@@ -26,28 +24,35 @@ export default function DashboardPage() {
   const thisWeekMin = dailyStats.slice(-7).reduce((sum, s) => sum + s.minutesStudied, 0)
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-display font-bold text-white">
-          Olá, {displayName.split(' ')[0]}! {user.streak > 0 ? <Flame size={22} style={{ color: '#f59e0b', display: 'inline' }} /> : '👋'}
-        </h2>
-        {handleToShow && (
-          <p className="text-sm font-medium mt-0.5" style={{ color: '#6270f5' }}>@{handleToShow}</p>
-        )}
-        <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-          {user.streak > 0
-            ? `${user.streak} dias consecutivos de estudo. Não quebres a sequência!`
-            : 'Começa a estudar hoje e inicia a tua sequência.'}
-        </p>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
+      {/* Header — saudação à esquerda, badges à direita */}
+      <header className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-3xl md:text-[2rem] font-display font-extrabold tracking-tight flex items-center gap-2" style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            Olá, {displayName.split(' ')[0]}!
+            <span className="text-2xl">{user.streak > 0 ? '🔥' : '👋'}</span>
+          </h2>
+          {handleToShow && (
+            <p className="text-sm font-medium mt-1" style={{ color: '#6270f5' }}>@{handleToShow}</p>
+          )}
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            {user.streak > 0
+              ? `${user.streak} ${user.streak === 1 ? 'dia consecutivo' : 'dias consecutivos'} de estudo. Não quebres a sequência!`
+              : 'Começa a estudar hoje e inicia a tua sequência.'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <CompactBadge icon={Flame} label={`${user.streak} ${user.streak === 1 ? 'dia' : 'dias'}`} color="#f59e0b" />
+          <CompactBadge icon={Zap} label={`${user.xp} XP`} color="#6270f5" />
+        </div>
+      </header>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={Flame} label="Sequência atual" value={`${user.streak}d`} color="#f59e0b" sub={`Recorde: ${user.longestStreak}d`} />
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <StatCard icon={Flame} label="Sequência" value={`${user.streak}d`} color="#f59e0b" sub={`Recorde: ${user.longestStreak}d`} />
         <StatCard icon={Clock} label="Horas totais" value={formatMinutes(user.totalStudyMinutes)} color="#6270f5" sub={`Esta semana: ${formatMinutes(thisWeekMin)}`} />
         <StatCard icon={Zap} label="XP total" value={user.xp} color="#a78bfa" sub={`Esta semana: +${thisWeekXP}`} />
-        <StatCard icon={BookOpen} label="Nível" value={user.level} color="#10b981" sub={`${user.xp}/${user.xpForNextLevel} XP`} />
+        <StatCard icon={Award} label="Nível" value={user.level} color="#10b981" sub={`${user.xp}/${user.xpForNextLevel} XP`} />
       </div>
 
       {/* Invite banner */}
@@ -58,11 +63,11 @@ export default function DashboardPage() {
         <PlansSummary studentId={studentId} plans={plans} progressMap={progressMap} loading={plansLoading} />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="md:col-span-2 space-y-5">
+      {/* Analytics + insights */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2">
           <WeeklyChart stats={dailyStats} />
         </div>
-
         <div className="space-y-5">
           <TodayGoal />
           <div className="card">
@@ -73,6 +78,34 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+// ── Badge compacto (streak / XP) ──────────────────────────────────────────────
+
+function CompactBadge({
+  icon: Icon,
+  label,
+  color,
+}: {
+  icon: typeof Flame
+  label: string
+  color: string
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold"
+      style={{
+        background: `${color}14`,
+        color,
+        border: `1px solid ${color}26`,
+      }}
+    >
+      <Icon size={14} />
+      {label}
+    </span>
+  )
+}
+
+// ── Invite banner ─────────────────────────────────────────────────────────────
 
 function InviteBanner({ code }: { code: string }) {
   const [copied, setCopied] = useState(false)
@@ -86,18 +119,42 @@ function InviteBanner({ code }: { code: string }) {
 
   return (
     <div
-      className="flex items-center gap-4 px-5 py-3.5 rounded-2xl"
-      style={{ background: 'rgba(98,112,245,0.08)', border: '1px solid rgba(98,112,245,0.15)' }}
+      className="relative overflow-hidden flex items-center gap-4 px-5 py-4 rounded-2xl"
+      style={{
+        background: 'linear-gradient(115deg, rgba(98,112,245,0.12) 0%, rgba(167,139,250,0.10) 50%, rgba(16,185,129,0.08) 100%)',
+        border: '1px solid rgba(98,112,245,0.18)',
+      }}
     >
-      <UserPlus size={20} style={{ color: '#6270f5' }} className="shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Convida os teus colegas!</p>
-        <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{link}</p>
+      <div
+        aria-hidden
+        className="absolute -left-10 -top-10 w-40 h-40 rounded-full opacity-30"
+        style={{ background: 'radial-gradient(closest-side, rgba(98,112,245,0.35), transparent)' }}
+      />
+      <div
+        className="relative w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+        style={{
+          background: 'linear-gradient(135deg, #6270f5, #a78bfa)',
+          color: 'white',
+          boxShadow: '0 6px 18px rgba(98,112,245,0.35)',
+        }}
+      >
+        <UserPlus size={20} />
+      </div>
+      <div className="relative flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <Sparkles size={13} style={{ color: '#a78bfa' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Convida os teus colegas</p>
+        </div>
+        <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{link}</p>
       </div>
       <button
         onClick={copy}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all"
-        style={{ background: '#6270f5', color: '#fff' }}
+        className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all"
+        style={{
+          background: copied ? '#10b981' : 'linear-gradient(135deg, #6270f5, #4f4de8)',
+          color: '#fff',
+          boxShadow: copied ? '0 4px 14px rgba(16,185,129,0.35)' : '0 4px 14px rgba(98,112,245,0.35)',
+        }}
       >
         {copied ? <Check size={13} /> : <Copy size={13} />}
         {copied ? 'Copiado!' : 'Copiar link'}
@@ -105,4 +162,3 @@ function InviteBanner({ code }: { code: string }) {
     </div>
   )
 }
-

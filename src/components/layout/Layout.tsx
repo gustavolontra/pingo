@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
-import TopBar from './TopBar'
 import { useKVContent } from '@/hooks/useKVContent'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
@@ -42,8 +41,7 @@ export default function Layout() {
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8">
           <Outlet />
         </main>
       </div>

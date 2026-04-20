@@ -140,11 +140,15 @@ function CardEstudo({ states, onOpen }: { states: PlanState[]; onOpen: (planId: 
 
   return (
     <div className="card">
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles size={16} style={{ color: '#6270f5' }} />
-        <h3 className="text-sm font-display font-semibold" style={{ color: 'var(--text)' }}>Estudo contínuo</h3>
+      <div className="flex items-center gap-2.5 mb-4">
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ background: 'rgba(98,112,245,0.12)' }}>
+          <Sparkles size={14} style={{ color: '#6270f5' }} />
+        </span>
+        <h3 className="text-base font-display font-bold" style={{ color: 'var(--text)' }}>Estudo contínuo</h3>
         {hasAny && (
-          <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(99,143,255,0.1)', color: '#6270f5' }}>
+          <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(99,143,255,0.12)', color: '#6270f5' }}>
             {states.length}
           </span>
         )}
@@ -153,7 +157,7 @@ function CardEstudo({ states, onOpen }: { states: PlanState[]; onOpen: (planId: 
       {!hasAny ? (
         <EmptyInside label="Sem planos de estudo contínuo." />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {states.map((s) => <PlanRow key={s.plan.id} state={s} onOpen={onOpen} />)}
         </div>
       )}
@@ -168,11 +172,15 @@ function CardExame({ states, onOpen }: { states: PlanState[]; onOpen: (planId: s
 
   return (
     <div className="card">
-      <div className="flex items-center gap-2 mb-3">
-        <Calendar size={16} style={{ color: '#a78bfa' }} />
-        <h3 className="text-sm font-display font-semibold" style={{ color: 'var(--text)' }}>Preparação de exames</h3>
+      <div className="flex items-center gap-2.5 mb-4">
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ background: 'rgba(167,139,250,0.15)' }}>
+          <Calendar size={14} style={{ color: '#a78bfa' }} />
+        </span>
+        <h3 className="text-base font-display font-bold" style={{ color: 'var(--text)' }}>Preparação de exames</h3>
         {hasAny && (
-          <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
+          <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>
             {states.length}
           </span>
         )}
@@ -181,7 +189,7 @@ function CardExame({ states, onOpen }: { states: PlanState[]; onOpen: (planId: s
       {!hasAny ? (
         <EmptyInside label="Sem planos de exame." />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {states.map((s) => <PlanRow key={s.plan.id} state={s} onOpen={onOpen} showTargetDate />)}
         </div>
       )}
@@ -200,29 +208,39 @@ function PlanRow({
 }) {
   const { plan, todayDia, overdueDia, nextDia, completedCount } = state
   const total = plan.plano.dias.length
+  const pct = total > 0 ? Math.min(100, Math.round((completedCount / total) * 100)) : 0
   const daysToTarget = plan.targetDate ? daysUntil(new Date(plan.targetDate)) : null
 
   const primary = todayDia ?? overdueDia
   const primaryLabel = todayDia ? 'Hoje' : overdueDia ? 'Atrasado' : nextDia ? 'Próximo' : null
   const primaryColor = todayDia ? '#f59e0b' : overdueDia ? '#ef4444' : '#6270f5'
+  const isActive = primary && primary !== nextDia
 
   return (
-    <button onClick={() => onOpen(plan.id, primary?.dia ?? null)}
-      className="w-full text-left p-3 rounded-xl transition-all"
-      style={{ background: 'var(--surface-2)', border: `1px solid ${primary && primary !== nextDia ? `${primaryColor}30` : 'var(--border)'}` }}>
+    <button
+      onClick={() => onOpen(plan.id, primary?.dia ?? null)}
+      className="group w-full text-left p-3.5 rounded-xl transition-all hover:-translate-y-0.5"
+      style={{
+        background: 'var(--surface)',
+        border: `1px solid ${isActive ? `${primaryColor}30` : 'var(--border)'}`,
+        boxShadow: isActive
+          ? `0 1px 2px rgba(15,23,42,0.04), 0 4px 14px ${primaryColor}1a`
+          : '0 1px 2px rgba(15,23,42,0.03)',
+      }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{plan.title}</p>
+            <p className="text-sm font-bold truncate" style={{ color: 'var(--text)' }}>{plan.title}</p>
             {plan.level && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded flex items-center gap-0.5"
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md flex items-center gap-0.5 font-medium"
                 style={{ background: 'rgba(167,139,250,0.12)', color: '#a78bfa' }}>
                 <GraduationCap size={8} /> {plan.level}
               </span>
             )}
             {showTargetDate && plan.targetDate && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded"
-                style={{ background: daysToTarget != null && daysToTarget <= 3 ? 'rgba(239,68,68,0.1)' : 'var(--surface)',
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium"
+                style={{ background: daysToTarget != null && daysToTarget <= 3 ? 'rgba(239,68,68,0.1)' : 'var(--surface-2)',
                          color: daysToTarget != null && daysToTarget <= 3 ? '#ef4444' : 'var(--text-muted)' }}>
                 {daysToTarget != null
                   ? (daysToTarget === 0 ? 'hoje' : daysToTarget < 0 ? 'passou' : `em ${daysToTarget}d`)
@@ -231,14 +249,29 @@ function PlanRow({
             )}
           </div>
 
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            {completedCount}/{total} dia{total === 1 ? '' : 's'} feito{total === 1 ? '' : 's'}
-            {plan.shared && ' · partilhado'}
-          </p>
+          <div className="flex items-center gap-2 text-[11px] mb-2" style={{ color: 'var(--text-muted)' }}>
+            <span className="font-semibold" style={{ color: 'var(--text)' }}>{completedCount}</span>
+            <span>/</span>
+            <span>{total} dia{total === 1 ? '' : 's'}</span>
+            <span>·</span>
+            <span className="font-semibold" style={{ color: primaryColor }}>{pct}%</span>
+            {plan.shared && <><span>·</span><span>partilhado</span></>}
+          </div>
+
+          {/* Barra de progresso fina */}
+          <div className="h-1 rounded-full overflow-hidden mb-2.5" style={{ background: 'var(--surface-2)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${pct}%`,
+                background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}cc)`,
+              }}
+            />
+          </div>
 
           {primary && primaryLabel && (
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wide"
                 style={{ background: `${primaryColor}15`, color: primaryColor }}>
                 {primaryLabel === 'Atrasado' && <Flame size={9} className="inline mr-0.5" />}
                 {primaryLabel}
@@ -250,22 +283,28 @@ function PlanRow({
           )}
 
           {!primary && nextDia && (
-            <div className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
               Sem estudo hoje · próximo Dia {nextDia.dia} ({nextDia.data})
             </div>
           )}
 
           {!primary && !nextDia && completedCount >= total && (
-            <div className="mt-2 text-xs" style={{ color: '#10b981' }}>Plano concluído ✓</div>
+            <div className="text-xs font-semibold" style={{ color: '#10b981' }}>Plano concluído ✓</div>
           )}
         </div>
 
-        <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} className="shrink-0 mt-1" />
+        <ChevronRight
+          size={14}
+          style={{ color: isActive ? primaryColor : 'var(--text-muted)' }}
+          className="shrink-0 mt-1 transition-transform group-hover:translate-x-0.5"
+        />
       </div>
 
       {primary && primaryLabel && primaryLabel !== 'Próximo' && (
-        <div className="flex items-center gap-1 mt-2 text-xs font-semibold"
-          style={{ color: primaryColor }}>
+        <div
+          className="flex items-center gap-1 mt-2.5 pt-2.5 text-xs font-semibold"
+          style={{ color: primaryColor, borderTop: '1px dashed var(--border)' }}
+        >
           <BookOpen size={11} /> Estudar agora
         </div>
       )}
