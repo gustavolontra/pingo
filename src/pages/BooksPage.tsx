@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore, type Book } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
@@ -483,6 +483,23 @@ export default function BooksPage() {
 
   const lendo = books.filter((b) => b.status === 'lendo')
   const lidos = books.filter((b) => b.status === 'lido')
+
+  // Auto-heal: se `listaPartilhada` está ativo mas o post no feed nunca foi
+  // persistido (POST falhou em algum momento), recria-o agora para que
+  // colegas possam reagir. Corre uma única vez por montagem.
+  useEffect(() => {
+    if (!studentId || !listaPartilhada || books.length === 0) return
+    const hasListaPost = feedItems.some((f) => f.autorId === studentId && f.tipo === 'lista')
+    if (hasListaPost) return
+    addFeedItem({
+      autorId: studentId,
+      autorNome: studentName ?? 'Aluno',
+      autorAt: studentHandle ?? '',
+      tipo: 'lista',
+      conteudo: `partilhou a sua lista de leituras (${books.length} livro${books.length !== 1 ? 's' : ''})`,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, listaPartilhada])
 
   function handleMarkDone(resumo: string | undefined, partilhado: boolean) {
     if (!markingBook || !studentId) return

@@ -199,6 +199,9 @@ function FeedCard({ item }: { item: FeedItem }) {
   const { studentId } = useStudentAuthStore()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const isOwner = studentId != null && studentId === item.autorId
+  // Item sintético (lista derivada de listaPartilhada) ainda não persistida —
+  // as reações só funcionam depois do autor fazer auto-heal.
+  const isVirtual = item.id.startsWith('virtual-')
   // Handle vivo do autor (fallback para o que ficou congelado no post).
   const author = students.find((s) => s.id === item.autorId)
   const handle = author?.handle ?? item.autorAt
@@ -269,15 +272,23 @@ function FeedCard({ item }: { item: FeedItem }) {
         {REACTIONS.map(({ tipo, icon: Icon, color }) => {
           const ids = item.reacoes[tipo] ?? []
           const active = studentId ? ids.includes(studentId) : false
+          const disabled = isVirtual || !studentId
           return (
             <button
               key={tipo}
-              onClick={() => studentId && reactToFeedItem(item.id, tipo, studentId)}
+              onClick={() => {
+                if (disabled || !studentId) return
+                reactToFeedItem(item.id, tipo, studentId)
+              }}
+              disabled={disabled}
+              title={isVirtual ? 'As reações ficam disponíveis assim que a autora atualizar o feed.' : undefined}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all"
               style={{
                 background: active ? `${color}18` : 'var(--surface-2)',
                 color: active ? color : 'var(--text-muted)',
                 border: `1px solid ${active ? `${color}30` : 'var(--border)'}`,
+                opacity: disabled ? 0.5 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
               }}
             >
               <Icon size={12} />

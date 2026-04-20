@@ -264,7 +264,7 @@ interface AdminState {
   // Feed
   addFeedItem: (item: Omit<FeedItem, 'id' | 'data' | 'reacoes'>) => void
   deleteFeedItem: (itemId: string) => void
-  reactToFeedItem: (itemId: string, tipo: string, studentId: string) => void
+  reactToFeedItem: (itemId: string, tipo: string, studentId: string) => Promise<void>
 
   // Disciplines
   createDiscipline: (data: Omit<ManagedDiscipline, 'id' | 'createdAt' | 'topics'>) => void
@@ -461,8 +461,7 @@ export const useAdminStore = create<AdminState>()(
         api.deleteFeedItem(itemId)
       },
 
-      reactToFeedItem: (itemId, tipo, studentId) => {
-        api.reactToFeedItem(itemId, tipo, studentId)
+      reactToFeedItem: async (itemId, tipo, studentId) => {
         set({
           feedItems: get().feedItems.map((f) => {
             if (f.id !== itemId) return f
@@ -477,6 +476,13 @@ export const useAdminStore = create<AdminState>()(
             }
           }),
         })
+        // Aguarda o PUT para garantir que o KV persiste antes do próximo refetch.
+        try {
+          await api.reactToFeedItem(itemId, tipo, studentId)
+        } catch {
+          // Se o servidor falhar, ressincroniza do KV para reverter o optimistic update.
+          await get().fetchFeed()
+        }
       },
 
       // ── Disciplines ─────────────────────────────────────────────────────────
