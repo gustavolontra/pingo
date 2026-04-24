@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useStore, type Book } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
+import { api } from '@/lib/api'
 import {
   BookMarked, Plus, Pencil, Trash2, CheckCircle2, X,
   BookOpen, Share2, List, MessageSquare,
@@ -520,6 +521,35 @@ export default function BooksPage() {
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId, listaPartilhada])
+
+  // Auto-heal do snapshot `allBooks`/`sharedBooks` no student: se a lista
+  // guardada no KV (que os colegas vêem) não bate com a lista viva, força
+  // uma re-escrita. Evita que livros apagados continuem a aparecer no
+  // Club Dashboard dos colegas.
+  useEffect(() => {
+    if (!studentId || !student) return
+    const expected = books.map((b) => `${b.titulo}|${b.autor}|${b.status}`).sort().join(',')
+    const snapshot = (student.allBooks ?? [])
+      .map((b) => `${b.titulo}|${b.autor}|${b.status}`).sort().join(',')
+    if (expected === snapshot) return
+    const allBooks = books.map((b) => ({ titulo: b.titulo, autor: b.autor, status: b.status }))
+    const shared = books
+      .filter((b) => b.partilhado && b.status === 'lido')
+      .map((b) => ({
+        bookId: b.id,
+        titulo: b.titulo,
+        autor: b.autor,
+        resumo: b.resumo ?? '',
+        dataFim: b.dataFim ?? '',
+      }))
+    useAdminStore.setState((s) => ({
+      students: s.students.map((st) =>
+        st.id === studentId ? { ...st, allBooks, sharedBooks: shared } : st,
+      ),
+    }))
+    api.updateStudent(studentId, { allBooks, sharedBooks: shared })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentId, books.length])
 
   function handleMarkDone(resumo: string | undefined, partilhado: boolean) {
     if (!markingBook || !studentId) return

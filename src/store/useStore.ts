@@ -166,6 +166,32 @@ function mondayOfWeek(): string {
   return d.toISOString().split('T')[0]
 }
 
+/**
+ * Mantém o snapshot de `allBooks` e `sharedBooks` no student (KV) alinhado
+ * com a lista viva em `booksByStudent`. Os colegas só conseguem ver o que
+ * vem deste snapshot, portanto tem de estar sempre fresco — caso contrário
+ * o Club Dashboard dum aluno mostra livros apagados.
+ */
+function syncStudentBooksSnapshot(studentId: string, books: Book[]) {
+  const allBooks = books.map((b) => ({ titulo: b.titulo, autor: b.autor, status: b.status }))
+  const shared = books
+    .filter((b) => b.partilhado && b.status === 'lido')
+    .map((b) => ({
+      bookId: b.id,
+      titulo: b.titulo,
+      autor: b.autor,
+      resumo: b.resumo ?? '',
+      dataFim: b.dataFim ?? '',
+    }))
+  // Escreve directamente o snapshot localmente e no KV sem tocar noutros campos.
+  useAdminStore.setState((s) => ({
+    students: s.students.map((st) =>
+      st.id === studentId ? { ...st, allBooks, sharedBooks: shared } : st,
+    ),
+  }))
+  api.updateStudent(studentId, { allBooks, sharedBooks: shared })
+}
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -544,23 +570,29 @@ export const useStore = create<AppState>()(
           status: 'lendo',
           partilhado: false,
         }
-        set({ booksByStudent: { ...get().booksByStudent, [sid]: [...prev, book] } })
+        const next = [...prev, book]
+        set({ booksByStudent: { ...get().booksByStudent, [sid]: next } })
         api.addBook(sid, data)
+        syncStudentBooksSnapshot(sid, next)
       },
 
       updateBook: (bookId, data) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
-        set({ booksByStudent: { ...get().booksByStudent, [sid]: prev.map((b) => b.id === bookId ? { ...b, ...data } : b) } })
+        const next = prev.map((b) => b.id === bookId ? { ...b, ...data } : b)
+        set({ booksByStudent: { ...get().booksByStudent, [sid]: next } })
         api.updateBook(sid, bookId, data)
+        syncStudentBooksSnapshot(sid, next)
       },
 
       deleteBook: (bookId) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
         const bookToDelete = prev.find((b) => b.id === bookId)
-        set({ booksByStudent: { ...get().booksByStudent, [sid]: prev.filter((b) => b.id !== bookId) } })
+        const next = prev.filter((b) => b.id !== bookId)
+        set({ booksByStudent: { ...get().booksByStudent, [sid]: next } })
         api.deleteBook(sid, bookId)
+        syncStudentBooksSnapshot(sid, next)
 
         // Remove posts do feed associados a este livro (bookId direto ou
         // fallback por título para posts antigos antes do campo existir).
@@ -580,17 +612,14 @@ export const useStore = create<AppState>()(
       markBookRead: (bookId, resumo, partilhado) => {
         const sid = get().lastStudentId ?? 'anon'
         const prev = get().booksByStudent[sid] ?? []
-        set({
-          booksByStudent: {
-            ...get().booksByStudent,
-            [sid]: prev.map((b) =>
-              b.id === bookId
-                ? { ...b, status: 'lido', dataFim: new Date().toISOString().split('T')[0], resumo, partilhado }
-                : b
-            ),
-          },
-        })
+        const next = prev.map((b) =>
+          b.id === bookId
+            ? { ...b, status: 'lido' as const, dataFim: new Date().toISOString().split('T')[0], resumo, partilhado }
+            : b,
+        )
+        set({ booksByStudent: { ...get().booksByStudent, [sid]: next } })
         api.updateBook(sid, bookId, { status: 'lido', dataFim: new Date().toISOString().split('T')[0], resumo, partilhado })
+        syncStudentBooksSnapshot(sid, next)
       },
 
       fetchServerData: async (studentId) => {
