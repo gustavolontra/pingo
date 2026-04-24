@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useStore } from '@/store/useStore'
+import { useStore, type Book } from '@/store/useStore'
 import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore, type Student } from '@/store/useAdminStore'
 import {
@@ -12,7 +12,7 @@ import BookThreadModal from '@/components/dashboard/BookThreadModal'
 type ModoStudent = Student & { modo?: 'estudo' | 'clube' | 'ambos' }
 
 export default function ClubDashboardPage() {
-  const { studentName } = useStudentAuthStore()
+  const { studentId, studentName } = useStudentAuthStore()
   const students = useAdminStore((s) => s.students) as ModoStudent[]
   const feedItems = useAdminStore((s) => s.feedItems)
   const getBooks = useStore((s) => s.getBooks)
@@ -21,25 +21,31 @@ export default function ClubDashboardPage() {
 
   const year = new Date().getFullYear()
 
+  // Livros actuais do aluno (fonte fidedigna para o próprio); para outros
+  // membros usamos o snapshot em `allBooks`/`sharedBooks` do KV.
+  const myBooks = getBooks()
+
   // ── Membros do clube ────────────────────────────────────────────────────────
   const clubMembers = students.filter(
     (s) => s.isActive && (s.modo === 'clube' || s.modo === 'ambos'),
   )
 
   // ── Agregados anuais ────────────────────────────────────────────────────────
-  // Usa allBooks (lista partilhada) + sharedBooks (lidos partilhados com resumo).
   let totalALer = 0
   let totalLidosAno = 0
   for (const m of clubMembers) {
+    if (m.id === studentId) {
+      // Para mim uso a lista viva — evita contar livros já apagados.
+      totalALer += myBooks.filter((b) => b.status === 'lendo').length
+      totalLidosAno += myBooks.filter(
+        (b) => b.status === 'lido' && (b.dataFim ?? '').startsWith(String(year)),
+      ).length
+      continue
+    }
     const all = m.allBooks ?? []
     totalALer += all.filter((b) => b.status === 'lendo').length
     totalLidosAno += (m.sharedBooks ?? []).filter((b) => b.dataFim?.startsWith(String(year))).length
-    // Se o aluno não partilhou lista mas tem sharedBooks lidos este ano, já entra.
   }
-  // Inclui os livros do próprio aluno (que talvez ainda não tenha partilhado a lista).
-  const myBooks = getBooks()
-  totalALer += myBooks.filter((b) => b.status === 'lendo').length
-  totalLidosAno += myBooks.filter((b) => b.status === 'lido' && (b.dataFim ?? '').startsWith(String(year))).length
 
   // ── Feed de leituras (só resumos + listas) ──────────────────────────────────
   const clubIds = new Set(clubMembers.map((m) => m.id))
@@ -92,6 +98,8 @@ export default function ClubDashboardPage() {
       {/* Membros do clube */}
       <MembersPanel
         members={clubMembers}
+        currentStudentId={studentId}
+        myBooks={myBooks}
         onOpenThread={(titulo, autor) => setActiveThread({ titulo, autor })}
       />
 
@@ -292,9 +300,13 @@ function WeeklyGoalCard() {
 
 function MembersPanel({
   members,
+  currentStudentId,
+  myBooks,
   onOpenThread,
 }: {
   members: ModoStudent[]
+  currentStudentId: string | null
+  myBooks: Book[]
   onOpenThread: (titulo: string, autor: string) => void
 }) {
   if (members.length === 0) {
@@ -327,7 +339,14 @@ function MembersPanel({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {members.map((m) => <MemberCard key={m.id} member={m} onOpenThread={onOpenThread} />)}
+        {members.map((m) => (
+          <MemberCard
+            key={m.id}
+            member={m}
+            liveBooks={m.id === currentStudentId ? myBooks : null}
+            onOpenThread={onOpenThread}
+          />
+        ))}
       </div>
     </div>
   )
@@ -335,18 +354,26 @@ function MembersPanel({
 
 function MemberCard({
   member,
+  liveBooks,
   onOpenThread,
 }: {
   member: ModoStudent
+  liveBooks: Book[] | null
   onOpenThread: (titulo: string, autor: string) => void
 }) {
-  const all = member.allBooks ?? []
-  const lendo = all.filter((b) => b.status === 'lendo')
+  // Para o próprio aluno, usa a lista viva (getBooks); para os outros
+  // membros usa o snapshot persistido em `allBooks`/`sharedBooks`.
+  const lendo: { titulo: string; autor: string }[] = liveBooks
+    ? liveBooks.filter((b) => b.status === 'lendo').map((b) => ({ titulo: b.titulo, autor: b.autor }))
+    : (member.allBooks ?? []).filter((b) => b.status === 'lendo').map((b) => ({ titulo: b.titulo, autor: b.autor }))
   const current = lendo[0]
   const next = lendo[1]
-  const lastRead = (member.sharedBooks ?? [])
-    .slice()
-    .sort((a, b) => (b.dataFim ?? '').localeCompare(a.dataFim ?? ''))[0]
+  const lastRead: { titulo: string; autor: string; dataFim?: string } | undefined = liveBooks
+    ? liveBooks
+        .filter((b) => b.status === 'lido')
+        .slice()
+        .sort((a, b) => (b.dataFim ?? '').localeCompare(a.dataFim ?? ''))[0]
+    : (member.sharedBooks ?? []).slice().sort((a, b) => (b.dataFim ?? '').localeCompare(a.dataFim ?? ''))[0]
 
   return (
     <div
