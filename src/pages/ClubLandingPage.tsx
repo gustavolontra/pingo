@@ -58,7 +58,7 @@ export default function ClubLandingPage() {
             Lê em <span style={{ color: '#10b981' }}>boa companhia</span>.
           </h2>
           <p className="text-base mt-4 max-w-md leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            Um espaço calmo para os teus alunos partilharem livros, comentarem leituras e avançarem em conjunto — semana após semana.
+            Um espaço calmo para ti e os teus amigos partilharem livros, comentarem leituras e avançarem em conjunto — semana após semana.
           </p>
 
           <div className="flex flex-wrap gap-3 mt-7">

@@ -41,7 +41,7 @@ export default function EntryPage() {
             O que queres explorar hoje?
           </h2>
           <p className="text-sm sm:text-base max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>
-            Escolhe o projeto que veio contigo. Podes trocar depois a qualquer momento.
+            Escolhe por onde queres começar. Podes alternar entre os dois a qualquer momento.
           </p>
         </div>
 
