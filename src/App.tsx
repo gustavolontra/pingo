@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import EntryPage from '@/pages/EntryPage'
 import LandingPage from '@/pages/LandingPage'
+import ClubLandingPage from '@/pages/ClubLandingPage'
 import Layout from '@/components/layout/Layout'
 import DashboardRouter from '@/pages/DashboardRouter'
 import StudyPage from '@/pages/StudyPage'
@@ -45,8 +47,10 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
-      {/* Página inicial pública */}
-      <Route path="/" element={<LandingPage />} />
+      {/* Páginas iniciais públicas */}
+      <Route path="/" element={<EntryPage />} />
+      <Route path="/estudo" element={<LandingPage />} />
+      <Route path="/clube" element={<ClubLandingPage />} />
       <Route path="/login" element={<StudentLoginPage />} />
       <Route path="/registar" element={<StudentLoginPage />} />
       <Route path="/convite/:codigo" element={<ConvitePage />} />
