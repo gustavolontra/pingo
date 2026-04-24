@@ -68,7 +68,16 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, request }) => {
     if (!inviter) {
       return Response.json({ inviter: null }, { headers })
     }
-    return Response.json({ inviter: { name: inviter.name, handle: inviter.email.split('@')[0] } }, { headers })
+    const handle = typeof inviter.handle === 'string' && inviter.handle.length > 0
+      ? inviter.handle
+      : inviter.email.split('@')[0]
+    return Response.json({
+      inviter: {
+        name: inviter.name,
+        handle,
+        modo: (inviter.modo as 'estudo' | 'clube' | 'ambos' | undefined) ?? 'estudo',
+      },
+    }, { headers })
   }
 
   // List all pedidos
@@ -159,6 +168,12 @@ export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
     )
     const handle = makeUniqueHandle(baseHandleFromName(pedido.nome), takenHandles)
 
+    // Herda o modo do convidador — se o Lontra (modo='clube') convida uma amiga,
+    // a amiga entra como clube; se convida um colega para estudar (modo='ambos'),
+    // o colega também entra como ambos.
+    const inviterForModo = existing.find((s) => s.id === pedido.convidadoPor)
+    const inheritedModo = (inviterForModo?.modo as 'estudo' | 'clube' | 'ambos' | undefined) ?? 'estudo'
+
     const newStudent: Student = {
       id: crypto.randomUUID(),
       login,
@@ -175,6 +190,7 @@ export const onRequestPut: PagesFunction<Env> = async ({ env, request }) => {
       convidadoPor: pedido.convidadoPor,
       convitesFeitos: [],
       mustChangePassword: true,
+      modo: inheritedModo,
     }
 
     // Add student (reutiliza a lista já lida acima)

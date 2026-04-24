@@ -4,7 +4,7 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore, type Student } from '@/store/useAdminStore'
 import {
   BookMarked, BookOpen, CheckCircle2, Users, Target, Sparkles, Flame,
-  TrendingUp, Plus, Minus, MessageSquare,
+  TrendingUp, Plus, Minus, MessageSquare, UserPlus, Copy, Check,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import BookThreadModal from '@/components/dashboard/BookThreadModal'
@@ -18,6 +18,8 @@ export default function ClubDashboardPage() {
   const getBooks = useStore((s) => s.getBooks)
   const displayName = (studentName ?? 'Leitor').split(' ')[0]
   const [activeThread, setActiveThread] = useState<{ titulo: string; autor: string } | null>(null)
+  const me = students.find((s) => s.id === studentId)
+  const inviteCode = me?.codigoConvite ?? ''
 
   const year = new Date().getFullYear()
 
@@ -91,6 +93,9 @@ export default function ClubDashboardPage() {
         <ClubStat icon={CheckCircle2} label={`Lidos em ${year}`} value={totalLidosAno} color="#a78bfa" />
         <WeeklyGoalStat />
       </div>
+
+      {/* Convida colegas para o clube */}
+      {inviteCode && <ClubInviteBanner code={inviteCode} />}
 
       {/* Meta semanal (com controlo) */}
       <WeeklyGoalCard />
@@ -338,11 +343,12 @@ function MembersPanel({
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2.5">
         {members.map((m) => (
           <MemberCard
             key={m.id}
             member={m}
+            isMe={m.id === currentStudentId}
             liveBooks={m.id === currentStudentId ? myBooks : null}
             onOpenThread={onOpenThread}
           />
@@ -354,15 +360,15 @@ function MembersPanel({
 
 function MemberCard({
   member,
+  isMe,
   liveBooks,
   onOpenThread,
 }: {
   member: ModoStudent
+  isMe: boolean
   liveBooks: Book[] | null
   onOpenThread: (titulo: string, autor: string) => void
 }) {
-  // Para o próprio aluno, usa a lista viva (getBooks); para os outros
-  // membros usa o snapshot persistido em `allBooks`/`sharedBooks`.
   const lendo: { titulo: string; autor: string }[] = liveBooks
     ? liveBooks.filter((b) => b.status === 'lendo').map((b) => ({ titulo: b.titulo, autor: b.autor }))
     : (member.allBooks ?? []).filter((b) => b.status === 'lendo').map((b) => ({ titulo: b.titulo, autor: b.autor }))
@@ -377,27 +383,40 @@ function MemberCard({
 
   return (
     <div
-      className="p-3.5 rounded-2xl"
+      className="relative p-2.5 rounded-2xl"
       style={{
-        background: 'var(--surface-2)',
-        border: '1px solid var(--border)',
+        background: isMe ? 'rgba(98,112,245,0.06)' : 'var(--surface-2)',
+        border: `1px solid ${isMe ? 'rgba(98,112,245,0.35)' : 'var(--border)'}`,
+        boxShadow: isMe ? '0 1px 2px rgba(15,23,42,0.04), 0 4px 14px rgba(98,112,245,0.12)' : undefined,
       }}
     >
-      <div className="flex items-center gap-2.5 mb-3">
+      {isMe && (
+        <span
+          className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+          style={{ background: '#6270f5', color: 'white' }}
+        >
+          Você
+        </span>
+      )}
+      <div className="flex items-center gap-2 mb-2">
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
           style={{
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(99,143,255,0.18))',
-            color: '#10b981',
-            border: '1px solid rgba(16,185,129,0.22)',
+            background: isMe
+              ? 'linear-gradient(135deg, #6270f5, #a78bfa)'
+              : 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(99,143,255,0.18))',
+            color: isMe ? 'white' : '#10b981',
+            border: `1px solid ${isMe ? 'transparent' : 'rgba(16,185,129,0.22)'}`,
           }}
         >
           {member.name.charAt(0)}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold truncate" style={{ color: 'var(--text)' }}>{member.name}</p>
+        <div className="flex-1 min-w-0 pr-8">
+          <p className="text-[13px] font-bold truncate leading-tight" style={{ color: 'var(--text)' }}>
+            {member.name.split(' ')[0]}
+          </p>
           {member.handle && (
-            <p className="text-xs truncate" style={{ color: '#6270f5' }}>@{member.handle}</p>
+            <p className="text-[10px] truncate" style={{ color: isMe ? '#6270f5' : 'var(--text-muted)' }}>@{member.handle}</p>
           )}
         </div>
       </div>
@@ -405,7 +424,7 @@ function MemberCard({
       <MemberBookLine label="A ler" icon={BookOpen} color="#6270f5" book={current} onOpenThread={onOpenThread} />
       <MemberBookLine label="Próximo" icon={Sparkles} color="#a78bfa" book={next} onOpenThread={onOpenThread} />
       <MemberBookLine
-        label="Último lido"
+        label="Último"
         icon={CheckCircle2}
         color="#10b981"
         book={lastRead ? { titulo: lastRead.titulo, autor: lastRead.autor } : undefined}
@@ -431,26 +450,23 @@ function MemberBookLine({
   const content = (
     <>
       <span
-        className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center mt-0.5"
+        className="shrink-0 w-4 h-4 rounded-md flex items-center justify-center mt-0.5"
         style={{ background: `${color}14`, color }}
       >
-        <Icon size={10} />
+        <Icon size={9} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wide flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-[9px] font-semibold uppercase tracking-wide flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
           {label}
           {book && (
-            <MessageSquare size={9} className="opacity-0 group-hover/line:opacity-100 transition-opacity" style={{ color }} />
+            <MessageSquare size={8} className="opacity-0 group-hover/line:opacity-100 transition-opacity" style={{ color }} />
           )}
         </p>
         {book ? (
-          <>
-            <p className="text-xs font-semibold truncate" style={{ color: 'var(--text)' }}>{book.titulo}</p>
-            <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{book.autor}</p>
-          </>
+          <p className="text-[11px] font-semibold truncate leading-tight" style={{ color: 'var(--text)' }}>{book.titulo}</p>
         ) : (
-          <p className="text-[11px] italic" style={{ color: 'var(--text-muted)' }}>
-            Ainda não partilhou
+          <p className="text-[10px] italic leading-tight" style={{ color: 'var(--text-muted)' }}>
+            —
           </p>
         )}
       </div>
@@ -461,8 +477,8 @@ function MemberBookLine({
     return (
       <button
         onClick={() => onOpenThread(book.titulo, book.autor)}
-        title="Abrir comentários do livro"
-        className="group/line w-full flex items-start gap-2 text-xs py-1.5 text-left transition-opacity hover:opacity-80 cursor-pointer"
+        title={`${book.titulo} — ${book.autor}\nAbrir comentários`}
+        className="group/line w-full flex items-start gap-1.5 py-1 text-left transition-opacity hover:opacity-80 cursor-pointer"
         style={{ borderTop: '1px dashed var(--border)' }}
       >
         {content}
@@ -472,7 +488,7 @@ function MemberBookLine({
 
   return (
     <div
-      className="flex items-start gap-2 text-xs py-1.5"
+      className="flex items-start gap-1.5 py-1"
       style={{ borderTop: '1px dashed var(--border)' }}
     >
       {content}
@@ -541,6 +557,64 @@ function ReadingFeed({ items }: { items: ReturnType<typeof useAdminStore.getStat
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Convite para o clube ──────────────────────────────────────────────────────
+
+function ClubInviteBanner({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false)
+  const link = `${window.location.origin}/convite/${code}`
+
+  function copy() {
+    navigator.clipboard.writeText(link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div
+      className="relative overflow-hidden flex items-center gap-4 px-5 py-4 rounded-2xl"
+      style={{
+        background: 'linear-gradient(115deg, rgba(16,185,129,0.14) 0%, rgba(98,112,245,0.10) 55%, rgba(167,139,250,0.10) 100%)',
+        border: '1px solid rgba(16,185,129,0.22)',
+      }}
+    >
+      <div
+        aria-hidden
+        className="absolute -left-10 -top-10 w-40 h-40 rounded-full opacity-30"
+        style={{ background: 'radial-gradient(closest-side, rgba(16,185,129,0.35), transparent)' }}
+      />
+      <div
+        className="relative w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+        style={{
+          background: 'linear-gradient(135deg, #10b981, #059669)',
+          color: 'white',
+          boxShadow: '0 6px 18px rgba(16,185,129,0.35)',
+        }}
+      >
+        <UserPlus size={20} />
+      </div>
+      <div className="relative flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <BookMarked size={13} style={{ color: '#10b981' }} />
+          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Convida colegas para o clube</p>
+        </div>
+        <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{link}</p>
+      </div>
+      <button
+        onClick={copy}
+        className="relative flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all"
+        style={{
+          background: copied ? '#059669' : 'linear-gradient(135deg, #10b981, #059669)',
+          color: '#fff',
+          boxShadow: '0 4px 14px rgba(16,185,129,0.35)',
+        }}
+      >
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+        {copied ? 'Copiado!' : 'Copiar link'}
+      </button>
     </div>
   )
 }
