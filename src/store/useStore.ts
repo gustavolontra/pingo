@@ -102,6 +102,8 @@ interface AppState {
   lastStudentId: string | null
   /** Timestamp da última vez que o aluno viu o feed */
   lastSeenFeedAt: string | null
+  /** Meta semanal de páginas por aluno (clube de leitura). `weekStart` = Monday ISO. */
+  weeklyReadingByStudent: Record<string, { goal: number; weekStart: string; pages: number }>
 
   /** Disciplinas vindas do KV (não persistidas — recarregadas a cada visita) */
   kvDisciplines: Discipline[]
@@ -136,6 +138,11 @@ interface AppState {
   removeFriend: (friendId: string) => void
   ignoreSuggestion: (friendId: string) => void
 
+  /** Meta semanal de páginas (clube de leitura) */
+  getWeeklyReading: () => { goal: number; weekStart: string; pages: number }
+  setWeeklyReadingGoal: (goal: number) => void
+  addPagesRead: (pages: number) => void
+
   addBook: (data: Pick<Book, 'titulo' | 'autor' | 'capa'>) => void
   updateBook: (id: string, data: Partial<Pick<Book, 'titulo' | 'autor' | 'capa' | 'resumo' | 'partilhado'>>) => void
   deleteBook: (id: string) => void
@@ -151,6 +158,14 @@ function todayKey() {
   return new Date().toISOString().split('T')[0]
 }
 
+function mondayOfWeek(): string {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  const offset = (d.getDay() + 6) % 7  // Mon=0
+  d.setDate(d.getDate() - offset)
+  return d.toISOString().split('T')[0]
+}
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -164,6 +179,7 @@ export const useStore = create<AppState>()(
       ignoredSuggestionsByStudent: {},
       lastStudentId: null,
       lastSeenFeedAt: null,
+      weeklyReadingByStudent: {},
       kvDisciplines: [],
 
       // ── Computed ──────────────────────────────────────────────────────────
@@ -190,6 +206,48 @@ export const useStore = create<AppState>()(
         const id = get().lastStudentId
         if (!id) return []
         return get().ignoredSuggestionsByStudent[id] ?? []
+      },
+
+      getWeeklyReading: () => {
+        const id = get().lastStudentId
+        const ws = mondayOfWeek()
+        const fallback = { goal: 0, weekStart: ws, pages: 0 }
+        if (!id) return fallback
+        const entry = get().weeklyReadingByStudent[id]
+        // Se mudou a semana, reinicia as páginas mas preserva a meta.
+        if (!entry || entry.weekStart !== ws) {
+          return { goal: entry?.goal ?? 0, weekStart: ws, pages: 0 }
+        }
+        return entry
+      },
+
+      setWeeklyReadingGoal: (goal) => {
+        const id = get().lastStudentId
+        if (!id) return
+        const ws = mondayOfWeek()
+        const prev = get().weeklyReadingByStudent[id]
+        const pages = prev && prev.weekStart === ws ? prev.pages : 0
+        set({
+          weeklyReadingByStudent: {
+            ...get().weeklyReadingByStudent,
+            [id]: { goal: Math.max(0, Math.round(goal)), weekStart: ws, pages },
+          },
+        })
+      },
+
+      addPagesRead: (pages) => {
+        const id = get().lastStudentId
+        if (!id) return
+        const ws = mondayOfWeek()
+        const prev = get().weeklyReadingByStudent[id]
+        const currentPages = prev && prev.weekStart === ws ? prev.pages : 0
+        const goal = prev?.goal ?? 0
+        set({
+          weeklyReadingByStudent: {
+            ...get().weeklyReadingByStudent,
+            [id]: { goal, weekStart: ws, pages: Math.max(0, currentPages + pages) },
+          },
+        })
       },
 
       getDisciplines: () => {

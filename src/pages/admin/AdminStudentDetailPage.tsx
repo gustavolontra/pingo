@@ -1,12 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAdminStore } from '@/store/useAdminStore'
-import { ArrowLeft, Zap, Flame, Clock, BookOpen, Trophy, School, Mail, GraduationCap, Calendar, AtSign } from 'lucide-react'
+import { ArrowLeft, Zap, Flame, Clock, BookOpen, Trophy, School, Mail, GraduationCap, Calendar, AtSign, GraduationCap as StudyIcon, BookMarked, Layers } from 'lucide-react'
 import { formatMinutes } from '@/lib/utils'
+
+type Modo = 'estudo' | 'clube' | 'ambos'
 
 export default function AdminStudentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { students } = useAdminStore()
+  const { students, updateStudent } = useAdminStore()
 
   const student = students.find((s) => s.id === id)
   if (!student) {
@@ -90,6 +92,47 @@ export default function AdminStudentDetailPage() {
           }}
         >
           {student.isActive ? 'Ativo' : 'Inativo'}
+        </div>
+      </div>
+
+      {/* Modo da conta */}
+      <h3 className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+        Modo da conta
+      </h3>
+      <div className="card mb-6">
+        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+          Controla que dashboard e separadores ficam disponíveis para este aluno.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {(
+            [
+              { key: 'estudo', label: 'Estudo', desc: 'Planos + biblioteca', icon: StudyIcon, color: '#6270f5' },
+              { key: 'clube', label: 'Clube de Leitura', desc: 'Só leitura + feed', icon: BookMarked, color: '#10b981' },
+              { key: 'ambos', label: 'Ambos', desc: 'Alterna no dashboard', icon: Layers, color: '#a78bfa' },
+            ] as const
+          ).map(({ key, label, desc, icon: Icon, color }) => {
+            const selected = (student.modo ?? 'estudo') === key
+            return (
+              <button
+                key={key}
+                onClick={() => updateStudent(student.id, { modo: key as Modo })}
+                className="text-left px-3.5 py-3 rounded-xl transition-all"
+                style={{
+                  background: selected ? `${color}10` : 'var(--surface)',
+                  border: `1px solid ${selected ? `${color}45` : 'var(--border)'}`,
+                  boxShadow: selected ? `0 1px 2px rgba(15,23,42,0.04), 0 4px 14px ${color}1a` : undefined,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}18`, color }}>
+                    <Icon size={14} />
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: selected ? color : 'var(--text)' }}>{label}</span>
+                </div>
+                <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>{desc}</p>
+              </button>
+            )
+          })}
         </div>
       </div>
 

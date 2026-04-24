@@ -38,6 +38,9 @@ export interface Student {
   sharedBooks?: { bookId: string; titulo: string; autor: string; resumo: string; dataFim: string }[]
   listaPartilhada?: boolean
   allBooks?: { titulo: string; autor: string; status: 'lendo' | 'lido' }[]
+  /** Modo da conta: `estudo` (padrão, planos + biblioteca), `clube` (só clube de
+   * leitura) ou `ambos` (dashboard com alternador). */
+  modo?: 'estudo' | 'clube' | 'ambos'
   codigoConvite: string
   convidadoPor?: string
   convitesFeitos: string[]
@@ -255,7 +258,7 @@ interface AdminState {
 
   // Students
   createStudent: (data: { login: string; name: string; school: string; grade: string; password: string }) => Promise<void>
-  updateStudent: (id: string, data: Partial<Pick<Student, 'name' | 'email' | 'school' | 'grade' | 'isActive'>>) => void
+  updateStudent: (id: string, data: Partial<Pick<Student, 'name' | 'email' | 'school' | 'grade' | 'isActive' | 'modo'>>) => void
   syncStudentStats: (id: string, stats: Pick<Student, 'xp' | 'level' | 'streak' | 'lessonsCompleted' | 'totalStudyMinutes'>) => void
   updateStudentSharedBooks: (id: string, books: NonNullable<Student['sharedBooks']>) => void
   toggleStudentListShare: (id: string, shared: boolean, allBooks: NonNullable<Student['allBooks']>) => void

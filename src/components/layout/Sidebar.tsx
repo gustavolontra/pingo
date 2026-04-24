@@ -14,6 +14,8 @@ export default function Sidebar() {
   const xpPct = Math.round((user.xp / user.xpForNextLevel) * 100)
 
   const me = students.find((s) => s.id === studentId)
+  const modo = me?.modo ?? 'estudo'
+  const showEstudo = modo === 'estudo' || modo === 'ambos'
   const friendIds = getFriends()
   const ignoredIds = getIgnoredSuggestions()
   const suggestionCount = students.filter(
@@ -45,15 +47,19 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-0.5 flex-1">
         <SideNavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
 
-        <SectionLabel>Estudo</SectionLabel>
-        <SideNavItem to="/criar-plano" icon={Plus} label="Criar plano" />
-        <SideNavItem to="/biblioteca" icon={Library} label="Biblioteca" />
+        {showEstudo && (
+          <>
+            <SectionLabel>Estudo</SectionLabel>
+            <SideNavItem to="/criar-plano" icon={Plus} label="Criar plano" />
+            <SideNavItem to="/biblioteca" icon={Library} label="Biblioteca" />
+          </>
+        )}
 
         <SectionLabel>Comunidade</SectionLabel>
-        <SideNavItem to="/leituras" icon={BookMarked} label="Leituras" />
+        <SideNavItem to="/leituras" icon={BookMarked} label="Clube de Leitura" />
         <SideNavItem to="/amigos" icon={Users} label="Amigos" badge={suggestionCount > 0 ? suggestionCount : undefined} />
         <SideNavItem to="/feed" icon={Rss} label="Feed" badge={unseenFeedCount > 0 ? unseenFeedCount : undefined} />
-        <SideNavItem to="/ranking" icon={Trophy} label="Ranking" />
+        {showEstudo && <SideNavItem to="/ranking" icon={Trophy} label="Ranking" />}
       </nav>
 
       {/* User card — clickable → profile */}

@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from '@/pages/LandingPage'
 import Layout from '@/components/layout/Layout'
-import DashboardPage from '@/pages/DashboardPage'
+import DashboardRouter from '@/pages/DashboardRouter'
 import StudyPage from '@/pages/StudyPage'
 import ExamSchedulePage from '@/pages/ExamSchedulePage'
 import CreatePlanPage from '@/pages/CreatePlanPage'
@@ -60,7 +60,7 @@ export default function App() {
           </StudentGuard>
         }
       >
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="dashboard" element={<DashboardRouter />} />
         <Route path="study/:disciplineId" element={<StudyPage />} />
         <Route path="exames" element={<ExamSchedulePage />} />
         <Route path="criar-plano" element={<CreatePlanPage />} />
