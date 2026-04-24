@@ -214,6 +214,29 @@ export const api = {
     })
   },
 
+  // ── Book comments (Clube de Leitura) ──────────────────────────────────────
+  async getBookComments(threadKey: string): Promise<Array<{
+    id: string; threadKey: string; autorId: string; autorNome: string;
+    autorAt: string; conteudo: string; data: string
+  }>> {
+    const res = await fetch(`${BASE}/book-comments?threadKey=${encodeURIComponent(threadKey)}`)
+    if (!res.ok) return []
+    return res.json()
+  },
+  async addBookComment(input: {
+    threadKey: string; autorId: string; autorNome: string; autorAt: string; conteudo: string
+  }) {
+    const res = await fetch(`${BASE}/book-comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    return res.json()
+  },
+  async deleteBookComment(id: string) {
+    await fetch(`${BASE}/book-comments?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+  },
+
   // ── Friends ───────────────────────────────────────────────────────────────
   async getFriends(studentId: string): Promise<string[]> {
     const res = await fetch(`${BASE}/friends?studentId=${studentId}`)

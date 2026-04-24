@@ -7,6 +7,7 @@ import {
   TrendingUp, Plus, Minus, MessageSquare,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import BookThreadModal from '@/components/dashboard/BookThreadModal'
 
 type ModoStudent = Student & { modo?: 'estudo' | 'clube' | 'ambos' }
 
@@ -16,6 +17,7 @@ export default function ClubDashboardPage() {
   const feedItems = useAdminStore((s) => s.feedItems)
   const getBooks = useStore((s) => s.getBooks)
   const displayName = (studentName ?? 'Leitor').split(' ')[0]
+  const [activeThread, setActiveThread] = useState<{ titulo: string; autor: string } | null>(null)
 
   const year = new Date().getFullYear()
 
@@ -88,10 +90,21 @@ export default function ClubDashboardPage() {
       <WeeklyGoalCard />
 
       {/* Membros do clube */}
-      <MembersPanel members={clubMembers} />
+      <MembersPanel
+        members={clubMembers}
+        onOpenThread={(titulo, autor) => setActiveThread({ titulo, autor })}
+      />
 
       {/* Feed de leituras */}
       <ReadingFeed items={readingFeed} />
+
+      {activeThread && (
+        <BookThreadModal
+          titulo={activeThread.titulo}
+          autor={activeThread.autor}
+          onClose={() => setActiveThread(null)}
+        />
+      )}
     </div>
   )
 }
@@ -277,9 +290,13 @@ function WeeklyGoalCard() {
 
 // ── Membros do clube ─────────────────────────────────────────────────────────
 
-function MembersPanel({ members }: { members: ModoStudent[] }) {
-  const navigate = useNavigate()
-
+function MembersPanel({
+  members,
+  onOpenThread,
+}: {
+  members: ModoStudent[]
+  onOpenThread: (titulo: string, autor: string) => void
+}) {
   if (members.length === 0) {
     return (
       <div className="card text-center py-10">
@@ -310,13 +327,19 @@ function MembersPanel({ members }: { members: ModoStudent[] }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {members.map((m) => <MemberCard key={m.id} member={m} onOpen={() => navigate('/feed')} />)}
+        {members.map((m) => <MemberCard key={m.id} member={m} onOpenThread={onOpenThread} />)}
       </div>
     </div>
   )
 }
 
-function MemberCard({ member, onOpen }: { member: ModoStudent; onOpen: () => void }) {
+function MemberCard({
+  member,
+  onOpenThread,
+}: {
+  member: ModoStudent
+  onOpenThread: (titulo: string, autor: string) => void
+}) {
   const all = member.allBooks ?? []
   const lendo = all.filter((b) => b.status === 'lendo')
   const current = lendo[0]
@@ -326,9 +349,8 @@ function MemberCard({ member, onOpen }: { member: ModoStudent; onOpen: () => voi
     .sort((a, b) => (b.dataFim ?? '').localeCompare(a.dataFim ?? ''))[0]
 
   return (
-    <button
-      onClick={onOpen}
-      className="group text-left p-3.5 rounded-2xl transition-all hover:-translate-y-0.5"
+    <div
+      className="p-3.5 rounded-2xl"
       style={{
         background: 'var(--surface-2)',
         border: '1px solid var(--border)',
@@ -353,15 +375,16 @@ function MemberCard({ member, onOpen }: { member: ModoStudent; onOpen: () => voi
         </div>
       </div>
 
-      <MemberBookLine label="A ler" icon={BookOpen} color="#6270f5" book={current} />
-      <MemberBookLine label="Próximo" icon={Sparkles} color="#a78bfa" book={next} />
+      <MemberBookLine label="A ler" icon={BookOpen} color="#6270f5" book={current} onOpenThread={onOpenThread} />
+      <MemberBookLine label="Próximo" icon={Sparkles} color="#a78bfa" book={next} onOpenThread={onOpenThread} />
       <MemberBookLine
         label="Último lido"
         icon={CheckCircle2}
         color="#10b981"
         book={lastRead ? { titulo: lastRead.titulo, autor: lastRead.autor } : undefined}
+        onOpenThread={onOpenThread}
       />
-    </button>
+    </div>
   )
 }
 
@@ -370,14 +393,16 @@ function MemberBookLine({
   icon: Icon,
   color,
   book,
+  onOpenThread,
 }: {
   label: string
   icon: typeof BookOpen
   color: string
   book?: { titulo: string; autor: string }
+  onOpenThread: (titulo: string, autor: string) => void
 }) {
-  return (
-    <div className="flex items-start gap-2 text-xs py-1.5" style={{ borderTop: '1px dashed var(--border)' }}>
+  const content = (
+    <>
       <span
         className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center mt-0.5"
         style={{ background: `${color}14`, color }}
@@ -385,8 +410,11 @@ function MemberBookLine({
         <Icon size={10} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-[10px] font-semibold uppercase tracking-wide flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
           {label}
+          {book && (
+            <MessageSquare size={9} className="opacity-0 group-hover/line:opacity-100 transition-opacity" style={{ color }} />
+          )}
         </p>
         {book ? (
           <>
@@ -399,6 +427,28 @@ function MemberBookLine({
           </p>
         )}
       </div>
+    </>
+  )
+
+  if (book) {
+    return (
+      <button
+        onClick={() => onOpenThread(book.titulo, book.autor)}
+        title="Abrir comentários do livro"
+        className="group/line w-full flex items-start gap-2 text-xs py-1.5 text-left transition-opacity hover:opacity-80 cursor-pointer"
+        style={{ borderTop: '1px dashed var(--border)' }}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div
+      className="flex items-start gap-2 text-xs py-1.5"
+      style={{ borderTop: '1px dashed var(--border)' }}
+    >
+      {content}
     </div>
   )
 }

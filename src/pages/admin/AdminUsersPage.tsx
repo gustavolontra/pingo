@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAdminStore, type Student } from '@/store/useAdminStore'
 import { hashPassword } from '@/lib/crypto'
-import { UserPlus, Trash2, X, ChevronRight, Pencil, Check, Ban, Copy, Clock, AtSign } from 'lucide-react'
+import { UserPlus, Trash2, X, ChevronRight, Pencil, Check, Ban, Copy, Clock, AtSign, GraduationCap, BookMarked, Layers } from 'lucide-react'
 import { baseHandleFromName } from '@/lib/handle'
 
 const GRADE_OPTIONS = [
@@ -11,6 +11,8 @@ const GRADE_OPTIONS = [
 ]
 
 const EMPTY_FORM = { login: '', name: '', school: '', grade: '7.º ano', password: '' }
+
+type ModoFilter = 'todos' | 'estudo' | 'clube' | 'ambos'
 
 export default function AdminUsersPage() {
   const { students, createStudent, updateStudent, deleteStudent, pedidosConvite, fetchPedidosConvite, aprovarConvite, recusarConvite } = useAdminStore()
@@ -21,8 +23,20 @@ export default function AdminUsersPage() {
   const [error, setError] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [approvedCreds, setApprovedCreds] = useState<{ login: string; password: string } | null>(null)
+  const [modoFilter, setModoFilter] = useState<ModoFilter>('todos')
 
   const pendentes = pedidosConvite.filter((p) => p.estado === 'pendente')
+
+  const modoCounts = {
+    todos: students.length,
+    estudo: students.filter((s) => (s.modo ?? 'estudo') === 'estudo').length,
+    clube: students.filter((s) => s.modo === 'clube').length,
+    ambos: students.filter((s) => s.modo === 'ambos').length,
+  }
+
+  const filteredStudents = modoFilter === 'todos'
+    ? students
+    : students.filter((s) => (s.modo ?? 'estudo') === modoFilter)
 
   useEffect(() => { fetchPedidosConvite() }, [])
 
@@ -248,6 +262,46 @@ export default function AdminUsersPage() {
         </Modal>
       )}
 
+      {/* Filter chips */}
+      {students.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-[11px] font-semibold uppercase tracking-wide mr-1" style={{ color: 'var(--text-muted)' }}>Modo:</span>
+          {(
+            [
+              { key: 'todos', label: 'Todos', color: '#64748b', count: modoCounts.todos },
+              { key: 'estudo', label: 'Estudo', color: '#6270f5', count: modoCounts.estudo },
+              { key: 'clube', label: 'Clube de Leitura', color: '#10b981', count: modoCounts.clube },
+              { key: 'ambos', label: 'Ambos', color: '#a78bfa', count: modoCounts.ambos },
+            ] as const
+          ).map(({ key, label, color, count }) => {
+            const active = modoFilter === key
+            return (
+              <button
+                key={key}
+                onClick={() => setModoFilter(key as ModoFilter)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                style={{
+                  background: active ? `${color}15` : 'var(--surface)',
+                  color: active ? color : 'var(--text-muted)',
+                  border: `1px solid ${active ? `${color}40` : 'var(--border)'}`,
+                }}
+              >
+                {label}
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0 rounded-full"
+                  style={{
+                    background: active ? `${color}20` : 'var(--surface-2)',
+                    color: active ? color : 'var(--text-muted)',
+                  }}
+                >
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* Table */}
       {students.length === 0 ? (
         <div className="card text-center py-12">
@@ -255,23 +309,28 @@ export default function AdminUsersPage() {
           <p className="font-semibold" style={{ color: 'var(--text)' }}>Nenhum utilizador ainda</p>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Clica em "Novo utilizador" para começar.</p>
         </div>
+      ) : filteredStudents.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Nenhum utilizador neste modo.</p>
+        </div>
       ) : (
         <div className="card p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-                {['Nome', 'Email', 'Escola', 'Série', 'Desde', ''].map((h) => (
+                {['Nome', 'Modo', 'Email', 'Escola', 'Série', 'Desde', ''].map((h) => (
                   <th key={h} className="text-left px-5 py-3 font-semibold" style={{ color: 'var(--text-muted)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => (
+              {filteredStudents.map((student) => (
                 <StudentRow
                   key={student.id}
                   student={student}
                   onEdit={() => openEdit(student)}
                   onDelete={() => setConfirmDeleteId(student.id)}
+                  onSetModo={(modo) => updateStudent(student.id, { modo })}
                 />
               ))}
             </tbody>
@@ -282,7 +341,14 @@ export default function AdminUsersPage() {
   )
 }
 
-function StudentRow({ student, onEdit, onDelete }: { student: Student; onEdit: () => void; onDelete: () => void }) {
+function StudentRow({
+  student, onEdit, onDelete, onSetModo,
+}: {
+  student: Student
+  onEdit: () => void
+  onDelete: () => void
+  onSetModo: (modo: 'estudo' | 'clube' | 'ambos') => void
+}) {
   const navigate = useNavigate()
   return (
     <tr style={{ borderBottom: '1px solid var(--border)' }} className="hover:bg-slate-50 transition-colors">
@@ -298,6 +364,9 @@ function StudentRow({ student, onEdit, onDelete }: { student: Student; onEdit: (
             @{student.handle}
           </div>
         )}
+      </td>
+      <td className="px-5 py-3.5">
+        <ModoQuickSwitch modo={student.modo ?? 'estudo'} onChange={onSetModo} />
       </td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.login}</td>
       <td className="px-5 py-3.5" style={{ color: 'var(--text-muted)' }}>{student.school}</td>
@@ -320,6 +389,63 @@ function StudentRow({ student, onEdit, onDelete }: { student: Student; onEdit: (
         </div>
       </td>
     </tr>
+  )
+}
+
+function ModoQuickSwitch({
+  modo,
+  onChange,
+}: {
+  modo: 'estudo' | 'clube' | 'ambos'
+  onChange: (modo: 'estudo' | 'clube' | 'ambos') => void
+}) {
+  const [open, setOpen] = useState(false)
+  const meta = {
+    estudo: { label: 'Estudo', color: '#6270f5', icon: GraduationCap },
+    clube: { label: 'Clube de Leitura', color: '#10b981', icon: BookMarked },
+    ambos: { label: 'Ambos', color: '#a78bfa', icon: Layers },
+  } as const
+  const active = meta[modo]
+  const ActiveIcon = active.icon
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold transition-all"
+        style={{ background: `${active.color}15`, color: active.color, border: `1px solid ${active.color}30` }}
+      >
+        <ActiveIcon size={11} />
+        {active.label}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="absolute z-50 top-full left-0 mt-1 rounded-xl p-1 min-w-[160px]"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 10px 30px rgba(15,23,42,0.12)' }}
+          >
+            {(['estudo', 'clube', 'ambos'] as const).map((k) => {
+              const m = meta[k]
+              const Icon = m.icon
+              const selected = modo === k
+              return (
+                <button
+                  key={k}
+                  onClick={() => { onChange(k); setOpen(false) }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-left transition-colors hover:bg-slate-50"
+                  style={{ color: selected ? m.color : 'var(--text)' }}
+                >
+                  <Icon size={12} style={{ color: m.color }} />
+                  {m.label}
+                  {selected && <Check size={12} className="ml-auto" style={{ color: m.color }} />}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 

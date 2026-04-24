@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore } from '@/store/useAdminStore'
 import { api } from '@/lib/api'
-import { Users, BookOpen, UserCheck, Trophy, Flame, Clock, Star } from 'lucide-react'
+import { Users, BookOpen, UserCheck, Trophy, Flame, Clock, Star, GraduationCap, BookMarked, Layers } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function AdminDashboard() {
   const { students, currentAdmin } = useAdminStore()
+  const navigate = useNavigate()
   const [disciplineCount, setDisciplineCount] = useState<number | null>(null)
   const activeStudents = students.filter((s) => s.isActive).length
 
@@ -14,6 +16,17 @@ export default function AdminDashboard() {
       setDisciplineCount(unique.size)
     })
   }, [])
+
+  // Distribuição por modo (default = estudo se não estiver definido)
+  const modoCounts = {
+    estudo: students.filter((s) => (s.modo ?? 'estudo') === 'estudo').length,
+    clube: students.filter((s) => s.modo === 'clube').length,
+    ambos: students.filter((s) => s.modo === 'ambos').length,
+  }
+  // Alunos com acesso ao Clube de Leitura = clube + ambos
+  const clubeAccess = modoCounts.clube + modoCounts.ambos
+  // Alunos com acesso ao Estudo = estudo + ambos
+  const estudoAccess = modoCounts.estudo + modoCounts.ambos
 
   const stats = [
     { label: 'Utilizadores', value: students.length, icon: Users, color: '#6270f5' },
@@ -34,7 +47,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-4 mb-5">
         {stats.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="card">
             <div className="flex items-center justify-between mb-3">
@@ -46,6 +59,56 @@ export default function AdminDashboard() {
             <p className="text-3xl font-display font-bold" style={{ color: 'var(--text)' }}>{value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Distribuição por modo */}
+      <div className="card mb-8">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <h3 className="font-display font-bold text-base" style={{ color: 'var(--text)' }}>Distribuição por modo</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Clica num cartão para filtrar a lista de utilizadores.</p>
+          </div>
+          <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+            <span className="inline-flex items-center gap-1">
+              <GraduationCap size={12} style={{ color: '#6270f5' }} />
+              Estudo: <strong style={{ color: 'var(--text)' }}>{estudoAccess}</strong>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <BookMarked size={12} style={{ color: '#10b981' }} />
+              Clube: <strong style={{ color: 'var(--text)' }}>{clubeAccess}</strong>
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <ModoBreakdownCard
+            label="Só Estudo"
+            desc="Planos + biblioteca, sem clube"
+            count={modoCounts.estudo}
+            total={students.length}
+            color="#6270f5"
+            icon={GraduationCap}
+            onClick={() => navigate('/admin/usuarios')}
+          />
+          <ModoBreakdownCard
+            label="Só Clube de Leitura"
+            desc="Apenas clube, sem estudo"
+            count={modoCounts.clube}
+            total={students.length}
+            color="#10b981"
+            icon={BookMarked}
+            onClick={() => navigate('/admin/usuarios')}
+          />
+          <ModoBreakdownCard
+            label="Ambos"
+            desc="Estudo + clube, com switcher"
+            count={modoCounts.ambos}
+            total={students.length}
+            color="#a78bfa"
+            icon={Layers}
+            onClick={() => navigate('/admin/usuarios')}
+          />
+        </div>
       </div>
 
       {/* Ranking de alunos */}
@@ -109,5 +172,58 @@ function StatPill({ icon, value, color }: { icon: React.ReactNode; value: string
       {icon}
       <span>{value}</span>
     </div>
+  )
+}
+
+function ModoBreakdownCard({
+  label,
+  desc,
+  count,
+  total,
+  color,
+  icon: Icon,
+  onClick,
+}: {
+  label: string
+  desc: string
+  count: number
+  total: number
+  color: string
+  icon: typeof Users
+  onClick: () => void
+}) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <button
+      onClick={onClick}
+      className="group text-left p-4 rounded-2xl transition-all hover:-translate-y-0.5"
+      style={{
+        background: 'var(--surface)',
+        border: `1px solid ${color}22`,
+        boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}15`, color }}>
+          <Icon size={16} />
+        </span>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${color}15`, color }}>
+          {pct}%
+        </span>
+      </div>
+      <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <p className="text-2xl font-display font-extrabold leading-tight mt-0.5" style={{ color: 'var(--text)', letterSpacing: '-0.01em' }}>
+        {count}
+        <span className="text-xs font-medium ml-1" style={{ color: 'var(--text-muted)' }}>/ {total}</span>
+      </p>
+      <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>{desc}</p>
+      {/* Barra de progresso */}
+      <div className="h-1 rounded-full overflow-hidden mt-3" style={{ background: 'var(--surface-2)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${pct}%`, background: color }}
+        />
+      </div>
+    </button>
   )
 }

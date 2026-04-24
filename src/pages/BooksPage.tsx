@@ -4,8 +4,9 @@ import { useStudentAuthStore } from '@/store/useStudentAuthStore'
 import { useAdminStore } from '@/store/useAdminStore'
 import {
   BookMarked, Plus, Pencil, Trash2, CheckCircle2, X,
-  BookOpen, Share2, List,
+  BookOpen, Share2, List, MessageSquare,
 } from 'lucide-react'
+import BookThreadModal from '@/components/dashboard/BookThreadModal'
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -274,6 +275,7 @@ function BookCard({
   const { feedItems, addFeedItem, deleteFeedItem } = useAdminStore()
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showThread, setShowThread] = useState(false)
 
   function handleSave(data: BookFormSave) {
     const wasShared = book.partilhado
@@ -406,18 +408,36 @@ function BookCard({
               </button>
             )}
           </div>
-          {book.status === 'lendo' && (
+          <div className="flex items-center gap-1.5">
             <button
-              onClick={() => onMarkRead(book)}
+              onClick={() => setShowThread(true)}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white' }}
-              title="Marcar como lido"
+              style={{ background: 'rgba(98,112,245,0.1)', color: '#6270f5', border: '1px solid rgba(98,112,245,0.2)' }}
+              title="Comentar no clube"
             >
-              <CheckCircle2 size={12} /> Marcar lido
+              <MessageSquare size={12} /> Comentar
             </button>
-          )}
+            {book.status === 'lendo' && (
+              <button
+                onClick={() => onMarkRead(book)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white' }}
+                title="Marcar como lido"
+              >
+                <CheckCircle2 size={12} /> Marcar lido
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {showThread && (
+        <BookThreadModal
+          titulo={book.titulo}
+          autor={book.autor}
+          onClose={() => setShowThread(false)}
+        />
+      )}
     </>
   )
 }
