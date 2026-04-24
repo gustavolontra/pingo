@@ -6,13 +6,30 @@ import { Mail, Lock } from 'lucide-react'
 export default function StudentLoginPage() {
   const navigate = useNavigate()
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{
+        background:
+          'radial-gradient(900px 500px at 0% 0%, rgba(98,112,245,0.14), transparent 60%), radial-gradient(900px 500px at 100% 100%, rgba(16,185,129,0.14), transparent 60%), var(--bg)',
+      }}
+    >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-display font-extrabold" style={{ color: 'var(--text)' }}>
-            pingo<span style={{ color: '#6270f5' }}>.team</span><span style={{ fontSize: '10px', fontWeight: 500, color: '#9ca3af', letterSpacing: '0.05em', marginLeft: '4px', verticalAlign: 'middle' }}>beta</span>
+            pingo
+            <span style={{
+              background: 'linear-gradient(90deg, #6270f5 0%, #a78bfa 50%, #10b981 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>
+              .team
+            </span>
+            <span style={{ fontSize: '10px', fontWeight: 500, color: '#9ca3af', letterSpacing: '0.05em', marginLeft: '4px', verticalAlign: 'middle' }}>beta</span>
           </h1>
-          <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>O teu estudo inteligente</p>
+          <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
+            Estudo + Clube de Leitura · num só sítio
+          </p>
         </div>
 
         <LoginForm navigate={navigate} />
@@ -85,7 +102,16 @@ function LoginForm({ navigate }: { navigate: (p: string) => void }) {
 
         {error && <p className="text-sm text-center" style={{ color: '#dc2626' }}>{error}</p>}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full mt-1" style={{ opacity: loading ? 0.7 : 1 }}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full mt-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
+          style={{
+            background: 'linear-gradient(135deg, #6270f5 0%, #a78bfa 55%, #10b981 100%)',
+            boxShadow: '0 6px 20px rgba(98,112,245,0.35)',
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
           {loading ? 'A entrar...' : 'Entrar'}
         </button>
       </form>

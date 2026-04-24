@@ -195,12 +195,12 @@ function ClubMockup() {
           </span>
         </div>
 
-        {/* Member row */}
+        {/* Member row (mockup — nomes fictícios) */}
         <div className="space-y-2">
           {[
-            { name: 'Marina', book: 'Príncipe Cruel', author: 'Holly Black', color: '#6270f5' },
-            { name: 'Lontra', book: 'Nexus', author: 'Yuval Harari', color: '#a78bfa' },
-            { name: 'Sofia', book: 'Era uma vez…', author: 'Stephanie Garber', color: '#10b981' },
+            { name: 'Clara', book: 'O Principezinho', author: 'Saint-Exupéry', color: '#6270f5' },
+            { name: 'Tomás', book: 'A Ilha do Tesouro', author: 'R. L. Stevenson', color: '#a78bfa' },
+            { name: 'Inês', book: 'Mistério na Floresta', author: 'J. Martins', color: '#10b981' },
           ].map((m) => (
             <div
               key={m.name}
